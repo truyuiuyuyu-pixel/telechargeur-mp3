@@ -19,8 +19,170 @@ from downloader import (
 )
 import scanner
 import qrcode
-from themes import get_all_themes, get_theme_by_id, match_theme_by_query
-from cloud_cleaner import reset_cloud_storage
+import time
+
+# =====================================================================
+# THÈMES & STYLES DE MUSIQUE (Halloween, Noël, Fête, etc.)
+# Intégrés directement dans app.py pour éviter toute erreur d'import
+# =====================================================================
+THEMES_CATALOG = {
+    "halloween": {
+        "id": "halloween",
+        "name": "Halloween & Horreur",
+        "icon": "fa-ghost",
+        "badge": "🎃 Ambiance Halloween",
+        "keywords": ["halloween", "allowen", "haloween", "hallowen", "horreur", "spooky", "peur", "citrouille", "fantome", "vampire", "zombie"],
+        "description": "Les plus grands morceaux cultes et mystérieux pour Halloween",
+        "tracks": [
+            {"title": "Thriller", "artist": "Michael Jackson", "query": "Michael Jackson Thriller lyrics"},
+            {"title": "Ghostbusters (Theme)", "artist": "Ray Parker Jr.", "query": "Ray Parker Jr Ghostbusters lyrics"},
+            {"title": "Spooky Scary Skeletons", "artist": "Andrew Gold", "query": "Andrew Gold Spooky Scary Skeletons lyrics"},
+            {"title": "This Is Halloween", "artist": "The Nightmare Before Christmas", "query": "This Is Halloween The Nightmare Before Christmas lyrics"},
+            {"title": "Monster Mash", "artist": "Bobby Boris Pickett", "query": "Bobby Pickett Monster Mash lyrics"},
+            {"title": "Halloween Theme", "artist": "John Carpenter", "query": "John Carpenter Halloween Theme original"},
+            {"title": "Somebody's Watching Me", "artist": "Rockwell", "query": "Rockwell Somebody's Watching Me lyrics"},
+            {"title": "Highway to Hell", "artist": "AC/DC", "query": "AC DC Highway to Hell lyrics"},
+            {"title": "Sweet Dreams", "artist": "Marilyn Manson", "query": "Marilyn Manson Sweet Dreams lyrics"},
+            {"title": "Zombie", "artist": "The Cranberries", "query": "The Cranberries Zombie lyrics"}
+        ]
+    },
+    "noel": {
+        "id": "noel",
+        "name": "Noël & Fêtes",
+        "icon": "fa-tree",
+        "badge": "🎄 Ambiance Noël",
+        "keywords": ["noel", "noël", "christmas", "fetes", "fêtes", "hiver", "sapin", "cadeaux"],
+        "description": "Les classiques intemporels de Noël et fêtes de fin d'année",
+        "tracks": [
+            {"title": "All I Want for Christmas Is You", "artist": "Mariah Carey", "query": "Mariah Carey All I Want for Christmas Is You lyrics"},
+            {"title": "Last Christmas", "artist": "Wham!", "query": "Wham Last Christmas lyrics"},
+            {"title": "Jingle Bell Rock", "artist": "Bobby Helms", "query": "Bobby Helms Jingle Bell Rock lyrics"},
+            {"title": "Vive le vent", "artist": "Chants de Noël", "query": "Vive le vent paroles"},
+            {"title": "Petit Papa Noël", "artist": "Tino Rossi", "query": "Tino Rossi Petit Papa Noel paroles"},
+            {"title": "Feliz Navidad", "artist": "José Feliciano", "query": "Jose Feliciano Feliz Navidad lyrics"}
+        ]
+    },
+    "soiree": {
+        "id": "soiree",
+        "name": "Soirée & Fête",
+        "icon": "fa-champagne-glasses",
+        "badge": "🎉 Ambiance Fête & Dance",
+        "keywords": ["soiree", "soirée", "fete", "fête", "party", "club", "dance", "boite", "dj"],
+        "description": "Les hits ultimes pour danser et mettre le feu en soirée",
+        "tracks": [
+            {"title": "One More Time", "artist": "Daft Punk", "query": "Daft Punk One More Time lyrics"},
+            {"title": "Don't Start Now", "artist": "Dua Lipa", "query": "Dua Lipa Don't Start Now lyrics"},
+            {"title": "Titanium", "artist": "David Guetta ft. Sia", "query": "David Guetta Titanium lyrics"},
+            {"title": "Alors on danse", "artist": "Stromae", "query": "Stromae Alors on danse lyrics"}
+        ]
+    },
+    "sport": {
+        "id": "sport",
+        "name": "Sport & Fitness",
+        "icon": "fa-dumbbell",
+        "badge": "🏋️ Motivation Workout",
+        "keywords": ["sport", "fitness", "workout", "gym", "motivation", "musculation", "training", "running"],
+        "description": "L'énergie maximale pour booster vos entraînements",
+        "tracks": [
+            {"title": "Eye of the Tiger", "artist": "Survivor", "query": "Survivor Eye of the Tiger lyrics"},
+            {"title": "Lose Yourself", "artist": "Eminem", "query": "Eminem Lose Yourself lyrics"},
+            {"title": "Stronger", "artist": "Kanye West", "query": "Kanye West Stronger lyrics"}
+        ]
+    },
+    "chill": {
+        "id": "chill",
+        "name": "Détente & Calme",
+        "icon": "fa-mug-hot",
+        "badge": "🧘 Calme & Relaxation",
+        "keywords": ["chill", "detente", "détente", "calme", "relax", "relaxation", "lofi", "sommeil", "sleep", "zen"],
+        "description": "Musiques douces, Lofi et piano pour se relaxer",
+        "tracks": [
+            {"title": "Sunset Lover", "artist": "Petit Biscuit", "query": "Petit Biscuit Sunset Lover audio"},
+            {"title": "River Flows in You", "artist": "Yiruma", "query": "Yiruma River Flows in You piano"},
+            {"title": "Clair de Lune", "artist": "Claude Debussy", "query": "Claude Debussy Clair de Lune piano"}
+        ]
+    },
+    "gaming": {
+        "id": "gaming",
+        "name": "Gaming & Électro",
+        "icon": "fa-gamepad",
+        "badge": "🎮 Gaming & Bass",
+        "keywords": ["gaming", "game", "electro", "ncs", "synthwave", "jeux"],
+        "description": "Les sons préférés des gamers et passionnés d'électro",
+        "tracks": [
+            {"title": "Faded", "artist": "Alan Walker", "query": "Alan Walker Faded lyrics"},
+            {"title": "Monody", "artist": "TheFatRat", "query": "TheFatRat Monody lyrics"}
+        ]
+    },
+    "retro80": {
+        "id": "retro80",
+        "name": "Années 80 & Rétro",
+        "icon": "fa-compact-disc",
+        "badge": "📻 Vintage Années 80/90",
+        "keywords": ["80", "90", "retro", "rétro", "vintage", "disco", "nostalgie", "annees 80"],
+        "description": "Les plus grands classiques cultes des années 80 et 90",
+        "tracks": [
+            {"title": "Take On Me", "artist": "A-ha", "query": "A-ha Take On Me lyrics"},
+            {"title": "Billie Jean", "artist": "Michael Jackson", "query": "Michael Jackson Billie Jean lyrics"}
+        ]
+    },
+    "latino": {
+        "id": "latino",
+        "name": "Latino & Soleil",
+        "icon": "fa-sun",
+        "badge": "🏖️ Soleil & Reggaeton",
+        "keywords": ["latino", "soleil", "ete", "été", "reggaeton", "plage", "vacances"],
+        "description": "Rythmes latinos, ensoleillés et chaleureux",
+        "tracks": [
+            {"title": "Despacito", "artist": "Luis Fonsi ft. Daddy Yankee", "query": "Luis Fonsi Despacito lyrics"},
+            {"title": "Danza Kuduro", "artist": "Don Omar ft. Lucenzo", "query": "Don Omar Danza Kuduro lyrics"}
+        ]
+    }
+}
+
+def get_all_themes():
+    return [{"id": k, "name": v["name"], "icon": v["icon"], "badge": v["badge"], "description": v["description"]} for k, v in THEMES_CATALOG.items()]
+
+def get_theme_by_id(theme_id):
+    return THEMES_CATALOG.get(theme_id)
+
+def match_theme_by_query(query):
+    if not query:
+        return None
+    q = query.lower().strip()
+    words = q.split()
+    for tid, info in THEMES_CATALOG.items():
+        for kw in info["keywords"]:
+            if kw in q or any(kw in w for w in words):
+                return info
+    return None
+
+# =====================================================================
+# NETTOYAGE & RÉINITIALISATION DU CLOUD
+# Intégré directement dans app.py
+# =====================================================================
+def reset_cloud_storage():
+    cfg = load_config()
+    music_base = cfg.get("music_folder", "Musique")
+    deleted_files = 0
+    if not os.path.isabs(music_base):
+        music_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), music_base)
+    if os.path.exists(music_base):
+        for root, dirs, files in os.walk(music_base, topdown=False):
+            for file in files:
+                try:
+                    os.remove(os.path.join(root, file))
+                    deleted_files += 1
+                except Exception:
+                    pass
+            for d in dirs:
+                try:
+                    dp = os.path.join(root, d)
+                    if not os.listdir(dp):
+                        os.rmdir(dp)
+                except Exception:
+                    pass
+    return {"success": True, "deleted_files": deleted_files, "message": f"Cloud réinitialisé : {deleted_files} fichier(s) effacé(s)."}
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
