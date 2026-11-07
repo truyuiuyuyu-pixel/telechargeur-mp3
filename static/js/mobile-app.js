@@ -207,6 +207,8 @@
         setupTabs();
         setupSettings();
         setupScanPhone();
+        setupMobThemes();
+        setupMobCloudCleaner();
         handleUrlParams();
     }
 
@@ -273,6 +275,76 @@
     }
 
     // =========================================================
+    // THEMES & STYLES MUSICAUX (Halloween, Noël, etc.)
+    // =========================================================
+    function showMobThemeBanner(theme) {
+        const tb = $('mobThemeBanner');
+        if (!tb) return;
+        tb.innerHTML = `
+            <div><strong>${esc(theme.badge || theme.name)}</strong> : ${esc(theme.description || '')}</div>
+            <button style="background:none;border:none;color:#fff;cursor:pointer;padding:4px;" onclick="document.getElementById('mobThemeBanner').style.display='none'">&times;</button>
+        `;
+        tb.style.display = 'flex';
+    }
+
+    function hideMobThemeBanner() {
+        const tb = $('mobThemeBanner');
+        if (tb) tb.style.display = 'none';
+    }
+
+    function setupMobThemes() {
+        document.querySelectorAll('.mob-theme-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const themeId = btn.dataset.theme;
+                document.querySelectorAll('.mob-theme-pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const inp = $('mobSearchInput');
+                if (inp) inp.value = themeId;
+                doSearch(themeId);
+            });
+        });
+    }
+
+    // =========================================================
+    // REINITIALISATION & NETTOYAGE DU CLOUD (Mobile)
+    // =========================================================
+    function setupMobCloudCleaner() {
+        // Envoi automatique de réinitialisation quand on quitte
+        window.addEventListener('beforeunload', () => {
+            try { navigator.sendBeacon('/api/cloud/reset'); } catch (e) {}
+        });
+        window.addEventListener('pagehide', () => {
+            try { navigator.sendBeacon('/api/cloud/reset'); } catch (e) {}
+        });
+
+        // Bouton header
+        $('btnMobCloudReset')?.addEventListener('click', async () => {
+            if (!confirm('Réinitialiser le cloud et effacer tous les fichiers audio temporaires ?')) return;
+            try {
+                const res = await fetch('/api/cloud/reset', { method: 'POST' });
+                const data = await res.json();
+                showToast(data.message || 'Cloud réinitialisé !');
+                await loadLibrary();
+            } catch {
+                showToast('Erreur réinitialisation', true);
+            }
+        });
+
+        // Bouton settings sheet
+        $('btnMobResetCloudNow')?.addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/cloud/reset', { method: 'POST' });
+                const data = await res.json();
+                showToast(data.message || 'Cloud réinitialisé !');
+                $('mobSettingsSheet')?.classList.remove('open');
+                await loadLibrary();
+            } catch {
+                showToast('Erreur réinitialisation', true);
+            }
+        });
+    }
+
+    // =========================================================
     // RECHERCHE
     // =========================================================
     const mobSearchForm = $('mobSearchForm');
@@ -295,6 +367,15 @@
             const data = await res.json();
             const results = data.results || [];
             $('mobSearchLoader').style.display = 'none';
+
+            if (data.theme) {
+                showMobThemeBanner(data.theme);
+                document.querySelectorAll('.mob-theme-pill').forEach(b => {
+                    b.classList.toggle('active', b.dataset.theme === data.theme.id);
+                });
+            } else {
+                hideMobThemeBanner();
+            }
 
             if (results.length === 0) {
                 $('mobSearchEmpty').style.display = 'block';
@@ -396,11 +477,17 @@
                     const dlCard = $(`mobDl_${taskId}`);
                     if (dlCard) {
                         const saveLink = document.createElement('a');
-                        saveLink.href = `/api/download-ready/${taskId}`;
+                        saveLink.href = `/api/download-ready/${taskId}?cleanup=1`;
                         saveLink.className = 'btn-save-to-phone';
                         saveLink.setAttribute('download', info.filename || `${title}.mp3`);
                         saveLink.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> Enregistrer sur ce téléphone (MP3 HD 320k)';
                         dlCard.appendChild(saveLink);
+
+                        // Déclencher le téléchargement directement sur le smartphone
+                        try {
+                            saveLink.click();
+                            showToast(`📲 Téléchargement direct sur votre téléphone démarré !`);
+                        } catch (e) {}
 
                         // Retirer la carte après 30 secondes (laisse le temps d'appuyer)
                         setTimeout(() => {
@@ -418,8 +505,58 @@
     }
 
     // =========================================================
-    // BIBLIOTHÈQUE
+    // BIBLIOTHÈQUE & TÉLÉCHARGEMENT DIRECT MP3 (SANS ZIP)
     // =========================================================
+    async function downloadAllTracksDirectly(progressEl, onComplete) {
+        try {
+            const res = await fetch('/api/library');
+            const data = await res.json();
+            const singers = data.singers || [];
+            const allTracks = [];
+            singers.forEach(s => {
+                (s.tracks || []).forEach(t => allTracks.push(t));
+            });
+
+            if (!allTracks.length) {
+                showToast("Aucune musique dans la bibliothèque ! Téléchargez d'abord un morceau.", true);
+                return;
+            }
+
+            if (progressEl) progressEl.style.display = 'block';
+
+            let downloaded = 0;
+            for (let i = 0; i < allTracks.length; i++) {
+                const track = allTracks[i];
+                const title = track.title || track.filename;
+                if (progressEl) {
+                    progressEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> MP3 ${i + 1}/${allTracks.length} : <strong>${esc(title)}</strong>...`;
+                }
+
+                // Déclencher le téléchargement du vrai MP3 natif
+                const link = document.createElement('a');
+                link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}?cleanup=1`;
+                link.setAttribute('download', track.filename || `${title}.mp3`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                downloaded++;
+
+                // Pause de 750ms entre chaque morceau pour que le gestionnaire Android les télécharge tous
+                await new Promise(resolve => setTimeout(resolve, 750));
+            }
+
+            if (progressEl) {
+                progressEl.innerHTML = `✅ ${downloaded} vrai(s) MP3 téléchargé(s) directement dans votre téléphone !`;
+                setTimeout(() => { progressEl.style.display = 'none'; }, 6000);
+            }
+
+            if (onComplete) onComplete(downloaded);
+        } catch (err) {
+            console.error('Erreur téléchargement direct:', err);
+            if (progressEl) progressEl.innerHTML = `❌ Erreur téléchargement direct`;
+        }
+    }
+
     async function loadLibrary() {
         $('mobLibLoader').style.display = 'flex';
         $('mobLibEmpty').style.display = 'none';
@@ -490,6 +627,15 @@
             showToast('Erreur chargement bibliothèque', true);
         }
     }
+
+    // Écouteur pour le bouton de téléchargement direct sans ZIP
+    $('btnMobDownloadAllDirect')?.addEventListener('click', async () => {
+        const progress = $('mobDlAllProgress');
+        await downloadAllTracksDirectly(progress, (count) => {
+            showToast(`📲 ${count} MP3 enregistrés sur votre téléphone !`);
+            setTimeout(() => loadLibrary(), 2500);
+        });
+    });
 
     // =========================================================
     // MODE CHANTEUR COMPLET

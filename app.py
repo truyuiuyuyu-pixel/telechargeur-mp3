@@ -19,6 +19,8 @@ from downloader import (
 )
 import scanner
 import qrcode
+from themes import get_all_themes, get_theme_by_id, match_theme_by_query
+from cloud_cleaner import reset_cloud_storage
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
@@ -130,9 +132,36 @@ def handle_config():
 def search():
     query = request.args.get('q', '').strip()
     if not query:
-        return jsonify({"results": []})
+        return jsonify({"results": [], "theme": None})
+    theme_info = match_theme_by_query(query)
     results = search_tracks(query, limit=12)
-    return jsonify({"results": results})
+    return jsonify({
+        "results": results,
+        "theme": {
+            "id": theme_info["id"],
+            "name": theme_info["name"],
+            "badge": theme_info["badge"],
+            "icon": theme_info["icon"],
+            "description": theme_info["description"],
+            "tracks": theme_info.get("tracks", [])
+        } if theme_info else None
+    })
+
+@app.route('/api/themes')
+def api_themes():
+    return jsonify(get_all_themes())
+
+@app.route('/api/theme/<theme_id>')
+def api_theme(theme_id):
+    theme = get_theme_by_id(theme_id)
+    if not theme:
+        return jsonify({"error": "Thème introuvable"}), 404
+    return jsonify(theme)
+
+@app.route('/api/cloud/reset', methods=['GET', 'POST'])
+def api_cloud_reset():
+    res = reset_cloud_storage()
+    return jsonify(res)
 
 @app.route('/api/download', methods=['POST'])
 def start_download():
@@ -189,6 +218,19 @@ def download_file(rel_path):
         return abort(404)
 
     filename = os.path.basename(full_path)
+
+    cleanup = request.args.get('cleanup') == '1'
+    if cleanup:
+        def deferred_remove(path):
+            import time
+            time.sleep(12)
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except Exception:
+                pass
+        threading.Thread(target=deferred_remove, args=(full_path,), daemon=True).start()
+
     # En-têtes explicites pour forcer le téléchargement sur Android Chrome, iOS Safari et PC
     response = send_file(
         full_path,
@@ -222,6 +264,19 @@ def download_ready(task_id):
         return abort(404)
 
     filename = os.path.basename(filepath)
+
+    cleanup = request.args.get('cleanup') == '1'
+    if cleanup:
+        def deferred_remove(path):
+            import time
+            time.sleep(10)
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except Exception:
+                pass
+        threading.Thread(target=deferred_remove, args=(filepath,), daemon=True).start()
+
     response = send_file(
         filepath,
         mimetype='audio/mpeg',
@@ -373,6 +428,61 @@ def download_artist_zip(artist_name):
     memory_file.seek(0)
     zip_filename = f"{clean_artist}_MP3_HD_320k.zip"
     return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
+
+@app.route('/api/download-all-to-phone')
+def download_all_to_phone():
+    """
+    Télécharge TOUTES les musiques sous la forme d'un fichier .ZIP directement
+    sur le téléphone (dans son dossier Téléchargements), puis efface
+    les fichiers du cloud pour ne rien laisser sur le serveur.
+    """
+    import zipfile
+    import time
+    cfg = load_config()
+    music_base = cfg.get("music_folder", "Musique")
+    if not os.path.isabs(music_base):
+        music_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), music_base)
+
+    if not os.path.exists(music_base):
+        return abort(404)
+
+    memory_file = io.BytesIO()
+    file_count = 0
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(music_base):
+            for file in files:
+                if file.lower().endswith(('.mp3', '.m4a', '.flac', '.wav', '.ogg')):
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, music_base)
+                    zf.write(file_path, arcname)
+                    file_count += 1
+
+    if file_count == 0:
+        return jsonify({"error": "Aucune musique trouvée à télécharger", "empty": True}), 200
+
+    memory_file.seek(0)
+    zip_filename = "Mes_Musiques_MP3_HD.zip"
+
+    # Si cleanup=1 (par défaut), programmer le nettoyage du cloud après l'envoi
+    cleanup = request.args.get('cleanup', '1') == '1'
+    if cleanup:
+        def deferred_clean():
+            time.sleep(10)
+            try:
+                reset_cloud_storage()
+            except Exception:
+                pass
+        threading.Thread(target=deferred_clean, daemon=True).start()
+
+    response = send_file(
+        memory_file,
+        mimetype='application/zip',
+        as_attachment=True,
+        download_name=zip_filename
+    )
+    response.headers['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
 if __name__ == '__main__':
     ip = get_local_ip()

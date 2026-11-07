@@ -124,6 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setupTabs();
         setupPresets();
         setupSingerMode();
+        setupThemes();
+        setupCloudCleaner();
     }
 
     function applyFontStyle(fontClass) {
@@ -322,6 +324,64 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Themes & Ambiances (Halloween, Noël, Soirée, etc.) ---
+    function showThemeBanner(theme) {
+        const tb = document.getElementById('themeBanner');
+        if (!tb) return;
+        tb.innerHTML = `
+            <div>
+                <strong>${escapeHtml(theme.badge || theme.name)}</strong> : ${escapeHtml(theme.description || '')}
+            </div>
+            <button type="button" class="theme-banner-close" onclick="document.getElementById('themeBanner').style.display='none'">&times;</button>
+        `;
+        tb.style.display = 'flex';
+    }
+
+    function hideThemeBanner() {
+        const tb = document.getElementById('themeBanner');
+        if (tb) tb.style.display = 'none';
+    }
+
+    function setupThemes() {
+        document.querySelectorAll('.theme-pill').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const themeId = btn.dataset.theme;
+                document.querySelectorAll('.theme-pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                searchInput.value = themeId;
+                btnClearSearch.style.display = 'block';
+                searchForm.dispatchEvent(new Event('submit'));
+            });
+        });
+    }
+
+    // --- Réinitialisation & Nettoyage du Cloud ---
+    function setupCloudCleaner() {
+        // Envoi d'un beacon de réinitialisation quand le visiteur quitte le site
+        window.addEventListener('beforeunload', () => {
+            try { navigator.sendBeacon('/api/cloud/reset'); } catch (e) {}
+        });
+        window.addEventListener('pagehide', () => {
+            try { navigator.sendBeacon('/api/cloud/reset'); } catch (e) {}
+        });
+
+        // Bouton manuel "Vider le Cloud"
+        const btnCloudReset = document.getElementById('btnCloudReset');
+        if (btnCloudReset) {
+            btnCloudReset.addEventListener('click', async () => {
+                if (!confirm('Voulez-vous réinitialiser le cloud et effacer tous les fichiers audio temporaires ?')) return;
+                try {
+                    const res = await fetch('/api/cloud/reset', { method: 'POST' });
+                    const data = await res.json();
+                    showToast(data.message || 'Cloud réinitialisé avec succès !');
+                    await loadLibrary();
+                } catch {
+                    showToast('Erreur réinitialisation cloud', true);
+                }
+            });
+        }
+    }
+
     // --- Search Logic ---
     searchInput.addEventListener('input', () => {
         btnClearSearch.style.display = searchInput.value ? 'block' : 'none';
@@ -351,6 +411,15 @@ document.addEventListener('DOMContentLoaded', () => {
             searchLoader.style.display = 'none';
             resultsHeader.style.display = 'flex';
             resultsCount.textContent = `${results.length} morceau(x) trouvé(s)`;
+
+            if (data.theme) {
+                showThemeBanner(data.theme);
+                document.querySelectorAll('.theme-pill').forEach(b => {
+                    b.classList.toggle('active', b.dataset.theme === data.theme.id);
+                });
+            } else {
+                hideThemeBanner();
+            }
 
             if (results.length === 0) {
                 resultsGrid.innerHTML = `
@@ -500,7 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (card) {
                         // Bouton de sauvegarde directe sur le téléphone via /api/download-ready/<task_id>
                         const saveBtn = document.createElement('a');
-                        saveBtn.href = `/api/download-ready/${taskId}`;
+                        saveBtn.href = `/api/download-ready/${taskId}?cleanup=1`;
                         saveBtn.className = 'btn-save-phone';
                         saveBtn.setAttribute('download', info.filename || `${title}.mp3`);
                         saveBtn.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> Enregistrer sur ce Téléphone (MP3 HD 320k)';
@@ -542,6 +611,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     btnRefreshLibrary.addEventListener('click', loadLibrary);
+
+    const btnDownloadAllDirectMp3 = document.getElementById('btnDownloadAllDirectMp3');
+    if (btnDownloadAllDirectMp3) {
+        btnDownloadAllDirectMp3.addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/library');
+                const data = await res.json();
+                const singers = data.singers || [];
+                const allTracks = [];
+                singers.forEach(s => {
+                    (s.tracks || []).forEach(t => allTracks.push(t));
+                });
+
+                if (!allTracks.length) {
+                    showToast("Aucune musique dans la bibliothèque pour l'instant !", true);
+                    return;
+                }
+
+                showToast(`📲 Début du téléchargement de ${allTracks.length} fichiers MP3 directs...`);
+
+                let downloaded = 0;
+                for (let i = 0; i < allTracks.length; i++) {
+                    const track = allTracks[i];
+                    const title = track.title || track.filename;
+                    showToast(`MP3 ${i + 1}/${allTracks.length} : ${title}`);
+
+                    const link = document.createElement('a');
+                    link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}?cleanup=1`;
+                    link.setAttribute('download', track.filename || `${title}.mp3`);
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    downloaded++;
+
+                    await new Promise(r => setTimeout(r, 750));
+                }
+
+                showToast(`✅ ${downloaded} fichiers MP3 téléchargés directement sans ZIP !`);
+                setTimeout(() => loadLibrary(), 2500);
+            } catch (err) {
+                showToast("Erreur lors du téléchargement des MP3", true);
+            }
+        });
+    }
 
     function renderLibrary(singers) {
         libraryContainer.innerHTML = '';
