@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Téléchargeur MP3 HD — App Mobile</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MP3 HD">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="icon" type="image/png" href="/static/icons/favicon.png">
+    <link rel="stylesheet" href="/static/css/mobile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts — Polices Musique & Tech -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Exo+2:wght@400;700;800&family=Audiowide&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ============================================================
+     SPLASH SCREEN — Affiché au premier lancement (scan auto)
+     ============================================================ -->
+<div id="splashScreen">
+    <div class="splash-logo"><i class="fa-solid fa-music"></i></div>
+    <h1 class="splash-title">Téléchargeur MP3 HD</h1>
+    <p class="splash-subtitle">Pour votre Téléphone</p>
+    <span class="splash-badge"><i class="fa-solid fa-waveform-lines"></i> MP3 HD 320 kbps</span>
+
+    <div class="scan-wizard" id="scanWizard">
+
+        <!-- Étape 0 : Bienvenue -->
+        <div class="scan-step active" id="step0">
+            <span class="step-number">1</span>
+            <h3>Bienvenue !</h3>
+            <p>L'application va scanner votre téléphone pour connaître vos musiques existantes et éviter les doublons lors du téléchargement.</p>
+            <button class="mob-btn mob-btn-primary mob-btn-full" onclick="startScan()">
+                <i class="fa-solid fa-mobile-screen"></i>
+                Scanner mon téléphone maintenant
+            </button>
+            <button class="mob-btn mob-btn-full mt-8" style="background:var(--bg-elevated);border:1px solid var(--border);" onclick="skipScan()">
+                Passer cette étape
+            </button>
+        </div>
+
+        <!-- Étape 1 : Sélection des fichiers audio -->
+        <div class="scan-step" id="step1">
+            <span class="step-number">2</span>
+            <h3>Sélectionner vos musiques</h3>
+            <p>Sélectionnez tous vos fichiers MP3 et musiques présentes sur votre téléphone pour que l'app puisse les indexer.</p>
+            <input type="file" id="scanFileInput" multiple accept="audio/*,.mp3,.m4a,.ogg,.flac,.wav,.aac" style="display:none">
+            <button class="mob-btn mob-btn-primary mob-btn-full" onclick="document.getElementById('scanFileInput').click()">
+                <i class="fa-solid fa-folder-open"></i>
+                Choisir mes fichiers musique
+            </button>
+        </div>
+
+        <!-- Étape 2 : Scan en cours -->
+        <div class="scan-step" id="step2">
+            <span class="step-number">3</span>
+            <h3>Analyse en cours…</h3>
+            <p id="scanStatusMsg">Lecture des fichiers audio de votre téléphone…</p>
+            <div class="scan-progress-bar"><div class="scan-progress-fill" id="scanFill"></div></div>
+            <div class="scan-status-text" id="scanCountText">0 fichiers analysés</div>
+        </div>
+
+        <!-- Étape 3 : Scan terminé -->
+        <div class="scan-step" id="step3">
+            <span class="step-number" style="background:var(--success)"><i class="fa-solid fa-check" style="font-size:0.65rem"></i></span>
+            <h3>Scan terminé !</h3>
+            <p id="scanResultMsg">Vos musiques ont été indexées. L'app ne téléchargera jamais de doublons !</p>
+            <button class="mob-btn mob-btn-success mob-btn-full" onclick="finishSplash()">
+                <i class="fa-solid fa-rocket"></i>
+                Accéder à l'application
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================
+     APPLICATION PRINCIPALE MOBILE
+     ============================================================ -->
+<div id="mobileApp">
+
+    <!-- Header -->
+    <header class="mob-header">
+        <div class="mob-header-row">
+            <div class="mob-logo">
+                <div class="mob-logo-icon"><i class="fa-solid fa-music"></i></div>
+                <div>
+                    <div class="mob-logo-text">MP3 HD</div>
+                    <div class="mob-logo-sub">320 kbps • Anti-Doublons</div>
+                </div>
+            </div>
+            <div class="mob-header-actions">
+                <button class="mob-icon-btn" id="btnMobSettings" title="Paramètres">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bandeau téléchargement direct APK Android -->
+        <a href="/api/download-apk" download class="install-banner show" id="apkDownloadBanner" style="text-decoration:none;background:linear-gradient(135deg,rgba(16,185,129,0.18),rgba(6,182,212,0.12));border-color:rgba(16,185,129,0.4);">
+            <i class="fa-brands fa-android" style="color:var(--success);font-size:1.5rem;flex-shrink:0;"></i>
+            <div class="install-banner-text">
+                <strong style="color:var(--text-main);">Télécharger la vraie App Android</strong>
+                <span style="color:var(--text-muted);font-size:0.75rem;">Fichier .APK natif · Scan auto du téléphone · 320k</span>
+            </div>
+            <span class="install-banner-btn" style="background:linear-gradient(135deg,#10b981,#059669);">Installer APK</span>
+        </a>
+
+        <!-- Bandeau installation PWA (s'affiche si pas encore installée) -->
+        <div class="install-banner" id="installBanner">
+            <i class="fa-solid fa-mobile-screen-button" style="color:var(--primary);font-size:1.3rem;flex-shrink:0"></i>
+            <div class="install-banner-text">
+                <strong>Installer l'application</strong>
+                Accès rapide depuis l'écran d'accueil
+            </div>
+            <button class="install-banner-btn" id="btnInstallApp">Installer</button>
+        </div>
+    </header>
+
+    <!-- ===== TAB: RECHERCHE ===== -->
+    <div class="mob-tab-pane active" id="mobPane-search">
+
+        <div class="mob-search-box">
+            <span class="mob-hd-pill"><i class="fa-solid fa-waveform-lines"></i> MP3 HD 320 kbps</span>
+            <div class="mob-section-title">Rechercher une musique</div>
+            <div class="mob-section-desc">Artiste, titre ou collez un lien YouTube</div>
+            <form id="mobSearchForm" class="mob-search-row">
+                <input type="search" id="mobSearchInput" class="mob-input"
+                    placeholder="Ex: Stromae, Céline Dion, Adele…"
+                    autocomplete="off" autocorrect="off" spellcheck="false">
+                <button type="submit" class="mob-btn mob-btn-primary">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- Téléchargements en cours -->
+        <div id="mobDownloadsWrap" class="mob-downloads-wrap" style="display:none">
+            <div class="mob-section-title" style="margin-bottom:10px">
+                <i class="fa-solid fa-spinner fa-spin" style="color:var(--primary)"></i>
+                En cours de téléchargement
+            </div>
+            <div id="mobDownloadsList"></div>
+        </div>
+
+        <!-- Loader recherche -->
+        <div id="mobSearchLoader" class="mob-loader" style="display:none">
+            <div class="mob-spinner"></div>
+            <span>Recherche en cours…</span>
+        </div>
+
+        <!-- Résultats -->
+        <div id="mobResults" class="mob-results"></div>
+
+        <!-- Empty state -->
+        <div id="mobSearchEmpty" class="mob-empty" style="display:none">
+            <i class="fa-solid fa-compact-disc"></i>
+            <h3>Cherchez votre musique préférée</h3>
+            <p>Tapez le nom d'un chanteur ou d'une chanson ci-dessus.</p>
+        </div>
+    </div>
+
+    <!-- ===== TAB: MODE CHANTEUR ===== -->
+    <div class="mob-tab-pane" id="mobPane-singer">
+
+        <div class="mob-singer-mode-card">
+            <div class="mob-anti-dup-banner">
+                <i class="fa-solid fa-shield-halved mob-shield"></i>
+                <div>
+                    <strong>Scanner Anti-Doublons</strong><br>
+                    <span style="color:var(--text-muted);font-size:0.78rem">
+                        PC : <strong id="mobPcCount">…</strong> &nbsp;|&nbsp;
+                        Tél : <strong id="mobPhoneCount">0</strong>
+                    </span>
+                </div>
+                <button class="mob-btn mob-btn-sm mob-btn-info" id="btnMobScanPhone" style="margin-left:auto">
+                    <i class="fa-solid fa-rotate"></i> Rescan
+                </button>
+                <input type="file" id="mobPhoneFileInput" multiple accept="audio/*" style="display:none">
+            </div>
+
+            <div class="mob-section-title">Mode Chanteur Complet</div>
+            <div class="mob-section-desc">Toute la discographie d'un artiste, sans doublons</div>
+
+            <form id="mobSingerForm" class="mob-search-row" style="margin-top:12px">
+                <input type="text" id="mobSingerInput" class="mob-input"
+                    placeholder="Ex: Stromae, Jul, Adele…"
+                    autocomplete="off">
+                <button type="submit" class="mob-btn mob-btn-primary">
+                    <i class="fa-solid fa-bolt"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- Loader -->
+        <div id="mobSingerLoader" class="mob-loader" style="display:none">
+            <div class="mob-spinner"></div>
+            <span>Recherche discographie et scan doublons…</span>
+        </div>
+
+        <!-- Résultats discographie -->
+        <div id="mobSingerResults" style="display:none">
+            <div class="mob-singer-mode-card">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                    <div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--accent));display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">
+                        <i class="fa-solid fa-user-music"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:1.1rem;font-weight:800" id="mobArtistName">Artiste</div>
+                        <div style="font-size:0.78rem;color:var(--text-muted)">
+                            <span id="mobTotalTracks">0</span> titres •
+                            <span style="color:var(--success)" id="mobDupCount">0</span> déjà présents •
+                            <span style="color:var(--primary)" id="mobNewCount">0</span> nouveaux
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:8px">
+                    <button class="mob-btn mob-btn-full" id="mobBtnVerifySinger" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);">
+                        <i class="fa-solid fa-user-check"></i>
+                        Scanner & Vérifier le Chanteur (Anti-Intrus)
+                    </button>
+                    <button class="mob-btn mob-btn-primary mob-btn-full" id="mobBtnDlAll">
+                        <i class="fa-solid fa-cloud-arrow-down"></i>
+                        Télécharger toute la discographie
+                    </button>
+                    <a class="mob-btn mob-btn-info mob-btn-full" id="mobBtnZip" href="#" download>
+                        <i class="fa-solid fa-file-zipper"></i>
+                        Télécharger en ZIP (sur ce téléphone)
+                    </a>
+                </div>
+            </div>
+
+            <div id="mobDiscographyList" class="mob-singer-mode-card" style="padding:4px 16px"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div id="mobSingerEmpty" class="mob-empty">
+            <i class="fa-solid fa-record-vinyl"></i>
+            <h3>Toute la discographie d'un artiste</h3>
+            <p>L'app créera le dossier et les fichiers, et ne téléchargera que les morceaux manquants.</p>
+        </div>
+    </div>
+
+    <!-- ===== TAB: MA MUSIQUE ===== -->
+    <div class="mob-tab-pane" id="mobPane-library">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+            <div>
+                <div class="mob-section-title">Ma Musique</div>
+                <div class="mob-section-desc"><span id="mobLibCount">0</span> titre(s) téléchargé(s)</div>
+            </div>
+            <button class="mob-btn mob-btn-sm" style="background:var(--bg-elevated);border:1px solid var(--border)" id="btnMobRefreshLib">
+                <i class="fa-solid fa-rotate"></i>
+            </button>
+        </div>
+
+        <div id="mobLibLoader" class="mob-loader" style="display:none">
+            <div class="mob-spinner"></div>
+            <span>Chargement…</span>
+        </div>
+
+        <div id="mobLibContainer"></div>
+
+        <div id="mobLibEmpty" class="mob-empty" style="display:none">
+            <i class="fa-solid fa-folder-plus"></i>
+            <h3>Aucune musique encore</h3>
+            <p>Utilisez l'onglet Recherche pour télécharger vos premiers titres !</p>
+        </div>
+    </div>
+
+    <!-- Bottom Tab Bar -->
+    <nav class="mob-tabbar">
+        <button class="mob-tab active" data-pane="search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            Recherche
+        </button>
+        <button class="mob-tab" data-pane="singer">
+            <i class="fa-solid fa-microphone-lines"></i>
+            Chanteur
+        </button>
+        <button class="mob-tab" data-pane="library">
+            <i class="fa-solid fa-folder-open"></i>
+            Ma Musique
+        </button>
+    </nav>
+
+    <!-- Mini Player -->
+    <div class="mob-player" id="mobPlayer">
+        <div class="mob-player-info">
+            <div class="mob-player-title" id="mobPlayerTitle">Titre</div>
+            <div class="mob-player-artist" id="mobPlayerArtist">Artiste</div>
+        </div>
+        <div class="mob-player-controls">
+            <button class="mob-player-btn" id="mobBtnPrev"><i class="fa-solid fa-backward-step"></i></button>
+            <button class="mob-player-btn play-btn" id="mobBtnPlay"><i class="fa-solid fa-play"></i></button>
+            <button class="mob-player-btn" id="mobBtnNext"><i class="fa-solid fa-forward-step"></i></button>
+            <button class="mob-player-btn" id="mobBtnClosePlayer"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <audio id="mobAudio"></audio>
+    </div>
+
+</div><!-- /#mobileApp -->
+
+<!-- ===== SETTINGS BOTTOM SHEET ===== -->
+<div class="mob-settings-sheet" id="mobSettingsSheet">
+    <div class="mob-settings-panel">
+        <div class="mob-sheet-handle"></div>
+        <div class="mob-settings-title"><i class="fa-solid fa-gear"></i> Paramètres</div>
+
+        <div class="mob-form-group">
+            <label class="mob-form-label">Qualité MP3</label>
+            <select id="mobSelectQuality" class="mob-select">
+                <option value="320" selected>⭐ 320 kbps — Qualité Studio HD</option>
+                <option value="192">192 kbps — Excellente qualité</option>
+                <option value="128">128 kbps — Économie d'espace</option>
+            </select>
+        </div>
+
+        <div class="mob-form-group">
+            <label class="mob-form-label">Source MP3 préférée</label>
+            <select id="mobSelectSource" class="mob-select">
+                <option value="Tous les sites (YouTube · SoundCloud · Deezer · +1000)">⚡ TOUS les sites (Recommandé)</option>
+                <option value="YouTube (Convertisseur MP3 haute qualité intégré)">YouTube MP3</option>
+                <option value="SoundCloud MP3">SoundCloud</option>
+                <option value="Deezer / Catalogue mondial">Deezer</option>
+            </select>
+        </div>
+
+        <div class="mob-form-group">
+            <label class="mob-form-label">Site de recherche</label>
+            <select id="mobSelectSearch" class="mob-select">
+                <option value="Multi-sources (YouTube Music · Deezer · iTunes · Spotify)">⚡ Multi-sources (Recommandé)</option>
+                <option value="YouTube Music">YouTube Music</option>
+                <option value="Deezer / Catalogue mondial">Deezer</option>
+            </select>
+        </div>
+
+        <div class="mob-form-group">
+            <label class="mob-form-label"><i class="fa-solid fa-font"></i> Style de police (Musique / Tech)</label>
+            <div class="mob-font-picker" id="mobFontPicker">
+                <button type="button" class="mob-font-pill active" data-font="font-default">
+                    <span class="fp-name" style="font-family:sans-serif">Défaut</span>
+                    <span class="fp-sample" style="font-family:sans-serif">Aa Bb</span>
+                </button>
+                <button type="button" class="mob-font-pill" data-font="font-orbitron">
+                    <span class="fp-name" style="font-family:'Orbitron',sans-serif">Orbitron</span>
+                    <span class="fp-sample" style="font-family:'Orbitron',sans-serif">Tech Space</span>
+                </button>
+                <button type="button" class="mob-font-pill" data-font="font-rajdhani">
+                    <span class="fp-name" style="font-family:'Rajdhani',sans-serif">Rajdhani</span>
+                    <span class="fp-sample" style="font-family:'Rajdhani',sans-serif">Music Modern</span>
+                </button>
+                <button type="button" class="mob-font-pill" data-font="font-exo2">
+                    <span class="fp-name" style="font-family:'Exo 2',sans-serif">Exo 2</span>
+                    <span class="fp-sample" style="font-family:'Exo 2',sans-serif">Futuriste</span>
+                </button>
+                <button type="button" class="mob-font-pill" data-font="font-audiowide">
+                    <span class="fp-name" style="font-family:'Audiowide',sans-serif">Audiowide</span>
+                    <span class="fp-sample" style="font-family:'Audiowide',sans-serif">DJ Studio</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="mob-form-group">
+            <label class="mob-form-label">Scanner mon téléphone</label>
+            <button class="mob-btn mob-btn-info mob-btn-full" id="btnMobRescan">
+                <i class="fa-solid fa-mobile-screen"></i>
+                Rescanner mes musiques du téléphone
+            </button>
+            <input type="file" id="mobRescanInput" multiple accept="audio/*" style="display:none">
+        </div>
+
+        <button class="mob-btn mob-btn-primary mob-btn-full" id="btnMobSaveSettings" style="margin-top:8px">
+            <i class="fa-solid fa-check"></i> Enregistrer
+        </button>
+        <button class="mob-btn mob-btn-full mt-8" style="background:var(--bg-elevated);border:1px solid var(--border)" id="btnMobCloseSettings">
+            Fermer
+        </button>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="mob-toast" id="mobToast"></div>
+
+<script src="/static/js/mobile-app.js"></script>
+</body>
+</html>

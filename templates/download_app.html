@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Téléchargeur MP3 HD — Installer l'App sur votre Téléphone</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="icon" type="image/png" href="/static/icons/favicon.png">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .dl-page { max-width: 540px; margin: 40px auto; padding: 20px; }
+        .dl-hero {
+            text-align: center;
+            padding: 48px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            margin-bottom: 24px;
+        }
+        .dl-app-icon {
+            width: 100px; height: 100px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.8rem; color: #fff;
+            margin: 0 auto 20px;
+            box-shadow: 0 12px 36px rgba(99,102,241,0.4);
+        }
+        .dl-app-name { font-size: 1.8rem; font-weight: 800; margin-bottom: 6px; }
+        .dl-app-desc { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px; }
+        .dl-features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 28px;
+            text-align: left;
+        }
+        .dl-feature {
+            background: var(--bg-elevated);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            font-size: 0.85rem;
+        }
+        .dl-feature i { color: var(--accent); margin-right: 6px; }
+        .btn-install-big {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px;
+            width: 100%; padding: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: #fff; border: none; border-radius: var(--radius-md);
+            font-size: 1.1rem; font-weight: 800;
+            text-decoration: none; cursor: pointer;
+            box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+            margin-bottom: 12px;
+        }
+        .btn-open-mobile {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px;
+            width: 100%; padding: 14px;
+            background: var(--bg-elevated);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            font-size: 1rem; font-weight: 700;
+            text-decoration: none;
+        }
+        .dl-steps {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+        }
+        .dl-steps h3 { font-size: 1rem; margin-bottom: 16px; color: var(--text-muted); }
+        .dl-step-row {
+            display: flex; align-items: flex-start; gap: 14px;
+            margin-bottom: 14px;
+        }
+        .dl-step-num {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff; font-size: 0.82rem; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .dl-step-text { font-size: 0.88rem; }
+        .dl-step-text strong { display: block; margin-bottom: 2px; }
+        .dl-step-text span { color: var(--text-muted); }
+        .back-link {
+            display: inline-flex; align-items: center; gap: 8px;
+            color: var(--text-muted); font-size: 0.88rem;
+            text-decoration: none; margin-bottom: 20px;
+        }
+        .back-link:hover { color: var(--text-main); }
+        .qr-block {
+            text-align: center;
+            background: var(--bg-elevated);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-top: 16px;
+        }
+        .qr-block img { width: 150px; height: 150px; border-radius: 10px; }
+        .qr-block p { color: var(--text-muted); font-size: 0.82rem; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="dl-page">
+    <a href="/" class="back-link"><i class="fa-solid fa-arrow-left"></i> Retour au site</a>
+
+    <div class="dl-hero">
+        <div class="dl-app-icon"><i class="fa-solid fa-music"></i></div>
+        <h1 class="dl-app-name">Téléchargeur MP3 HD</h1>
+        <p class="dl-app-desc">Application mobile pour télécharger vos musiques en qualité studio<br><strong>MP3 HD 320 kbps · Gratuit · Sans publicité</strong></p>
+
+        <div class="dl-features">
+            <div class="dl-feature"><i class="fa-solid fa-waveform-lines"></i> MP3 HD 320 kbps</div>
+            <div class="dl-feature"><i class="fa-solid fa-shield-halved"></i> Anti-Doublons</div>
+            <div class="dl-feature"><i class="fa-solid fa-folder-open"></i> Dossiers par Chanteur</div>
+            <div class="dl-feature"><i class="fa-solid fa-wifi"></i> Fonctionne Hors-Ligne</div>
+            <div class="dl-feature"><i class="fa-solid fa-compact-disc"></i> Discographie complète</div>
+            <div class="dl-feature"><i class="fa-solid fa-mobile-screen"></i> Android &amp; iPhone</div>
+        </div>
+
+        <a href="/api/download-apk" class="btn-install-big" style="background:linear-gradient(135deg, #10b981, #059669);text-decoration:none;">
+            <i class="fa-brands fa-android" style="font-size:1.4rem;"></i>
+            <span>Télécharger l'Application Android (.APK)</span>
+        </a>
+
+        <a href="/mobile" class="btn-open-mobile">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            Ouvrir la Version Web Mobile dans le Navigateur
+        </a>
+
+        <div class="qr-block">
+            <img src="/api/qr" alt="QR Code — Scanner pour ouvrir sur téléphone">
+            <p><i class="fa-solid fa-qrcode"></i> Scannez avec votre téléphone pour ouvrir la page de téléchargement</p>
+        </div>
+    </div>
+
+    <div class="dl-steps">
+        <h3><i class="fa-solid fa-circle-info"></i> Comment installer la vraie application Android (.APK) ?</h3>
+
+        <!-- Android APK Guide -->
+        <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.4);border-radius:var(--radius-md);padding:16px;margin-bottom:16px;">
+            <div style="font-weight:800;color:var(--success);margin-bottom:10px;display:flex;align-items:center;gap:8px;font-size:1.05rem;">
+                <i class="fa-brands fa-android" style="font-size:1.3rem;"></i> Installation du fichier APK (Android)
+            </div>
+            <div style="font-size:0.9rem;line-height:1.7;">
+                1. Touchez le bouton vert <strong>"Télécharger l'Application Android (.APK)"</strong> ci-dessus.<br>
+                2. Si Android affiche <em>"Ce fichier peut être dangereux"</em>, touchez <strong>"Télécharger quand même"</strong>.<br>
+                3. Une fois le téléchargement terminé, touchez <strong>"Ouvrir"</strong> puis <strong>"Installer"</strong>.<br>
+                4. Lancez l'application <strong>MP3 HD</strong> : elle scanne automatiquement vos musiques au premier lancement et s'adapte à votre smartphone !
+            </div>
+        </div>
+
+        <!-- iPhone Guide -->
+        <div style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);border-radius:var(--radius-md);padding:14px;margin-bottom:14px;">
+            <div style="font-weight:700;color:var(--primary);margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+                <i class="fa-brands fa-apple" style="font-size:1.2rem;"></i> Pour iPhone (Apple iOS)
+            </div>
+            <div style="font-size:0.88rem;line-height:1.6;">
+                1. Ouvrez <code>http://192.168.1.176:5000/mobile</code> dans <strong>Safari</strong>.<br>
+                2. Appuyez sur l'icône de <strong>Partage (⬆)</strong> en bas de l'écran.<br>
+                3. Touchez <strong>"Sur l'écran d'accueil"</strong> puis <strong>"Ajouter"</strong>.
+            </div>
+        </div>
+            </div>
+            <div style="font-size:0.88rem;line-height:1.6;">
+                1. Ouvrez <code>http://192.168.1.176:5000/mobile</code> dans <strong>Safari</strong>.<br>
+                2. Appuyez sur l'icône de <strong>Partage (carré avec flèche vers le haut ⬆)</strong> en bas de l'écran.<br>
+                3. Faites défiler vers le bas et touchez <strong>"Sur l'écran d'accueil"</strong>.<br>
+                4. Appuyez sur <strong>"Ajouter"</strong> en haut à droite : l'icône apparaît sur votre écran d'accueil !
+            </div>
+        </div>
+
+        <div style="text-align:center;padding:10px 0;">
+            <a href="/mobile" class="btn-open-mobile" style="background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;border:none;">
+                <i class="fa-solid fa-play"></i> Lancer l'App directement sans installer
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Bouton installation PWA
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+});
+
+document.getElementById('btnInstallPWA').addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        if (outcome === 'accepted') {
+            document.getElementById('btnInstallPWA').textContent = 'Installation en cours…';
+        }
+    } else {
+        // Pas de prompt dispo (iOS ou déjà installé) → rediriger vers /mobile
+        window.location.href = '/mobile';
+    }
+});
+
+// Enregistrer le SW depuis la page de téléchargement aussi
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/static/sw.js', { scope: '/' });
+}
+</script>
+</body>
+</html>
