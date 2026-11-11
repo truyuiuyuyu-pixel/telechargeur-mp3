@@ -35,8 +35,18 @@ from downloader import (
 import scanner
 import themes
 import qrcode
+from cloud_cleaner import reset_cloud_storage, auto_clean_old_temp_files
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
+
+def _start_server_cleanup_daemon():
+    def _loop():
+        while True:
+            time.sleep(3600)  # Vérifie toutes les heures
+            auto_clean_old_temp_files()
+    threading.Thread(target=_loop, daemon=True).start()
+
+_start_server_cleanup_daemon()
 
 def get_local_ip():
     """Détecte l'adresse IP locale de la machine sur le réseau WiFi/LAN."""
@@ -241,11 +251,9 @@ def api_theme_download_zip(theme_id):
 
 @app.route('/api/cloud/reset', methods=['GET', 'POST'])
 def api_cloud_reset():
-    """Préserve la bibliothèque locale (neutralisé pour sécurité)."""
-    return jsonify({
-        "success": True,
-        "message": "Stockage local préservé. Vos musiques restent en sécurité sur votre appareil."
-    })
+    """Libère l'espace temporaire du serveur pour éviter la saturation du disque."""
+    res = reset_cloud_storage()
+    return jsonify(res)
 
 @app.route('/api/download', methods=['POST'])
 def start_download():

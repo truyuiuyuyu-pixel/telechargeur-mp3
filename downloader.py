@@ -39,7 +39,10 @@ import themes
 ACTIVE_DOWNLOADS = {}
 
 def get_ffmpeg_path():
-    """Récupère le chemin exécutable de ffmpeg fourni par imageio-ffmpeg."""
+    """Récupère le chemin exécutable de ffmpeg (système ou imageio-ffmpeg)."""
+    system_ffmpeg = shutil.which("ffmpeg")
+    if system_ffmpeg:
+        return system_ffmpeg
     try:
         return imageio_ffmpeg.get_ffmpeg_exe()
     except Exception as e:
@@ -125,14 +128,19 @@ def pick_best_studio_track(entries, expected_artist="", expected_title="", user_
     return sorted_entries[0] if sorted_entries else None
 
 def get_yt_dlp_common_opts():
-    """Options yt-dlp robustes avec compatibilité maximale."""
+    """Options yt-dlp robustes avec compatibilité maximale (PC local et serveurs cloud / Linux)."""
     return {
         'quiet': True,
         'no_warnings': True,
         'nocheckcertificate': True,
         'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'socket_timeout': 15,
-        'retries': 3,
+        'socket_timeout': 20,
+        'retries': 5,
+        'extractor_args': {
+            'youtube': {
+                'player_client': ['android', 'ios', 'web']
+            }
+        }
     }
 
 def search_tracks(query: str, limit: int = 12, source: str = "all"):
