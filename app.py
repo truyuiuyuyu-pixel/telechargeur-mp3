@@ -1,8 +1,22 @@
+# -*- coding: utf-8 -*-
+"""
+app.py — Serveur principal Téléchargeur MP3 HD (Téléphone & Ordinateur)
+Prise en charge universelle :
+- Tous les sites de musique (YouTube, SoundCloud, Bandcamp, TikTok, MP3 direct...)
+- Mode Thèmes complet (Amour, Halloween, Noël, Soirée, Sport, Chill...)
+- Téléchargement physique direct sur le téléphone (sans cloud intermédiaire)
+- Dossiers par chanteur avec tags ID3 officiels
+- Interface responsive PC et interface mobile dédiée PWA
+"""
+
 import os
 import io
 import socket
 import webbrowser
 import threading
+import json
+import time
+import zipfile
 from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, abort, redirect, url_for
 
 from config import load_config, save_config, DEFAULT_CONFIG
@@ -11,6 +25,7 @@ import downloader
 from downloader import (
     search_tracks,
     download_track_async,
+    download_theme_async,
     download_singer_discography_async,
     get_library,
     delete_track,
@@ -18,171 +33,8 @@ from downloader import (
     ACTIVE_DOWNLOADS
 )
 import scanner
+import themes
 import qrcode
-import time
-
-# =====================================================================
-# THÈMES & STYLES DE MUSIQUE (Halloween, Noël, Fête, etc.)
-# Intégrés directement dans app.py pour éviter toute erreur d'import
-# =====================================================================
-THEMES_CATALOG = {
-    "halloween": {
-        "id": "halloween",
-        "name": "Halloween & Horreur",
-        "icon": "fa-ghost",
-        "badge": "🎃 Ambiance Halloween",
-        "keywords": ["halloween", "allowen", "haloween", "hallowen", "horreur", "spooky", "peur", "citrouille", "fantome", "vampire", "zombie"],
-        "description": "Les plus grands morceaux cultes et mystérieux pour Halloween",
-        "tracks": [
-            {"title": "Thriller", "artist": "Michael Jackson", "query": "Michael Jackson Thriller lyrics"},
-            {"title": "Ghostbusters (Theme)", "artist": "Ray Parker Jr.", "query": "Ray Parker Jr Ghostbusters lyrics"},
-            {"title": "Spooky Scary Skeletons", "artist": "Andrew Gold", "query": "Andrew Gold Spooky Scary Skeletons lyrics"},
-            {"title": "This Is Halloween", "artist": "The Nightmare Before Christmas", "query": "This Is Halloween The Nightmare Before Christmas lyrics"},
-            {"title": "Monster Mash", "artist": "Bobby Boris Pickett", "query": "Bobby Pickett Monster Mash lyrics"},
-            {"title": "Halloween Theme", "artist": "John Carpenter", "query": "John Carpenter Halloween Theme original"},
-            {"title": "Somebody's Watching Me", "artist": "Rockwell", "query": "Rockwell Somebody's Watching Me lyrics"},
-            {"title": "Highway to Hell", "artist": "AC/DC", "query": "AC DC Highway to Hell lyrics"},
-            {"title": "Sweet Dreams", "artist": "Marilyn Manson", "query": "Marilyn Manson Sweet Dreams lyrics"},
-            {"title": "Zombie", "artist": "The Cranberries", "query": "The Cranberries Zombie lyrics"}
-        ]
-    },
-    "noel": {
-        "id": "noel",
-        "name": "Noël & Fêtes",
-        "icon": "fa-tree",
-        "badge": "🎄 Ambiance Noël",
-        "keywords": ["noel", "noël", "christmas", "fetes", "fêtes", "hiver", "sapin", "cadeaux"],
-        "description": "Les classiques intemporels de Noël et fêtes de fin d'année",
-        "tracks": [
-            {"title": "All I Want for Christmas Is You", "artist": "Mariah Carey", "query": "Mariah Carey All I Want for Christmas Is You lyrics"},
-            {"title": "Last Christmas", "artist": "Wham!", "query": "Wham Last Christmas lyrics"},
-            {"title": "Jingle Bell Rock", "artist": "Bobby Helms", "query": "Bobby Helms Jingle Bell Rock lyrics"},
-            {"title": "Vive le vent", "artist": "Chants de Noël", "query": "Vive le vent paroles"},
-            {"title": "Petit Papa Noël", "artist": "Tino Rossi", "query": "Tino Rossi Petit Papa Noel paroles"},
-            {"title": "Feliz Navidad", "artist": "José Feliciano", "query": "Jose Feliciano Feliz Navidad lyrics"}
-        ]
-    },
-    "soiree": {
-        "id": "soiree",
-        "name": "Soirée & Fête",
-        "icon": "fa-champagne-glasses",
-        "badge": "🎉 Ambiance Fête & Dance",
-        "keywords": ["soiree", "soirée", "fete", "fête", "party", "club", "dance", "boite", "dj"],
-        "description": "Les hits ultimes pour danser et mettre le feu en soirée",
-        "tracks": [
-            {"title": "One More Time", "artist": "Daft Punk", "query": "Daft Punk One More Time lyrics"},
-            {"title": "Don't Start Now", "artist": "Dua Lipa", "query": "Dua Lipa Don't Start Now lyrics"},
-            {"title": "Titanium", "artist": "David Guetta ft. Sia", "query": "David Guetta Titanium lyrics"},
-            {"title": "Alors on danse", "artist": "Stromae", "query": "Stromae Alors on danse lyrics"}
-        ]
-    },
-    "sport": {
-        "id": "sport",
-        "name": "Sport & Fitness",
-        "icon": "fa-dumbbell",
-        "badge": "🏋️ Motivation Workout",
-        "keywords": ["sport", "fitness", "workout", "gym", "motivation", "musculation", "training", "running"],
-        "description": "L'énergie maximale pour booster vos entraînements",
-        "tracks": [
-            {"title": "Eye of the Tiger", "artist": "Survivor", "query": "Survivor Eye of the Tiger lyrics"},
-            {"title": "Lose Yourself", "artist": "Eminem", "query": "Eminem Lose Yourself lyrics"},
-            {"title": "Stronger", "artist": "Kanye West", "query": "Kanye West Stronger lyrics"}
-        ]
-    },
-    "chill": {
-        "id": "chill",
-        "name": "Détente & Calme",
-        "icon": "fa-mug-hot",
-        "badge": "🧘 Calme & Relaxation",
-        "keywords": ["chill", "detente", "détente", "calme", "relax", "relaxation", "lofi", "sommeil", "sleep", "zen"],
-        "description": "Musiques douces, Lofi et piano pour se relaxer",
-        "tracks": [
-            {"title": "Sunset Lover", "artist": "Petit Biscuit", "query": "Petit Biscuit Sunset Lover audio"},
-            {"title": "River Flows in You", "artist": "Yiruma", "query": "Yiruma River Flows in You piano"},
-            {"title": "Clair de Lune", "artist": "Claude Debussy", "query": "Claude Debussy Clair de Lune piano"}
-        ]
-    },
-    "gaming": {
-        "id": "gaming",
-        "name": "Gaming & Électro",
-        "icon": "fa-gamepad",
-        "badge": "🎮 Gaming & Bass",
-        "keywords": ["gaming", "game", "electro", "ncs", "synthwave", "jeux"],
-        "description": "Les sons préférés des gamers et passionnés d'électro",
-        "tracks": [
-            {"title": "Faded", "artist": "Alan Walker", "query": "Alan Walker Faded lyrics"},
-            {"title": "Monody", "artist": "TheFatRat", "query": "TheFatRat Monody lyrics"}
-        ]
-    },
-    "retro80": {
-        "id": "retro80",
-        "name": "Années 80 & Rétro",
-        "icon": "fa-compact-disc",
-        "badge": "📻 Vintage Années 80/90",
-        "keywords": ["80", "90", "retro", "rétro", "vintage", "disco", "nostalgie", "annees 80"],
-        "description": "Les plus grands classiques cultes des années 80 et 90",
-        "tracks": [
-            {"title": "Take On Me", "artist": "A-ha", "query": "A-ha Take On Me lyrics"},
-            {"title": "Billie Jean", "artist": "Michael Jackson", "query": "Michael Jackson Billie Jean lyrics"}
-        ]
-    },
-    "latino": {
-        "id": "latino",
-        "name": "Latino & Soleil",
-        "icon": "fa-sun",
-        "badge": "🏖️ Soleil & Reggaeton",
-        "keywords": ["latino", "soleil", "ete", "été", "reggaeton", "plage", "vacances"],
-        "description": "Rythmes latinos, ensoleillés et chaleureux",
-        "tracks": [
-            {"title": "Despacito", "artist": "Luis Fonsi ft. Daddy Yankee", "query": "Luis Fonsi Despacito lyrics"},
-            {"title": "Danza Kuduro", "artist": "Don Omar ft. Lucenzo", "query": "Don Omar Danza Kuduro lyrics"}
-        ]
-    }
-}
-
-def get_all_themes():
-    return [{"id": k, "name": v["name"], "icon": v["icon"], "badge": v["badge"], "description": v["description"]} for k, v in THEMES_CATALOG.items()]
-
-def get_theme_by_id(theme_id):
-    return THEMES_CATALOG.get(theme_id)
-
-def match_theme_by_query(query):
-    if not query:
-        return None
-    q = query.lower().strip()
-    words = q.split()
-    for tid, info in THEMES_CATALOG.items():
-        for kw in info["keywords"]:
-            if kw in q or any(kw in w for w in words):
-                return info
-    return None
-
-# =====================================================================
-# NETTOYAGE & RÉINITIALISATION DU CLOUD
-# Intégré directement dans app.py
-# =====================================================================
-def reset_cloud_storage():
-    cfg = load_config()
-    music_base = cfg.get("music_folder", "Musique")
-    deleted_files = 0
-    if not os.path.isabs(music_base):
-        music_base = os.path.join(os.path.dirname(os.path.abspath(__file__)), music_base)
-    if os.path.exists(music_base):
-        for root, dirs, files in os.walk(music_base, topdown=False):
-            for file in files:
-                try:
-                    os.remove(os.path.join(root, file))
-                    deleted_files += 1
-                except Exception:
-                    pass
-            for d in dirs:
-                try:
-                    dp = os.path.join(root, d)
-                    if not os.listdir(dp):
-                        os.rmdir(dp)
-                except Exception:
-                    pass
-    return {"success": True, "deleted_files": deleted_files, "message": f"Cloud réinitialisé : {deleted_files} fichier(s) effacé(s)."}
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
@@ -199,33 +51,40 @@ def get_local_ip():
     return ip
 
 def is_mobile_request():
-    """Détecte si la requête vient d'un appareil mobile."""
+    """Détecte si la requête provient d'un smartphone ou tablette."""
     ua = request.headers.get('User-Agent', '').lower()
     mobile_keywords = ['android', 'iphone', 'ipad', 'ipod', 'mobile', 'blackberry', 'windows phone']
     return any(kw in ua for kw in mobile_keywords)
 
 PORT = int(os.environ.get("PORT", 5000))
 
+# =====================================================================
+# ROUTES PAGES WEB
+# =====================================================================
+
 @app.route('/')
 def index():
+    """Page d'accueil : redirige automatiquement les téléphones vers l'interface mobile."""
+    if is_mobile_request() and request.args.get('desktop') != '1':
+        return redirect(url_for('mobile_app'))
     return render_template('index.html')
 
 @app.route('/mobile')
 def mobile_app():
-    """Interface mobile optimisée PWA — s'installe sur l'écran d'accueil."""
+    """Interface mobile optimisée pour smartphone (PWA & tactile)."""
     return render_template('mobile.html')
 
 @app.route('/telecharger-app')
 @app.route('/installer')
 @app.route('/app')
 def download_app_page():
-    """Page de téléchargement/installation de l'application mobile (APK Android natif + web)."""
+    """Page de téléchargement et installation pour mobile."""
     return render_template('download_app.html')
 
 @app.route('/api/download-apk')
 @app.route('/download-apk')
 def download_apk():
-    """Téléchargement direct du fichier APK Android natif."""
+    """Téléchargement direct du fichier APK Android."""
     apk_path = os.path.join(app.static_folder, 'Telechargeur_MP3_HD.apk')
     if not os.path.exists(apk_path):
         return abort(404)
@@ -236,16 +95,12 @@ def download_apk():
         download_name='Telechargeur_MP3_HD.apk'
     )
     response.headers['Content-Disposition'] = 'attachment; filename="Telechargeur_MP3_HD.apk"'
-    response.headers['Content-Type'] = 'application/vnd.android.package-archive'
     response.headers['Cache-Control'] = 'no-cache'
     return response
 
 @app.route('/static/sw.js')
 def service_worker():
-    """Sert le Service Worker depuis la racine (scope obligatoire pour le SW)."""
-    return send_from_directory('static', 'sw.js',
-                               mimetype='application/javascript',
-                               max_age=0)
+    return send_from_directory('static', 'sw.js', mimetype='application/javascript', max_age=0)
 
 @app.route('/manifest.json')
 def manifest():
@@ -263,7 +118,7 @@ def network_info():
 
 @app.route('/api/qr')
 def qr_code():
-    """Génère l'image du QR Code pour scanner et ouvrir directement l'application sur smartphone."""
+    """QR Code pour connexion instantanée du téléphone sur le réseau WiFi."""
     ip = get_local_ip()
     target_url = f"http://{ip}:{PORT}"
     qr = qrcode.QRCode(box_size=10, border=2)
@@ -275,12 +130,15 @@ def qr_code():
     buf.seek(0)
     return send_file(buf, mimetype="image/png")
 
+# =====================================================================
+# API CONFIGURATION
+# =====================================================================
+
 @app.route('/api/config', methods=['GET', 'POST'])
 def handle_config():
     if request.method == 'POST':
         data = request.json or {}
         current_cfg = load_config()
-        # Mettre à jour avec les champs reçus
         for key in ["mp3_site", "mp3_site_url", "search_site", "search_site_url", "music_folder", "create_artist_folder", "audio_quality"]:
             if key in data:
                 current_cfg[key] = data[key]
@@ -290,13 +148,20 @@ def handle_config():
     else:
         return jsonify(load_config())
 
+# =====================================================================
+# API RECHERCHE MULTI-SOURCES
+# =====================================================================
+
 @app.route('/api/search')
 def search():
     query = request.args.get('q', '').strip()
+    source = request.args.get('source', 'all').lower()
     if not query:
         return jsonify({"results": [], "theme": None})
-    theme_info = match_theme_by_query(query)
-    results = search_tracks(query, limit=12)
+
+    theme_info = themes.match_theme_by_query(query)
+    results = search_tracks(query, limit=12, source=source)
+
     return jsonify({
         "results": results,
         "theme": {
@@ -309,21 +174,78 @@ def search():
         } if theme_info else None
     })
 
+# =====================================================================
+# API THÈMES & AMBIANCES
+# =====================================================================
+
 @app.route('/api/themes')
 def api_themes():
-    return jsonify(get_all_themes())
+    return jsonify(themes.get_all_themes())
 
 @app.route('/api/theme/<theme_id>')
 def api_theme(theme_id):
-    theme = get_theme_by_id(theme_id)
+    theme = themes.get_theme_by_id(theme_id)
     if not theme:
         return jsonify({"error": "Thème introuvable"}), 404
     return jsonify(theme)
 
+@app.route('/api/theme/<theme_id>/download-all', methods=['POST'])
+def api_theme_download_all(theme_id):
+    """Télécharge l'ensemble des titres d'un thème musical complet."""
+    try:
+        task_id = download_theme_async(theme_id)
+        return jsonify({"task_id": task_id, "status": "started"})
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/theme/<theme_id>/download-zip')
+def api_theme_download_zip(theme_id):
+    """Télécharge toutes les musiques disponibles de ce thème sous forme d'un fichier ZIP."""
+    theme = themes.get_theme_by_id(theme_id)
+    if not theme:
+        return abort(404)
+
+    cfg = load_config()
+    music_base = cfg.get("music_folder", "Musique")
+    theme_tracks = theme.get("tracks", [])
+
+    memory_file = io.BytesIO()
+    found_count = 0
+
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for t in theme_tracks:
+            t_art = sanitize_filename(t.get("artist", ""))
+            t_tit = sanitize_filename(t.get("title", ""))
+            # Chercher dans Musique/Artiste/Titre.mp3
+            art_dir = os.path.join(music_base, t_art)
+            if os.path.exists(art_dir):
+                for f in os.listdir(art_dir):
+                    if f.lower().endswith(".mp3") and t_tit.lower() in f.lower():
+                        fp = os.path.join(art_dir, f)
+                        zf.write(fp, f"{t_art}/{f}")
+                        found_count += 1
+                        break
+
+    if found_count == 0:
+        return jsonify({"error": "Aucune musique de ce thème n'a encore été téléchargée. Lancez le téléchargement du thème d'abord.", "empty": True}), 200
+
+    memory_file.seek(0)
+    zip_name = f"Theme_{theme_id.capitalize()}_MP3_HD.zip"
+    return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name=zip_name)
+
+# =====================================================================
+# API TÉLÉCHARGEMENT & FICHIERS
+# =====================================================================
+
 @app.route('/api/cloud/reset', methods=['GET', 'POST'])
 def api_cloud_reset():
-    res = reset_cloud_storage()
-    return jsonify(res)
+    """Préserve la bibliothèque locale (neutralisé pour sécurité)."""
+    return jsonify({
+        "success": True,
+        "message": "Stockage local préservé. Vos musiques restent en sécurité sur votre appareil."
+    })
 
 @app.route('/api/download', methods=['POST'])
 def start_download():
@@ -335,7 +257,7 @@ def start_download():
     cover_url = data.get('cover_url')
 
     if not url:
-        return jsonify({"error": "URL manquante"}), 400
+        return jsonify({"error": "URL ou terme manquant"}), 400
 
     task_id = download_track_async(
         url=url,
@@ -352,67 +274,11 @@ def download_status(task_id):
         return jsonify(ACTIVE_DOWNLOADS[task_id])
     return jsonify({"status": "not_found"}), 404
 
-@app.route('/api/library')
-def library():
-    lib = get_library()
-    return jsonify(lib)
-
-@app.route('/api/stream/<path:rel_path>')
-def stream_music(rel_path):
-    """Permet au lecteur audio intégré d'écouter le morceau directement sur téléphone et PC."""
-    cfg = load_config()
-    music_base = cfg.get("music_folder", "Musique")
-    full_path = os.path.normpath(os.path.join(music_base, rel_path))
-
-    if not full_path.startswith(os.path.normpath(music_base)) or not os.path.exists(full_path):
-        return abort(404)
-
-    return send_file(full_path, mimetype='audio/mpeg')
-
-@app.route('/api/download-file/<path:rel_path>')
-def download_file(rel_path):
-    """Permet au smartphone ou à l'ordinateur de télécharger le fichier MP3 directement dans sa mémoire."""
-    cfg = load_config()
-    music_base = cfg.get("music_folder", "Musique")
-    full_path = os.path.normpath(os.path.join(music_base, rel_path))
-
-    if not full_path.startswith(os.path.normpath(music_base)) or not os.path.exists(full_path):
-        return abort(404)
-
-    filename = os.path.basename(full_path)
-
-    cleanup = request.args.get('cleanup') == '1'
-    if cleanup:
-        def deferred_remove(path):
-            import time
-            time.sleep(12)
-            try:
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception:
-                pass
-        threading.Thread(target=deferred_remove, args=(full_path,), daemon=True).start()
-
-    # En-têtes explicites pour forcer le téléchargement sur Android Chrome, iOS Safari et PC
-    response = send_file(
-        full_path,
-        mimetype='audio/mpeg',
-        as_attachment=True,
-        download_name=filename
-    )
-    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-    response.headers['Content-Type'] = 'audio/mpeg'
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    return response
-
 @app.route('/api/download-ready/<task_id>')
 def download_ready(task_id):
     """
-    Appelé depuis le navigateur du téléphone pour récupérer directement le MP3 HD 320k
-    une fois le traitement serveur terminé (conversion + tags).
-    Utilisé pour le bouton 'Enregistrer sur ce téléphone' affiché automatiquement.
+    Téléchargement direct du fichier MP3 HD 320k vers la mémoire du téléphone ou PC.
+    NE SUPPRIME JAMAIS LE FICHIER (garantit la persistance sur l'appareil).
     """
     if task_id not in ACTIVE_DOWNLOADS:
         return abort(404)
@@ -426,19 +292,6 @@ def download_ready(task_id):
         return abort(404)
 
     filename = os.path.basename(filepath)
-
-    cleanup = request.args.get('cleanup') == '1'
-    if cleanup:
-        def deferred_remove(path):
-            import time
-            time.sleep(10)
-            try:
-                if os.path.exists(path):
-                    os.remove(path)
-            except Exception:
-                pass
-        threading.Thread(target=deferred_remove, args=(filepath,), daemon=True).start()
-
     response = send_file(
         filepath,
         mimetype='audio/mpeg',
@@ -452,154 +305,36 @@ def download_ready(task_id):
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
-@app.route('/api/track', methods=['DELETE'])
-def remove_track():
-    rel_path = request.args.get('path')
-    if not rel_path:
-        return jsonify({"error": "Chemin manquant"}), 400
-    try:
-        deleted = delete_track(rel_path)
-        return jsonify({"success": deleted})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-@app.route('/api/retag', methods=['POST'])
-def retag():
-    data = request.json or {}
-    rel_path = data.get('path')
-    artist = data.get('artist')
-    title = data.get('title')
-    album = data.get('album')
-    try:
-        new_rel = update_track_tags_and_move(rel_path, artist, title, album)
-        return jsonify({"success": True, "new_path": new_rel})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-@app.route('/api/singer/discography')
-def singer_discography():
-    """
-    Mode Chanteur Complet : Recherche tous les morceaux d'un chanteur
-    et scanne l'ordinateur/téléphone pour repérer les doublons.
-    """
-    artist = request.args.get('artist', '').strip()
-    if not artist:
-        return jsonify({"error": "Nom d'artiste manquant"}), 400
-    limit = int(request.args.get('limit', 50))
-    data = scanner.search_singer_discography(artist, limit=limit)
-    return jsonify(data)
-
-@app.route('/api/singer/verify-folder')
-def singer_verify_folder():
-    """
-    Scanner vérificateur de chanteur :
-    Analyse tous les fichiers du dossier du chanteur et vérifie
-    qu'ils appartiennent bien à ce chanteur (détecte les intrus et mauvaises attributions).
-    """
-    artist = request.args.get('artist', '').strip()
-    if not artist:
-        return jsonify({"error": "Nom d'artiste manquant"}), 400
-    report = scanner.scan_and_verify_singer_folder(artist)
-    return jsonify(report)
-
-@app.route('/api/singer/verify-track')
-def singer_verify_track():
-    """Vérifie si un titre donné appartient bien au chanteur cible."""
-    title = request.args.get('title', '').strip()
-    artist = request.args.get('artist', '').strip()
-    target = request.args.get('target', '').strip()
-    if not title or not target:
-        return jsonify({"error": "Paramètres manquants"}), 400
-    res = scanner.verify_track_artist(title, artist, target)
-    return jsonify(res)
-
-@app.route('/api/singer/create-files', methods=['POST'])
-def singer_create_files():
-    """Crée les fichiers dédiés du chanteur (dossier, playlist .m3u8, discographie.json, texte)."""
-    data = request.json or {}
-    artist = data.get('artist', '').strip()
-    tracks = data.get('tracks', [])
-    if not artist:
-        return jsonify({"error": "Nom d'artiste manquant"}), 400
-    res = scanner.create_artist_files_and_playlist(artist, tracks)
-    return jsonify({"success": True, "files": res})
-
-@app.route('/api/singer/download-all', methods=['POST'])
-def singer_download_all():
-    """Télécharge l'intégralité des morceaux du chanteur en évitant les doublons."""
-    data = request.json or {}
-    artist = data.get('artist', '').strip()
-    tracks = data.get('tracks', [])
-    skip_duplicates = data.get('skip_duplicates', True)
-
-    if not artist or not tracks:
-        return jsonify({"error": "Données incomplètes"}), 400
-
-    task_id = download_singer_discography_async(
-        artist_name=artist,
-        tracks=tracks,
-        skip_duplicates=skip_duplicates
-    )
-    return jsonify({"task_id": task_id, "status": "started"})
-
-@app.route('/api/phone/register-music', methods=['POST'])
-def phone_register_music():
-    """
-    Permet au téléphone d'envoyer la liste des titres qu'il possède
-    pour que le scanner anti-doublon les ignore.
-    """
-    data = request.json or {}
-    tracks = data.get('tracks', [])
-    count = scanner.register_phone_music(tracks)
-    return jsonify({"success": True, "registered_count": count})
-
-@app.route('/api/scanner/summary')
-def scanner_summary():
-    """Renvoie le résumé des morceaux existants sur le PC et le téléphone."""
-    existing = scanner.scan_all_existing_music()
-    return jsonify({
-        "total_existing": len(existing),
-        "pc_count": len([x for x in existing if "PC" in x.get("source", "") or "App" in x.get("source", "")]),
-        "phone_count": len([x for x in existing if "Téléphone" in x.get("source", "")])
-    })
-
-@app.route('/api/singer/download-zip/<path:artist_name>')
-def download_artist_zip(artist_name):
-    """
-    Permet au smartphone ou à l'ordinateur de télécharger l'intégralité du dossier
-    du chanteur (tous les MP3 HD 320k + playlist .m3u8) sous la forme d'un fichier .ZIP.
-    """
-    import zipfile
+@app.route('/api/download-file/<path:rel_path>')
+def download_file(rel_path):
+    """Téléchargement direct d'un MP3 spécifique de la bibliothèque sur le smartphone."""
     cfg = load_config()
     music_base = cfg.get("music_folder", "Musique")
-    clean_artist = sanitize_filename(artist_name)
-    artist_dir = os.path.normpath(os.path.join(music_base, clean_artist))
+    full_path = os.path.normpath(os.path.join(music_base, rel_path))
 
-    if not os.path.exists(artist_dir):
+    if not full_path.startswith(os.path.normpath(music_base)) or not os.path.exists(full_path):
         return abort(404)
 
-    memory_file = io.BytesIO()
-    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
-        for root, dirs, files in os.walk(artist_dir):
-            for file in files:
-                if file.lower().endswith(('.mp3', '.m3u8', '.txt', '.json')):
-                    file_path = os.path.join(root, file)
-                    arcname = os.path.relpath(file_path, os.path.dirname(artist_dir))
-                    zf.write(file_path, arcname)
-
-    memory_file.seek(0)
-    zip_filename = f"{clean_artist}_MP3_HD_320k.zip"
-    return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
+    filename = os.path.basename(full_path)
+    response = send_file(
+        full_path,
+        mimetype='audio/mpeg',
+        as_attachment=True,
+        download_name=filename
+    )
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+    response.headers['Content-Type'] = 'audio/mpeg'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    return response
 
 @app.route('/api/download-all-to-phone')
 def download_all_to_phone():
     """
-    Télécharge TOUTES les musiques sous la forme d'un fichier .ZIP directement
-    sur le téléphone (dans son dossier Téléchargements), puis efface
-    les fichiers du cloud pour ne rien laisser sur le serveur.
+    Télécharge TOUTES les musiques en un seul fichier ZIP directement
+    dans le dossier Téléchargements du smartphone.
     """
-    import zipfile
-    import time
     cfg = load_config()
     music_base = cfg.get("music_folder", "Musique")
     if not os.path.isabs(music_base):
@@ -625,17 +360,6 @@ def download_all_to_phone():
     memory_file.seek(0)
     zip_filename = "Mes_Musiques_MP3_HD.zip"
 
-    # Si cleanup=1 (par défaut), programmer le nettoyage du cloud après l'envoi
-    cleanup = request.args.get('cleanup', '1') == '1'
-    if cleanup:
-        def deferred_clean():
-            time.sleep(10)
-            try:
-                reset_cloud_storage()
-            except Exception:
-                pass
-        threading.Thread(target=deferred_clean, daemon=True).start()
-
     response = send_file(
         memory_file,
         mimetype='application/zip',
@@ -646,22 +370,162 @@ def download_all_to_phone():
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
+@app.route('/api/library')
+def library():
+    lib = get_library()
+    return jsonify(lib)
+
+@app.route('/api/stream/<path:rel_path>')
+def stream_music(rel_path):
+    """Lecture audio en streaming directement dans le lecteur web/mobile."""
+    cfg = load_config()
+    music_base = cfg.get("music_folder", "Musique")
+    full_path = os.path.normpath(os.path.join(music_base, rel_path))
+
+    if not full_path.startswith(os.path.normpath(music_base)) or not os.path.exists(full_path):
+        return abort(404)
+
+    return send_file(full_path, mimetype='audio/mpeg')
+
+@app.route('/api/track', methods=['DELETE'])
+def remove_track():
+    rel_path = request.args.get('path')
+    if not rel_path:
+        return jsonify({"error": "Chemin manquant"}), 400
+    try:
+        deleted = delete_track(rel_path)
+        return jsonify({"success": deleted})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@app.route('/api/retag', methods=['POST'])
+def retag():
+    data = request.json or {}
+    rel_path = data.get('path')
+    artist = data.get('artist')
+    title = data.get('title')
+    album = data.get('album')
+    try:
+        new_rel = update_track_tags_and_move(rel_path, artist, title, album)
+        return jsonify({"success": True, "new_path": new_rel})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+# =====================================================================
+# API MODE CHANTEUR COMPLET & SCANNER
+# =====================================================================
+
+@app.route('/api/singer/discography')
+def singer_discography():
+    artist = request.args.get('artist', '').strip()
+    if not artist:
+        return jsonify({"error": "Nom d'artiste manquant"}), 400
+    limit = int(request.args.get('limit', 50))
+    data = scanner.search_singer_discography(artist, limit=limit)
+    return jsonify(data)
+
+@app.route('/api/singer/verify-folder')
+def singer_verify_folder():
+    artist = request.args.get('artist', '').strip()
+    if not artist:
+        return jsonify({"error": "Nom d'artiste manquant"}), 400
+    report = scanner.scan_and_verify_singer_folder(artist)
+    return jsonify(report)
+
+@app.route('/api/singer/verify-track')
+def singer_verify_track():
+    title = request.args.get('title', '').strip()
+    artist = request.args.get('artist', '').strip()
+    target = request.args.get('target', '').strip()
+    if not title or not target:
+        return jsonify({"error": "Paramètres manquants"}), 400
+    res = scanner.verify_track_artist(title, artist, target)
+    return jsonify(res)
+
+@app.route('/api/singer/create-files', methods=['POST'])
+def singer_create_files():
+    data = request.json or {}
+    artist = data.get('artist', '').strip()
+    tracks = data.get('tracks', [])
+    if not artist:
+        return jsonify({"error": "Nom d'artiste manquant"}), 400
+    res = scanner.create_artist_files_and_playlist(artist, tracks)
+    return jsonify({"success": True, "files": res})
+
+@app.route('/api/singer/download-all', methods=['POST'])
+def singer_download_all():
+    data = request.json or {}
+    artist = data.get('artist', '').strip()
+    tracks = data.get('tracks', [])
+    skip_duplicates = data.get('skip_duplicates', False)
+
+    if not artist or not tracks:
+        return jsonify({"error": "Données incomplètes"}), 400
+
+    task_id = download_singer_discography_async(
+        artist_name=artist,
+        tracks=tracks,
+        skip_duplicates=skip_duplicates
+    )
+    return jsonify({"task_id": task_id, "status": "started"})
+
+@app.route('/api/singer/download-zip/<path:artist_name>')
+def download_artist_zip(artist_name):
+    cfg = load_config()
+    music_base = cfg.get("music_folder", "Musique")
+    clean_artist = sanitize_filename(artist_name)
+    artist_dir = os.path.normpath(os.path.join(music_base, clean_artist))
+
+    if not os.path.exists(artist_dir):
+        return abort(404)
+
+    memory_file = io.BytesIO()
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(artist_dir):
+            for file in files:
+                if file.lower().endswith(('.mp3', '.m3u8', '.txt', '.json')):
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, os.path.dirname(artist_dir))
+                    zf.write(file_path, arcname)
+
+    memory_file.seek(0)
+    zip_filename = f"{clean_artist}_MP3_HD_320k.zip"
+    return send_file(memory_file, mimetype='application/zip', as_attachment=True, download_name=zip_filename)
+
+@app.route('/api/phone/register-music', methods=['POST'])
+def phone_register_music():
+    data = request.json or {}
+    tracks = data.get('tracks', [])
+    count = scanner.register_phone_music(tracks)
+    return jsonify({"success": True, "registered_count": count})
+
+@app.route('/api/scanner/summary')
+def scanner_summary():
+    existing = scanner.scan_all_existing_music()
+    return jsonify({
+        "total_existing": len(existing),
+        "pc_count": len([x for x in existing if "PC" in x.get("source", "") or "App" in x.get("source", "")]),
+        "phone_count": len([x for x in existing if "Téléphone" in x.get("source", "")])
+    })
+
+# =====================================================================
+# DÉMARRAGE DU SERVEUR
+# =====================================================================
+
 if __name__ == '__main__':
     ip = get_local_ip()
     sep = "=" * 65
     print(sep)
-    print(" APPLICATION TELECHARGEUR MP3 POUR TELEPHONE ET ORDINATEUR")
+    print(" 🎵 APPLICATION TÉLÉCHARGEUR MP3 POUR TÉLÉPHONE ET ORDINATEUR 🎵")
     print(sep)
-    print(f" PC    : http://localhost:{PORT}")
-    print(f" Tel   : http://{ip}:{PORT}")
+    print(f" PC        : http://localhost:{PORT}")
+    print(f" Téléphone : http://{ip}:{PORT}")
     print(sep)
-    print(" Scannez le QR Code dans l'interface ou connectez votre telephone")
-    print(" au meme reseau WiFi pour l'utiliser sur smartphone !")
+    print(" Scannez le QR Code dans l'interface pour l'utiliser sur smartphone !")
+    print(" Vos musiques sont sauvegardées directement sur vos appareils.")
     print(sep)
 
-    # Ouvrir automatiquement le navigateur sur PC
     def open_browser():
-        import time
         time.sleep(1.2)
         try:
             webbrowser.open(f"http://localhost:{PORT}")
