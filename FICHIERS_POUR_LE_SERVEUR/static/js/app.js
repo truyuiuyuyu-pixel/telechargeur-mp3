@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const descEl = document.getElementById('themeDetailHeaderDesc');
         const tracksGrid = document.getElementById('themeTracksGrid');
         const btnDlAll = document.getElementById('btnDownloadThemeAll');
-        const btnZip = document.getElementById('btnDownloadThemeZip');
+        const btnDirectMp3s = document.getElementById('btnDownloadThemeDirectMp3s');
 
         if (!section || !tracksGrid) return;
         section.style.display = 'block';
@@ -447,8 +447,42 @@ document.addEventListener('DOMContentLoaded', () => {
             titleEl.innerHTML = `<i class="fa-solid ${theme.icon || 'fa-music'}" style="color:${theme.color || 'var(--primary)'}"></i> ${escapeHtml(theme.name)}`;
             descEl.textContent = theme.description || '';
 
-            if (btnZip) {
-                btnZip.href = `/api/theme/${themeId}/download-zip`;
+            if (btnDirectMp3s) {
+                btnDirectMp3s.style.display = 'inline-flex';
+                btnDirectMp3s.onclick = async () => {
+                    try {
+                        const libRes = await fetch('/api/library');
+                        const lib = await libRes.json();
+                        const expected = (theme.tracks || []).map(t => (t.title || '').toLowerCase());
+                        const toDownload = [];
+                        (lib.singers || []).forEach(s => {
+                            (s.tracks || []).forEach(t => {
+                                const tl = (t.title || '').toLowerCase();
+                                if (expected.some(e => tl.includes(e) || e.includes(tl))) {
+                                    toDownload.push(t);
+                                }
+                            });
+                        });
+                        if (!toDownload.length) {
+                            showToast("Téléchargez d'abord le thème via le bouton bleu ci-contre.", true);
+                            return;
+                        }
+                        showToast(`📲 Enregistrement de ${toDownload.length} fichiers MP3 réels...`);
+                        for (let i = 0; i < toDownload.length; i++) {
+                            const tr = toDownload[i];
+                            const link = document.createElement('a');
+                            link.href = `/api/download-file/${encodeURIComponent(tr.rel_path)}`;
+                            link.setAttribute('download', tr.filename || `${tr.title}.mp3`);
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                            await new Promise(r => setTimeout(r, 750));
+                        }
+                        showToast(`✅ ${toDownload.length} MP3 enregistrés directement sans ZIP !`);
+                    } catch (e) {
+                        showToast("Erreur téléchargement MP3 du thème", true);
+                    }
+                };
             }
 
             tracksGrid.innerHTML = '';
@@ -1219,13 +1253,34 @@ document.addEventListener('DOMContentLoaded', () => {
             singerLoader.style.display = 'none';
             singerResultsContainer.style.display = 'block';
 
-            // ✅ Afficher et wirer le bouton ZIP (télécharger dossier complet sur téléphone)
-            const btnZip = document.getElementById('btnDownloadZip');
-            if (btnZip) {
-                btnZip.style.display = 'inline-flex';
-                btnZip.onclick = () => {
-                    showToast(`📦 Création du ZIP pour ${data.artist}... Cela peut prendre quelques secondes.`);
-                    window.location.href = `/api/singer/download-zip/${encodeURIComponent(data.artist)}`;
+            // ✅ Bouton Enregistrer tous les vrais MP3 du chanteur directement
+            const btnDirectSinger = document.getElementById('btnSaveArtistMp3sDirect');
+            if (btnDirectSinger) {
+                btnDirectSinger.style.display = 'inline-flex';
+                btnDirectSinger.onclick = async () => {
+                    try {
+                        const libRes = await fetch('/api/library');
+                        const lib = await libRes.json();
+                        const sObj = (lib.singers || []).find(s => s.singer.toLowerCase() === data.artist.toLowerCase());
+                        if (!sObj || !sObj.tracks || !sObj.tracks.length) {
+                            showToast(`Aucun MP3 de ${data.artist} trouvé dans la bibliothèque. Lancez le téléchargement d'abord.`, true);
+                            return;
+                        }
+                        showToast(`📲 Enregistrement de ${sObj.tracks.length} fichiers MP3 réels...`);
+                        for (let i = 0; i < sObj.tracks.length; i++) {
+                            const tr = sObj.tracks[i];
+                            const link = document.createElement('a');
+                            link.href = `/api/download-file/${encodeURIComponent(tr.rel_path)}`;
+                            link.setAttribute('download', tr.filename || `${tr.title}.mp3`);
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                            await new Promise(r => setTimeout(r, 750));
+                        }
+                        showToast(`✅ ${sObj.tracks.length} MP3 enregistrés directement sans ZIP !`);
+                    } catch (e) {
+                        showToast("Erreur enregistrement MP3", true);
+                    }
                 };
             }
 

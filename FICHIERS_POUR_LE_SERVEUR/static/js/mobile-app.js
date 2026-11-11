@@ -378,9 +378,10 @@
             titleEl.innerHTML = `<i class="fa-solid ${theme.icon || 'fa-music'}" style="color:${theme.color || 'var(--primary)'}"></i> ${esc(theme.name)}`;
             descEl.textContent = theme.description || '';
 
-            if (btnZip) {
-                btnZip.href = `/api/theme/${themeId}/download-zip`;
-                btnZip.style.display = 'inline-flex';
+            const btnSaveMp3s = $('btnMobSaveThemeMp3s');
+            if (btnSaveMp3s) {
+                btnSaveMp3s.style.display = 'block';
+                btnSaveMp3s.onclick = () => downloadThemeTracksDirectly(themeId);
             }
 
             listEl.innerHTML = '';
@@ -432,11 +433,79 @@
         }
     }
 
-    // =========================================================
-    // STOCKAGE LOCAL (Préservation des fichiers)
-    // =========================================================
-    function setupMobCloudCleaner() {
-        // Neutralisé : pas de suppression de fichiers
+    async function downloadTracksSequentially(tracks, label) {
+        if (!tracks || !tracks.length) {
+            showToast("Aucun fichier MP3 trouvé à enregistrer", true);
+            return;
+        }
+
+        showToast(`📲 Début de l'enregistrement de ${tracks.length} MP3 sur votre téléphone...`);
+        let downloaded = 0;
+
+        for (let i = 0; i < tracks.length; i++) {
+            const track = tracks[i];
+            const title = track.title || track.filename || `Morceau_${i+1}`;
+            showToast(`📲 MP3 ${i + 1}/${tracks.length} : ${title}`);
+
+            const link = document.createElement('a');
+            link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
+            link.setAttribute('download', track.filename || `${title}.mp3`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            downloaded++;
+
+            await new Promise(r => setTimeout(r, 800));
+        }
+
+        showToast(`✅ ${downloaded} fichiers MP3 réels enregistrés directement dans votre téléphone !`);
+    }
+
+    async function downloadThemeTracksDirectly(themeId) {
+        try {
+            const themeRes = await fetch(`/api/theme/${themeId}`);
+            const theme = await themeRes.json();
+            const expectedTitles = (theme.tracks || []).map(t => (t.title || '').toLowerCase());
+
+            const libRes = await fetch('/api/library');
+            const lib = await libRes.json();
+            const matchingTracks = [];
+
+            (lib.singers || []).forEach(s => {
+                (s.tracks || []).forEach(t => {
+                    const tLower = (t.title || '').toLowerCase();
+                    if (expectedTitles.some(et => tLower.includes(et) || et.includes(tLower))) {
+                        matchingTracks.push(t);
+                    }
+                });
+            });
+
+            if (matchingTracks.length === 0) {
+                showToast("Téléchargez d'abord le thème via le bouton ci-dessus.", true);
+                return;
+            }
+
+            await downloadTracksSequentially(matchingTracks, theme.name);
+        } catch (e) {
+            showToast("Erreur lors de la récupération des MP3 du thème", true);
+        }
+    }
+
+    async function downloadSingerTracksDirectly(artistName) {
+        try {
+            const libRes = await fetch('/api/library');
+            const lib = await libRes.json();
+            const singerObj = (lib.singers || []).find(s => s.singer.toLowerCase() === artistName.toLowerCase());
+
+            if (!singerObj || !singerObj.tracks || !singerObj.tracks.length) {
+                showToast(`Aucun MP3 de ${artistName} encore téléchargé sur le serveur.`, true);
+                return;
+            }
+
+            await downloadTracksSequentially(singerObj.tracks, artistName);
+        } catch (e) {
+            showToast("Erreur lors de la récupération des MP3 de l'artiste", true);
+        }
     }
 
     // =========================================================
@@ -783,9 +852,12 @@
             el('mobDupCount', data.existing_count || 0);
             el('mobNewCount', data.new_count || 0);
 
-            // Bouton ZIP
-            const zipBtn = $('mobBtnZip');
-            if (zipBtn) zipBtn.href = `/api/singer/download-zip/${encodeURIComponent(data.artist)}`;
+            // Bouton Enregistrer tous les MP3 du chanteur sur le téléphone
+            const saveSingerBtn = $('mobBtnSaveSingerMp3s');
+            if (saveSingerBtn) {
+                saveSingerBtn.style.display = 'block';
+                saveSingerBtn.onclick = () => downloadSingerTracksDirectly(data.artist);
+            }
 
             // Créer les fichiers artiste côté serveur
             fetch('/api/singer/create-files', {
