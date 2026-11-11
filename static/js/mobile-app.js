@@ -256,6 +256,7 @@
                 const pane = $(`mobPane-${btn.dataset.pane}`);
                 if (pane) pane.classList.add('active');
                 if (btn.dataset.pane === 'library') loadLibrary();
+                if (btn.dataset.pane === 'themes') loadMobThemes();
             });
         });
     }
@@ -275,8 +276,10 @@
     }
 
     // =========================================================
-    // THEMES & STYLES MUSICAUX (Halloween, Noël, etc.)
+    // THEMES & STYLES MUSICAUX (Amour, Halloween, Noël, etc.)
     // =========================================================
+    let currentMobSelectedThemeId = null;
+
     function showMobThemeBanner(theme) {
         const tb = $('mobThemeBanner');
         if (!tb) return;
@@ -298,55 +301,231 @@
                 const themeId = btn.dataset.theme;
                 document.querySelectorAll('.mob-theme-pill').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                const inp = $('mobSearchInput');
-                if (inp) inp.value = themeId;
-                doSearch(themeId);
+                // Basculer vers l'onglet Thèmes pour voir la sélection complète
+                const tabThemesBtn = document.querySelector('.mob-tab[data-pane="themes"]');
+                if (tabThemesBtn) {
+                    tabThemesBtn.click();
+                    setTimeout(() => openMobThemeDetail(themeId), 100);
+                } else {
+                    const inp = $('mobSearchInput');
+                    if (inp) inp.value = themeId;
+                    doSearch(themeId);
+                }
             });
         });
     }
 
-    // =========================================================
-    // REINITIALISATION & NETTOYAGE DU CLOUD (Mobile)
-    // =========================================================
-    function setupMobCloudCleaner() {
-        // Envoi automatique de réinitialisation quand on quitte
-        window.addEventListener('beforeunload', () => {
-            try { navigator.sendBeacon('/api/cloud/reset'); } catch (e) {}
-        });
-        window.addEventListener('pagehide', () => {
-            try { navigator.sendBeacon('/api/cloud/reset'); } catch (e) {}
-        });
+    async function loadMobThemes() {
+        const grid = $('mobThemesGrid');
+        if (!grid) return;
+        grid.innerHTML = '<div class="mob-loader"><div class="mob-spinner"></div><span>Chargement des thèmes…</span></div>';
 
-        // Bouton header
-        $('btnMobCloudReset')?.addEventListener('click', async () => {
-            if (!confirm('Réinitialiser le cloud et effacer tous les fichiers audio temporaires ?')) return;
-            try {
-                const res = await fetch('/api/cloud/reset', { method: 'POST' });
-                const data = await res.json();
-                showToast(data.message || 'Cloud réinitialisé !');
-                await loadLibrary();
-            } catch {
-                showToast('Erreur réinitialisation', true);
-            }
-        });
+        try {
+            const res = await fetch('/api/themes');
+            const list = await res.json();
+            grid.innerHTML = '';
 
-        // Bouton settings sheet
-        $('btnMobResetCloudNow')?.addEventListener('click', async () => {
-            try {
-                const res = await fetch('/api/cloud/reset', { method: 'POST' });
-                const data = await res.json();
-                showToast(data.message || 'Cloud réinitialisé !');
-                $('mobSettingsSheet')?.classList.remove('open');
-                await loadLibrary();
-            } catch {
-                showToast('Erreur réinitialisation', true);
+            list.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'mob-theme-card';
+                card.dataset.id = t.id;
+                card.innerHTML = `
+                    <div class="mob-theme-icon" style="color:${t.color || 'var(--primary)'};background:${t.color ? t.color + '22' : 'var(--bg-elevated)'}">
+                        <i class="fa-solid ${t.icon || 'fa-music'}"></i>
+                    </div>
+                    <div class="mob-theme-info">
+                        <div class="mob-theme-name">${esc(t.name)}</div>
+                        <div class="mob-theme-desc">${esc(t.description || '')}</div>
+                        <span style="font-size:0.7rem;color:var(--text-muted);font-weight:600;">${t.track_count || 0} titres cultes</span>
+                    </div>
+                    <div class="mob-theme-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+                `;
+                card.addEventListener('click', () => {
+                    openMobThemeDetail(t.id);
+                });
+                grid.appendChild(card);
+            });
+
+            if (!currentMobSelectedThemeId && list.length > 0) {
+                openMobThemeDetail(list[0].id);
+            } else if (currentMobSelectedThemeId) {
+                openMobThemeDetail(currentMobSelectedThemeId);
             }
-        });
+        } catch (e) {
+            grid.innerHTML = '<div class="mob-empty">Erreur chargement thèmes</div>';
+        }
+    }
+
+    async function openMobThemeDetail(themeId) {
+        currentMobSelectedThemeId = themeId;
+        const detail = $('mobThemeDetail');
+        const titleEl = $('mobThemeDetailTitle');
+        const descEl = $('mobThemeDetailDesc');
+        const listEl = $('mobThemeTracksList');
+        const btnAll = $('btnMobDownloadThemeAll');
+        const btnZip = $('btnMobDownloadThemeZip');
+
+        if (!detail || !listEl) return;
+        detail.style.display = 'block';
+        listEl.innerHTML = '<div class="mob-loader"><div class="mob-spinner"></div><span>Chargement des morceaux…</span></div>';
+
+        detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        try {
+            const res = await fetch(`/api/theme/${themeId}`);
+            const theme = await res.json();
+
+            titleEl.innerHTML = `<i class="fa-solid ${theme.icon || 'fa-music'}" style="color:${theme.color || 'var(--primary)'}"></i> ${esc(theme.name)}`;
+            descEl.textContent = theme.description || '';
+
+            const btnSaveMp3s = $('btnMobSaveThemeMp3s');
+            if (btnSaveMp3s) {
+                btnSaveMp3s.style.display = 'block';
+                btnSaveMp3s.onclick = () => downloadThemeTracksDirectly(themeId);
+            }
+
+            listEl.innerHTML = '';
+            const tracks = theme.tracks || [];
+
+            tracks.forEach((tr, idx) => {
+                const trCard = document.createElement('div');
+                trCard.className = 'mob-result-card';
+                trCard.style.padding = '10px 12px';
+                trCard.style.marginBottom = '8px';
+                trCard.innerHTML = `
+                    <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg, ${theme.color || 'var(--primary)'}, #1e293b);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;flex-shrink:0">
+                        <i class="fa-solid ${theme.icon || 'fa-music'}"></i>
+                    </div>
+                    <div class="mob-card-info" style="margin-left:10px;flex:1;overflow:hidden;">
+                        <div class="mob-card-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;">${esc(tr.title)}</div>
+                        <div class="mob-card-artist" style="font-size:0.75rem;color:var(--text-muted);"><i class="fa-solid fa-microphone"></i> ${esc(tr.artist)}</div>
+                    </div>
+                    <button class="mob-btn mob-btn-sm mob-btn-primary btn-dl-theme-item" style="flex-shrink:0;">
+                        <i class="fa-solid fa-download"></i> MP3
+                    </button>
+                `;
+
+                trCard.querySelector('.btn-dl-theme-item').addEventListener('click', () => {
+                    triggerDownload(tr.query || `${tr.artist} ${tr.title} lyrics`, tr.artist, tr.title, null);
+                });
+
+                listEl.appendChild(trCard);
+            });
+
+            if (btnAll) {
+                btnAll.onclick = async () => {
+                    if (!confirm(`Télécharger toutes les ${tracks.length} musiques du thème "${theme.name}" sur ce téléphone ?`)) return;
+                    showToast(`Démarrage du téléchargement du thème : ${theme.name}...`);
+                    try {
+                        const dlRes = await fetch(`/api/theme/${themeId}/download-all`, { method: 'POST' });
+                        const dlData = await dlRes.json();
+                        if (dlData.task_id) {
+                            trackProgress(dlData.task_id, `Thème ${theme.name}`, `${tracks.length} titres`);
+                        }
+                    } catch (err) {
+                        showToast("Erreur lancement thème", true);
+                    }
+                };
+            }
+
+        } catch (e) {
+            listEl.innerHTML = '<div class="mob-empty">Erreur chargement morceaux.</div>';
+        }
+    }
+
+    async function downloadTracksSequentially(tracks, label) {
+        if (!tracks || !tracks.length) {
+            showToast("Aucun fichier MP3 trouvé à enregistrer", true);
+            return;
+        }
+
+        showToast(`📲 Début de l'enregistrement de ${tracks.length} MP3 sur votre téléphone...`);
+        let downloaded = 0;
+
+        for (let i = 0; i < tracks.length; i++) {
+            const track = tracks[i];
+            const title = track.title || track.filename || `Morceau_${i+1}`;
+            showToast(`📲 MP3 ${i + 1}/${tracks.length} : ${title}`);
+
+            const link = document.createElement('a');
+            link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
+            link.setAttribute('download', track.filename || `${title}.mp3`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            downloaded++;
+
+            await new Promise(r => setTimeout(r, 800));
+        }
+
+        showToast(`✅ ${downloaded} fichiers MP3 réels enregistrés directement dans votre téléphone !`);
+    }
+
+    async function downloadThemeTracksDirectly(themeId) {
+        try {
+            const themeRes = await fetch(`/api/theme/${themeId}`);
+            const theme = await themeRes.json();
+            const expectedTitles = (theme.tracks || []).map(t => (t.title || '').toLowerCase());
+
+            const libRes = await fetch('/api/library');
+            const lib = await libRes.json();
+            const matchingTracks = [];
+
+            (lib.singers || []).forEach(s => {
+                (s.tracks || []).forEach(t => {
+                    const tLower = (t.title || '').toLowerCase();
+                    if (expectedTitles.some(et => tLower.includes(et) || et.includes(tLower))) {
+                        matchingTracks.push(t);
+                    }
+                });
+            });
+
+            if (matchingTracks.length === 0) {
+                showToast("Téléchargez d'abord le thème via le bouton ci-dessus.", true);
+                return;
+            }
+
+            await downloadTracksSequentially(matchingTracks, theme.name);
+        } catch (e) {
+            showToast("Erreur lors de la récupération des MP3 du thème", true);
+        }
+    }
+
+    async function downloadSingerTracksDirectly(artistName) {
+        try {
+            const libRes = await fetch('/api/library');
+            const lib = await libRes.json();
+            const singerObj = (lib.singers || []).find(s => s.singer.toLowerCase() === artistName.toLowerCase());
+
+            if (!singerObj || !singerObj.tracks || !singerObj.tracks.length) {
+                showToast(`Aucun MP3 de ${artistName} encore téléchargé sur le serveur.`, true);
+                return;
+            }
+
+            await downloadTracksSequentially(singerObj.tracks, artistName);
+        } catch (e) {
+            showToast("Erreur lors de la récupération des MP3 de l'artiste", true);
+        }
     }
 
     // =========================================================
     // RECHERCHE
     // =========================================================
+    let currentMobSearchSource = 'all';
+    document.querySelectorAll('.mob-source-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.mob-source-pill').forEach(b => {
+                b.classList.remove('active');
+                b.style.borderColor = 'var(--border)';
+                b.style.background = 'var(--bg-elevated)';
+            });
+            btn.classList.add('active');
+            btn.style.borderColor = 'var(--primary)';
+            btn.style.background = 'rgba(99,102,241,0.2)';
+            currentMobSearchSource = btn.dataset.source || 'all';
+        });
+    });
+
     const mobSearchForm = $('mobSearchForm');
     if (mobSearchForm) {
         mobSearchForm.addEventListener('submit', async (e) => {
@@ -363,7 +542,7 @@
         $('mobSearchEmpty').style.display = 'none';
 
         try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&source=${encodeURIComponent(currentMobSearchSource)}`);
             const data = await res.json();
             const results = data.results || [];
             $('mobSearchLoader').style.display = 'none';
@@ -470,17 +649,18 @@
                 if (info.status === 'completed') {
                     clearInterval(interval);
                     if (fill) fill.style.background = 'var(--success)';
-                    showToast(`✅ "${title}" sauvegardé !`);
+                    showToast(`✅ "${title}" téléchargé !`);
                     loadLibrary();
 
-                    // ✅ Bouton "Enregistrer sur ce téléphone"
+                    // ✅ Bouton permanent "Enregistrer sur ce téléphone"
                     const dlCard = $(`mobDl_${taskId}`);
                     if (dlCard) {
                         const saveLink = document.createElement('a');
-                        saveLink.href = `/api/download-ready/${taskId}?cleanup=1`;
+                        saveLink.href = `/api/download-ready/${taskId}`;
                         saveLink.className = 'btn-save-to-phone';
                         saveLink.setAttribute('download', info.filename || `${title}.mp3`);
-                        saveLink.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> Enregistrer sur ce téléphone (MP3 HD 320k)';
+                        saveLink.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:var(--radius-sm);text-decoration:none;font-weight:700;margin-top:10px;';
+                        saveLink.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> 📲 Enregistrer sur ce téléphone (MP3 HD)';
                         dlCard.appendChild(saveLink);
 
                         // Déclencher le téléchargement directement sur le smartphone
@@ -489,11 +669,16 @@
                             showToast(`📲 Téléchargement direct sur votre téléphone démarré !`);
                         } catch (e) {}
 
-                        // Retirer la carte après 30 secondes (laisse le temps d'appuyer)
-                        setTimeout(() => {
+                        // Bouton pour fermer manuellement la carte
+                        const closeBtn = document.createElement('button');
+                        closeBtn.innerHTML = '&times;';
+                        closeBtn.style.cssText = 'position:absolute;top:4px;right:8px;background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;';
+                        closeBtn.onclick = () => {
                             dlCard.remove();
                             if (!list.children.length) wrap.style.display = 'none';
-                        }, 30000);
+                        };
+                        dlCard.style.position = 'relative';
+                        dlCard.appendChild(closeBtn);
                     }
                 } else if (info.status === 'error') {
                     clearInterval(interval);
@@ -534,7 +719,7 @@
 
                 // Déclencher le téléchargement du vrai MP3 natif
                 const link = document.createElement('a');
-                link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}?cleanup=1`;
+                link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
                 link.setAttribute('download', track.filename || `${title}.mp3`);
                 document.body.appendChild(link);
                 link.click();
@@ -667,9 +852,12 @@
             el('mobDupCount', data.existing_count || 0);
             el('mobNewCount', data.new_count || 0);
 
-            // Bouton ZIP
-            const zipBtn = $('mobBtnZip');
-            if (zipBtn) zipBtn.href = `/api/singer/download-zip/${encodeURIComponent(data.artist)}`;
+            // Bouton Enregistrer tous les MP3 du chanteur sur le téléphone
+            const saveSingerBtn = $('mobBtnSaveSingerMp3s');
+            if (saveSingerBtn) {
+                saveSingerBtn.style.display = 'block';
+                saveSingerBtn.onclick = () => downloadSingerTracksDirectly(data.artist);
+            }
 
             // Créer les fichiers artiste côté serveur
             fetch('/api/singer/create-files', {

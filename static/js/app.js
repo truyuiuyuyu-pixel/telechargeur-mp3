@@ -320,11 +320,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (btn.dataset.tab === 'tab-library') {
                     loadLibrary();
                 }
+                if (btn.dataset.tab === 'tab-themes') {
+                    loadThemesCatalog();
+                }
             });
         });
     }
 
+    // --- Multi-Source Selection (Tous les sites, YouTube, SoundCloud) ---
+    let currentSearchSource = 'all';
+    document.querySelectorAll('.source-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.source-pill').forEach(b => {
+                b.classList.remove('active');
+                b.style.borderColor = 'var(--border)';
+                b.style.background = 'var(--bg-elevated)';
+            });
+            btn.classList.add('active');
+            btn.style.borderColor = 'var(--primary)';
+            btn.style.background = 'var(--primary-light)';
+            currentSearchSource = btn.dataset.source || 'all';
+        });
+    });
+
     // --- Themes & Ambiances (Halloween, Noël, Soirée, etc.) ---
+    let currentSelectedThemeId = null;
+
     function showThemeBanner(theme) {
         const tb = document.getElementById('themeBanner');
         if (!tb) return;
@@ -348,36 +369,184 @@ document.addEventListener('DOMContentLoaded', () => {
                 const themeId = btn.dataset.theme;
                 document.querySelectorAll('.theme-pill').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                searchInput.value = themeId;
-                btnClearSearch.style.display = 'block';
-                searchForm.dispatchEvent(new Event('submit'));
+                // Basculer vers l'onglet Thèmes pour voir tous les morceaux du thème
+                const tabThemeBtn = document.querySelector('[data-tab="tab-themes"]');
+                if (tabThemeBtn) {
+                    tabThemeBtn.click();
+                    setTimeout(() => openThemeDetail(themeId), 100);
+                } else {
+                    searchInput.value = themeId;
+                    btnClearSearch.style.display = 'block';
+                    searchForm.dispatchEvent(new Event('submit'));
+                }
             });
         });
     }
 
-    // --- Réinitialisation & Nettoyage du Cloud ---
-    function setupCloudCleaner() {
-        // Envoi d'un beacon de réinitialisation quand le visiteur quitte le site
-        window.addEventListener('beforeunload', () => {
-            try { navigator.sendBeacon('/api/cloud/reset'); } catch (e) {}
-        });
-        window.addEventListener('pagehide', () => {
-            try { navigator.sendBeacon('/api/cloud/reset'); } catch (e) {}
-        });
+    async function loadThemesCatalog() {
+        const grid = document.getElementById('themesCatalogGrid');
+        if (!grid) return;
+        grid.innerHTML = '<div class="loader-box"><div class="spinner"></div><p>Chargement des styles et thèmes...</p></div>';
 
-        // Bouton manuel "Vider le Cloud"
-        const btnCloudReset = document.getElementById('btnCloudReset');
-        if (btnCloudReset) {
-            btnCloudReset.addEventListener('click', async () => {
-                if (!confirm('Voulez-vous réinitialiser le cloud et effacer tous les fichiers audio temporaires ?')) return;
-                try {
-                    const res = await fetch('/api/cloud/reset', { method: 'POST' });
-                    const data = await res.json();
-                    showToast(data.message || 'Cloud réinitialisé avec succès !');
-                    await loadLibrary();
-                } catch {
-                    showToast('Erreur réinitialisation cloud', true);
-                }
+        try {
+            const res = await fetch('/api/themes');
+            const list = await res.json();
+            grid.innerHTML = '';
+
+            list.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'theme-card-box';
+                card.dataset.id = t.id;
+                card.innerHTML = `
+                    <div class="theme-card-header">
+                        <div class="theme-card-icon" style="color:${t.color || 'var(--primary)'};background:${t.color ? t.color + '22' : 'var(--primary-light)'}">
+                            <i class="fa-solid ${t.icon || 'fa-music'}"></i>
+                        </div>
+                        <div>
+                            <div class="theme-card-name">${escapeHtml(t.name)}</div>
+                            <span class="theme-card-badge" style="color:var(--text-muted);font-size:0.8rem;">${t.track_count || 0} titres cultes</span>
+                        </div>
+                    </div>
+                    <p class="theme-card-desc" style="font-size:0.85rem;color:var(--text-muted);margin-top:6px;">${escapeHtml(t.description || '')}</p>
+                `;
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.theme-card-box').forEach(c => c.classList.remove('active'));
+                    card.classList.add('active');
+                    openThemeDetail(t.id);
+                });
+                grid.appendChild(card);
+            });
+
+            if (!currentSelectedThemeId && list.length > 0) {
+                openThemeDetail(list[0].id);
+            } else if (currentSelectedThemeId) {
+                openThemeDetail(currentSelectedThemeId);
+            }
+        } catch (e) {
+            grid.innerHTML = '<div class="empty-state"><p>Erreur lors du chargement des thèmes.</p></div>';
+        }
+    }
+
+    async function openThemeDetail(themeId) {
+        currentSelectedThemeId = themeId;
+        const section = document.getElementById('themeDetailSection');
+        const titleEl = document.getElementById('themeDetailHeaderTitle');
+        const descEl = document.getElementById('themeDetailHeaderDesc');
+        const tracksGrid = document.getElementById('themeTracksGrid');
+        const btnDlAll = document.getElementById('btnDownloadThemeAll');
+        const btnDirectMp3s = document.getElementById('btnDownloadThemeDirectMp3s');
+
+        if (!section || !tracksGrid) return;
+        section.style.display = 'block';
+        tracksGrid.innerHTML = '<div class="loader-box"><div class="spinner"></div><p>Chargement des titres du thème...</p></div>';
+
+        try {
+            const res = await fetch(`/api/theme/${themeId}`);
+            const theme = await res.json();
+
+            titleEl.innerHTML = `<i class="fa-solid ${theme.icon || 'fa-music'}" style="color:${theme.color || 'var(--primary)'}"></i> ${escapeHtml(theme.name)}`;
+            descEl.textContent = theme.description || '';
+
+            if (btnDirectMp3s) {
+                btnDirectMp3s.style.display = 'inline-flex';
+                btnDirectMp3s.onclick = async () => {
+                    try {
+                        const libRes = await fetch('/api/library');
+                        const lib = await libRes.json();
+                        const expected = (theme.tracks || []).map(t => (t.title || '').toLowerCase());
+                        const toDownload = [];
+                        (lib.singers || []).forEach(s => {
+                            (s.tracks || []).forEach(t => {
+                                const tl = (t.title || '').toLowerCase();
+                                if (expected.some(e => tl.includes(e) || e.includes(tl))) {
+                                    toDownload.push(t);
+                                }
+                            });
+                        });
+                        if (!toDownload.length) {
+                            showToast("Téléchargez d'abord le thème via le bouton bleu ci-contre.", true);
+                            return;
+                        }
+                        showToast(`📲 Enregistrement de ${toDownload.length} fichiers MP3 réels...`);
+                        for (let i = 0; i < toDownload.length; i++) {
+                            const tr = toDownload[i];
+                            const link = document.createElement('a');
+                            link.href = `/api/download-file/${encodeURIComponent(tr.rel_path)}`;
+                            link.setAttribute('download', tr.filename || `${tr.title}.mp3`);
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                            await new Promise(r => setTimeout(r, 750));
+                        }
+                        showToast(`✅ ${toDownload.length} MP3 enregistrés directement sans ZIP !`);
+                    } catch (e) {
+                        showToast("Erreur téléchargement MP3 du thème", true);
+                    }
+                };
+            }
+
+            tracksGrid.innerHTML = '';
+            const tracks = theme.tracks || [];
+
+            tracks.forEach((tr, idx) => {
+                const trCard = document.createElement('div');
+                trCard.className = 'result-card theme-track-card';
+                trCard.innerHTML = `
+                    <div class="result-thumb-wrapper">
+                        <div class="result-thumb-placeholder" style="background:linear-gradient(135deg, ${theme.color || '#6366f1'}, #1e293b);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.8rem;border-radius:var(--radius-sm);height:140px;">
+                            <i class="fa-solid ${theme.icon || 'fa-music'}"></i>
+                        </div>
+                    </div>
+                    <div class="result-body">
+                        <div class="result-source-badge" style="color:${theme.color || 'var(--primary)'};font-size:0.75rem;font-weight:700;">
+                            <i class="fa-solid fa-compact-disc"></i> ${escapeHtml(theme.badge || theme.name)}
+                        </div>
+                        <h4 class="result-title" style="margin:4px 0;">${escapeHtml(tr.title)}</h4>
+                        <div class="result-artist" style="color:var(--text-muted);font-size:0.85rem;"><i class="fa-solid fa-microphone"></i> ${escapeHtml(tr.artist)}</div>
+                        <div class="result-actions" style="margin-top:12px;">
+                            <button type="button" class="btn-download" id="btnDlThemeTr_${idx}">
+                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                                <span>Télécharger MP3</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                trCard.querySelector(`#btnDlThemeTr_${idx}`).addEventListener('click', () => {
+                    triggerDownload(tr.query || `${tr.artist} ${tr.title} lyrics`, tr.artist, tr.title, null);
+                });
+
+                tracksGrid.appendChild(trCard);
+            });
+
+            if (btnDlAll) {
+                btnDlAll.onclick = async () => {
+                    if (!confirm(`Télécharger toutes les musiques (${tracks.length}) du thème "${theme.name}" ?`)) return;
+                    showToast(`Démarrage du téléchargement du thème : ${theme.name}...`);
+                    try {
+                        const dlRes = await fetch(`/api/theme/${themeId}/download-all`, { method: 'POST' });
+                        const dlData = await dlRes.json();
+                        if (dlData.task_id) {
+                            trackDownloadProgress(dlData.task_id, `Thème ${theme.name}`, `${tracks.length} titres`);
+                        }
+                    } catch (err) {
+                        showToast("Erreur lancement téléchargement thème", true);
+                    }
+                };
+            }
+
+        } catch (e) {
+            tracksGrid.innerHTML = '<p>Erreur chargement morceaux du thème.</p>';
+        }
+    }
+
+    // --- Gestion du Stockage Local (Neutralisé : pas de destruction de fichiers) ---
+    function setupCloudCleaner() {
+        const btnLocal = document.getElementById('btnLocalMusic');
+        if (btnLocal) {
+            btnLocal.addEventListener('click', () => {
+                const libTab = document.querySelector('[data-tab="tab-library"]');
+                if (libTab) libTab.click();
             });
         }
     }
@@ -404,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchEmptyState.style.display = 'none';
 
         try {
-            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+            const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&source=${encodeURIComponent(currentSearchSource)}`);
             const data = await res.json();
             const results = data.results || [];
 
@@ -560,27 +729,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (info.status === 'completed') {
                     clearInterval(interval);
-                    showToast(`✅ "${title}" enregistré dans le dossier ${info.artist} !`);
+                    showToast(`✅ "${title}" téléchargé et prêt !`);
                     if (fill) fill.style.background = 'var(--success)';
                     loadLibrary();
 
-                    // ✅ Bouton "Enregistrer sur ce Téléphone" — affiché automatiquement après le téléchargement
+                    // ✅ Déclencher immédiatement le téléchargement dans le navigateur
+                    try {
+                        const directLink = document.createElement('a');
+                        directLink.href = `/api/download-ready/${taskId}`;
+                        directLink.setAttribute('download', info.filename || `${title}.mp3`);
+                        document.body.appendChild(directLink);
+                        directLink.click();
+                        directLink.remove();
+                    } catch(e_dl) {}
+
+                    // ✅ Bouton permanent de téléchargement direct sans expiration
                     const card = document.getElementById(`dlCard_${taskId}`);
                     if (card) {
-                        // Bouton de sauvegarde directe sur le téléphone via /api/download-ready/<task_id>
                         const saveBtn = document.createElement('a');
-                        saveBtn.href = `/api/download-ready/${taskId}?cleanup=1`;
+                        saveBtn.href = `/api/download-ready/${taskId}`;
                         saveBtn.className = 'btn-save-phone';
                         saveBtn.setAttribute('download', info.filename || `${title}.mp3`);
-                        saveBtn.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> Enregistrer sur ce Téléphone (MP3 HD 320k)';
+                        saveBtn.innerHTML = '<i class="fa-solid fa-download"></i> Enregistrer le MP3 HD (320 kbps)';
+                        saveBtn.style.display = 'inline-flex';
+                        saveBtn.style.marginTop = '8px';
                         card.appendChild(saveBtn);
 
-                        setTimeout(() => {
-                            if (card) card.remove();
+                        // Bouton pour fermer la carte manuellement
+                        const closeBtn = document.createElement('button');
+                        closeBtn.className = 'btn-close-card';
+                        closeBtn.innerHTML = '&times;';
+                        closeBtn.style.cssText = 'position:absolute;top:6px;right:8px;background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;';
+                        closeBtn.onclick = () => {
+                            card.remove();
                             if (downloadsList.children.length === 0) {
                                 activeDownloadsContainer.style.display = 'none';
                             }
-                        }, 20000); // Laisser 20s pour que l'utilisateur puisse appuyer sur le bouton
+                        };
+                        card.style.position = 'relative';
+                        card.appendChild(closeBtn);
                     }
                 } else if (info.status === 'error') {
                     clearInterval(interval);
@@ -638,7 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     showToast(`MP3 ${i + 1}/${allTracks.length} : ${title}`);
 
                     const link = document.createElement('a');
-                    link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}?cleanup=1`;
+                    link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
                     link.setAttribute('download', track.filename || `${title}.mp3`);
                     document.body.appendChild(link);
                     link.click();
@@ -1066,13 +1253,34 @@ document.addEventListener('DOMContentLoaded', () => {
             singerLoader.style.display = 'none';
             singerResultsContainer.style.display = 'block';
 
-            // ✅ Afficher et wirer le bouton ZIP (télécharger dossier complet sur téléphone)
-            const btnZip = document.getElementById('btnDownloadZip');
-            if (btnZip) {
-                btnZip.style.display = 'inline-flex';
-                btnZip.onclick = () => {
-                    showToast(`📦 Création du ZIP pour ${data.artist}... Cela peut prendre quelques secondes.`);
-                    window.location.href = `/api/singer/download-zip/${encodeURIComponent(data.artist)}`;
+            // ✅ Bouton Enregistrer tous les vrais MP3 du chanteur directement
+            const btnDirectSinger = document.getElementById('btnSaveArtistMp3sDirect');
+            if (btnDirectSinger) {
+                btnDirectSinger.style.display = 'inline-flex';
+                btnDirectSinger.onclick = async () => {
+                    try {
+                        const libRes = await fetch('/api/library');
+                        const lib = await libRes.json();
+                        const sObj = (lib.singers || []).find(s => s.singer.toLowerCase() === data.artist.toLowerCase());
+                        if (!sObj || !sObj.tracks || !sObj.tracks.length) {
+                            showToast(`Aucun MP3 de ${data.artist} trouvé dans la bibliothèque. Lancez le téléchargement d'abord.`, true);
+                            return;
+                        }
+                        showToast(`📲 Enregistrement de ${sObj.tracks.length} fichiers MP3 réels...`);
+                        for (let i = 0; i < sObj.tracks.length; i++) {
+                            const tr = sObj.tracks[i];
+                            const link = document.createElement('a');
+                            link.href = `/api/download-file/${encodeURIComponent(tr.rel_path)}`;
+                            link.setAttribute('download', tr.filename || `${tr.title}.mp3`);
+                            document.body.appendChild(link);
+                            link.click();
+                            link.remove();
+                            await new Promise(r => setTimeout(r, 750));
+                        }
+                        showToast(`✅ ${sObj.tracks.length} MP3 enregistrés directement sans ZIP !`);
+                    } catch (e) {
+                        showToast("Erreur enregistrement MP3", true);
+                    }
                 };
             }
 

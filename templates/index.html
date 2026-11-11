@@ -31,6 +31,10 @@
             </div>
 
             <div class="nav-actions">
+                <button type="button" id="btnLocalMusic" class="btn-action mobile-pill" title="Vos musiques sont sauvegardées directement sur vos appareils (PC & Téléphone)" onclick="document.querySelector('[data-tab=\'tab-library\']').click();">
+                    <i class="fa-solid fa-hard-drive"></i>
+                    <span>Musique Locale</span>
+                </button>
                 <a href="/api/download-apk" class="btn-action mobile-pill" download title="Télécharger le fichier APK de la vraie application Android" style="text-decoration:none;background:linear-gradient(135deg,#10b981,#059669);color:#fff;">
                     <i class="fa-brands fa-android"></i>
                     <span>Télécharger l'App (.APK)</span>
@@ -51,9 +55,13 @@
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <span>Recherche Rapide</span>
             </button>
+            <button class="tab-btn" data-tab="tab-themes" id="tabBtnThemes">
+                <i class="fa-solid fa-masks-theater"></i>
+                <span>Mode Thèmes (Amour, Halloween...)</span>
+            </button>
             <button class="tab-btn" data-tab="tab-singer" id="tabBtnSinger">
                 <i class="fa-solid fa-microphone-lines"></i>
-                <span>Mode Chanteur Complet (Anti-Doublons)</span>
+                <span>Mode Chanteur Complet</span>
             </button>
             <button class="tab-btn" data-tab="tab-library" id="tabBtnLibrary">
                 <i class="fa-solid fa-folder-open"></i>
@@ -74,8 +82,15 @@
                     </div>
 
                     <h2 class="section-title">Rechercher une musique ou coller un lien</h2>
-                    <p class="section-desc">Entrez le nom d'un chanteur, un titre de chanson ou collez directement une adresse web.</p>
+                    <p class="section-desc">Entrez le nom d'un chanteur, un titre de chanson ou collez directement une adresse web de n'importe quel site.</p>
                     
+                    <!-- Sélecteur de source de musique -->
+                    <div class="search-sources-bar" id="searchSourcesBar" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                        <button type="button" class="source-pill active" data-source="all" style="padding:6px 14px;border-radius:20px;font-size:0.85rem;cursor:pointer;font-weight:600;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-main);"><i class="fa-solid fa-globe"></i> 🌐 Tous les sites (+1000)</button>
+                        <button type="button" class="source-pill" data-source="youtube" style="padding:6px 14px;border-radius:20px;font-size:0.85rem;cursor:pointer;font-weight:600;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-main);"><i class="fa-brands fa-youtube" style="color:#ef4444;"></i> YouTube Music</button>
+                        <button type="button" class="source-pill" data-source="soundcloud" style="padding:6px 14px;border-radius:20px;font-size:0.85rem;cursor:pointer;font-weight:600;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-main);"><i class="fa-brands fa-soundcloud" style="color:#f97316;"></i> SoundCloud MP3</button>
+                    </div>
+
                     <form id="searchForm" class="search-form">
                         <div class="search-input-wrapper">
                             <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -89,6 +104,28 @@
                             <span>Rechercher</span>
                         </button>
                     </form>
+
+                    <!-- Styles & Ambiances de musique (Halloween, Noël, Fête, etc.) -->
+                    <div class="music-themes-bar">
+                        <span class="themes-label"><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>Styles & Ambiances :</strong></span>
+                        <div class="themes-pills" id="themesPillsContainer">
+                            <button type="button" class="theme-pill" data-theme="amour"><i class="fa-solid fa-heart" style="color:#f43f5e"></i> ❤️ Amour & Romantique</button>
+                            <button type="button" class="theme-pill" data-theme="halloween"><i class="fa-solid fa-ghost"></i> 🎃 Halloween</button>
+                            <button type="button" class="theme-pill" data-theme="noel"><i class="fa-solid fa-tree"></i> 🎄 Noël</button>
+                            <button type="button" class="theme-pill" data-theme="soiree"><i class="fa-solid fa-champagne-glasses"></i> 🎉 Fête / Soirée</button>
+                            <button type="button" class="theme-pill" data-theme="sport"><i class="fa-solid fa-dumbbell"></i> 🏋️ Sport / Workout</button>
+                            <button type="button" class="theme-pill" data-theme="chill"><i class="fa-solid fa-mug-hot"></i> 🧘 Détente & Calme</button>
+                            <button type="button" class="theme-pill" data-theme="gaming"><i class="fa-solid fa-gamepad"></i> 🎮 Gaming & Électro</button>
+                            <button type="button" class="theme-pill" data-theme="retro80"><i class="fa-solid fa-compact-disc"></i> 📻 Années 80/90</button>
+                            <button type="button" class="theme-pill" data-theme="latino"><i class="fa-solid fa-sun"></i> 🏖️ Latino & Soleil</button>
+                            <button type="button" class="theme-pill" data-theme="rap"><i class="fa-solid fa-microphone"></i> 🎤 Rap / Hip-Hop</button>
+                            <button type="button" class="theme-pill" data-theme="pop"><i class="fa-solid fa-star"></i> 🌟 Pop & Hits</button>
+                            <button type="button" class="theme-pill" data-theme="variete_fr"><i class="fa-solid fa-guitar"></i> 🇫🇷 Variété Française</button>
+                        </div>
+                    </div>
+
+                    <!-- Theme Banner quand un style est sélectionné -->
+                    <div id="themeBanner" class="theme-banner" style="display: none;"></div>
                 </div>
 
                 <!-- Active Downloads List -->
@@ -115,6 +152,46 @@
                     <div class="empty-icon"><i class="fa-solid fa-compact-disc"></i></div>
                     <h3>Prêt à télécharger vos musiques préférées</h3>
                     <p>Chaque musique téléchargée sera automatiquement étiquetée avec son <strong>chanteur</strong> et rangée dans son <strong>dossier par chanteur</strong> pour votre lecteur de musique.</p>
+                </div>
+            </section>
+
+            <!-- Tab: Mode Thèmes & Ambiances Musicales (Amour, Halloween, etc.) -->
+            <section id="tab-themes" class="tab-pane">
+                <div class="search-header-card">
+                    <div class="configured-sites-badge">
+                        <span class="badge-hd-pill"><i class="fa-solid fa-masks-theater"></i> <strong>Mode Thèmes Musicaux</strong></span>
+                        <span class="badge-hd-pill-sm" style="background:rgba(244,63,94,0.15);color:#f43f5e;border:1px solid #f43f5e;"><i class="fa-solid fa-heart"></i> Amour</span>
+                        <span class="badge-hd-pill-sm" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid #f59e0b;"><i class="fa-solid fa-ghost"></i> Halloween</span>
+                    </div>
+
+                    <h2 class="section-title">Explorez par Thème & Ambiance</h2>
+                    <p class="section-desc">Choisissez une ambiance (Amour, Halloween, Fête, Sport...). Accédez aux meilleurs morceaux cultes et téléchargez-les directement en MP3 HD 320k !</p>
+                </div>
+
+                <!-- Grille des Thèmes -->
+                <div class="themes-catalog-grid" id="themesCatalogGrid">
+                    <!-- Rempli en JS -->
+                </div>
+
+                <!-- Détails du thème sélectionné avec ses musiques -->
+                <div id="themeDetailSection" style="display:none;margin-top:20px;">
+                    <div class="theme-detail-header-box">
+                        <div>
+                            <h3 id="themeDetailHeaderTitle" style="font-size:1.3rem;display:flex;align-items:center;gap:8px;"></h3>
+                            <p id="themeDetailHeaderDesc" style="color:var(--text-muted);font-size:0.9rem;margin-top:4px;"></p>
+                        </div>
+                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <button type="button" id="btnDownloadThemeAll" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;">
+                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                                <span>Télécharger tout ce thème</span>
+                            </button>
+                            <button type="button" id="btnDownloadThemeDirectMp3s" class="btn-success" style="display:none;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;font-weight:600;font-size:0.9rem;cursor:pointer;">
+                                <i class="fa-solid fa-file-audio"></i>
+                                <span>📲 Enregistrer tous les MP3 directs</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="themeTracksGrid" class="results-grid" style="margin-top:16px;"></div>
                 </div>
             </section>
 
@@ -202,9 +279,9 @@
                                 <span>Télécharger Tout le Chanteur</span>
                                 <span class="hd-pill-inline">HD 320k</span>
                             </button>
-                            <button type="button" id="btnDownloadZip" class="btn-secondary btn-zip-dl" style="display:none;" title="Télécharger tout le dossier en .ZIP pour le transférer sur votre téléphone">
-                                <i class="fa-solid fa-file-zipper"></i>
-                                <span>Télécharger le ZIP sur ce Téléphone</span>
+                            <button type="button" id="btnSaveArtistMp3sDirect" class="btn-success btn-batch-dl" style="display:none;background:linear-gradient(135deg,#10b981,#059669);color:#fff;" title="Enregistrer tous les vrais fichiers MP3 du chanteur sur cet appareil">
+                                <i class="fa-solid fa-file-audio"></i>
+                                <span>📲 Enregistrer tous les MP3 directs</span>
                             </button>
                         </div>
                     </div>
@@ -258,6 +335,10 @@
                         <p class="section-desc">Rangement automatique par <strong>dossier de chanteur</strong> avec métadonnées reconnues dans l'application musique.</p>
                     </div>
                     <div class="library-actions">
+                        <button type="button" id="btnDownloadAllDirectMp3" class="btn-action mobile-pill" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:8px 16px;border-radius:var(--radius-sm);font-weight:700;border:none;cursor:pointer;" title="Télécharge directement tous les vrais fichiers MP3 sur votre appareil (sans ZIP)">
+                            <i class="fa-solid fa-file-audio"></i>
+                            <span>📲 Télécharger TOUS les MP3 (Sans ZIP)</span>
+                        </button>
                         <button id="btnRefreshLibrary" class="btn-secondary" title="Actualiser la liste">
                             <i class="fa-solid fa-arrows-rotate"></i>
                             <span>Actualiser</span>

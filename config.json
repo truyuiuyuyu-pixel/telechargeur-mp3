@@ -1,0 +1,11 @@
+{
+    "configured": true,
+    "mp3_site": "Tous les sites (YouTube · SoundCloud · Deezer · +1000)",
+    "mp3_site_url": "https://www.youtube.com",
+    "search_site": "Multi-sources (YouTube Music · Deezer · iTunes · Spotify)",
+    "search_site_url": "https://music.youtube.com",
+    "music_folder": "E:\\app télécharger\\Musique",
+    "create_artist_folder": true,
+    "audio_quality": "320",
+    "auto_tag": true
+}

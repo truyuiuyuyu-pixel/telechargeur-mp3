@@ -130,7 +130,15 @@
         <div class="mob-search-box">
             <span class="mob-hd-pill"><i class="fa-solid fa-waveform-lines"></i> MP3 HD 320 kbps</span>
             <div class="mob-section-title">Rechercher une musique</div>
-            <div class="mob-section-desc">Artiste, titre ou collez un lien YouTube</div>
+            <div class="mob-section-desc">Artiste, titre ou collez un lien de n'importe quel site</div>
+
+            <!-- Sélecteur de source de musique -->
+            <div class="mob-source-selector" style="display:flex;gap:6px;margin:8px 0;overflow-x:auto;scrollbar-width:none;">
+                <button type="button" class="mob-source-pill active" data-source="all" style="padding:4px 10px;border-radius:14px;font-size:0.75rem;cursor:pointer;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-main);white-space:nowrap;font-weight:600;">🌐 Tous les sites</button>
+                <button type="button" class="mob-source-pill" data-source="youtube" style="padding:4px 10px;border-radius:14px;font-size:0.75rem;cursor:pointer;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-main);white-space:nowrap;font-weight:600;"><i class="fa-brands fa-youtube" style="color:#ef4444;"></i> YouTube</button>
+                <button type="button" class="mob-source-pill" data-source="soundcloud" style="padding:4px 10px;border-radius:14px;font-size:0.75rem;cursor:pointer;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-main);white-space:nowrap;font-weight:600;"><i class="fa-brands fa-soundcloud" style="color:#f97316;"></i> SoundCloud</button>
+            </div>
+
             <form id="mobSearchForm" class="mob-search-row">
                 <input type="search" id="mobSearchInput" class="mob-input"
                     placeholder="Ex: Stromae, Céline Dion, Adele…"
@@ -139,6 +147,25 @@
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
             </form>
+
+            <!-- Styles & Ambiances de musique (Amour, Halloween, Noël, etc.) -->
+            <div class="mob-themes-scroll" id="mobThemesContainer">
+                <button type="button" class="mob-theme-pill" data-theme="amour"><i class="fa-solid fa-heart" style="color:#f43f5e"></i> ❤️ Amour</button>
+                <button type="button" class="mob-theme-pill" data-theme="halloween"><i class="fa-solid fa-ghost"></i> 🎃 Halloween</button>
+                <button type="button" class="mob-theme-pill" data-theme="noel"><i class="fa-solid fa-tree"></i> 🎄 Noël</button>
+                <button type="button" class="mob-theme-pill" data-theme="soiree"><i class="fa-solid fa-champagne-glasses"></i> 🎉 Soirée</button>
+                <button type="button" class="mob-theme-pill" data-theme="sport"><i class="fa-solid fa-dumbbell"></i> 🏋️ Sport</button>
+                <button type="button" class="mob-theme-pill" data-theme="chill"><i class="fa-solid fa-mug-hot"></i> 🧘 Détente</button>
+                <button type="button" class="mob-theme-pill" data-theme="gaming"><i class="fa-solid fa-gamepad"></i> 🎮 Gaming</button>
+                <button type="button" class="mob-theme-pill" data-theme="retro80"><i class="fa-solid fa-compact-disc"></i> 📻 Années 80</button>
+                <button type="button" class="mob-theme-pill" data-theme="latino"><i class="fa-solid fa-sun"></i> 🏖️ Latino</button>
+                <button type="button" class="mob-theme-pill" data-theme="rap"><i class="fa-solid fa-microphone"></i> 🎤 Rap</button>
+                <button type="button" class="mob-theme-pill" data-theme="pop"><i class="fa-solid fa-star"></i> 🌟 Pop</button>
+                <button type="button" class="mob-theme-pill" data-theme="variete_fr"><i class="fa-solid fa-guitar"></i> 🇫🇷 Variété</button>
+            </div>
+
+            <!-- Bannière de thème actif -->
+            <div id="mobThemeBanner" class="mob-theme-banner" style="display: none;"></div>
         </div>
 
         <!-- Téléchargements en cours -->
@@ -231,10 +258,10 @@
                         <i class="fa-solid fa-cloud-arrow-down"></i>
                         Télécharger toute la discographie
                     </button>
-                    <a class="mob-btn mob-btn-info mob-btn-full" id="mobBtnZip" href="#" download>
-                        <i class="fa-solid fa-file-zipper"></i>
-                        Télécharger en ZIP (sur ce téléphone)
-                    </a>
+                    <button type="button" class="mob-btn mob-btn-success mob-btn-full" id="mobBtnSaveSingerMp3s" style="display:none;">
+                        <i class="fa-solid fa-file-audio"></i>
+                        📲 Enregistrer tous les MP3 sur ce téléphone
+                    </button>
                 </div>
             </div>
 
@@ -261,6 +288,18 @@
             </button>
         </div>
 
+        <!-- ✅ Bouton Télécharger TOUTES les musiques en VRAIS MP3 DIRECTS (SANS ZIP) -->
+        <div id="mobDownloadAllBox" style="margin-bottom:16px;">
+            <button type="button" class="mob-btn mob-btn-success mob-btn-full" id="btnMobDownloadAllDirect" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:var(--radius-sm);font-weight:700;box-shadow:0 4px 14px rgba(16,185,129,0.35);border:none;cursor:pointer;">
+                <i class="fa-solid fa-file-audio" style="font-size:1.3rem;"></i>
+                <span>📲 Télécharger TOUS les MP3 sur mon Téléphone</span>
+            </button>
+            <div id="mobDlAllProgress" style="display:none;margin-top:8px;font-size:0.8rem;text-align:center;color:#34d399;font-weight:600;"></div>
+            <span style="display:block;font-size:0.75rem;color:var(--text-muted);text-align:center;margin-top:6px;">
+                ⚡ Vrais fichiers .MP3 directs (sans ZIP) reconnus par votre lecteur de musique
+            </span>
+        </div>
+
         <div id="mobLibLoader" class="mob-loader" style="display:none">
             <div class="mob-spinner"></div>
             <span>Chargement…</span>
@@ -275,11 +314,41 @@
         </div>
     </div>
 
+    <!-- ===== TAB: THÈMES & AMBIANCES (Amour, Halloween, etc.) ===== -->
+    <div class="mob-tab-pane" id="mobPane-themes">
+        <div class="mob-search-box" style="margin-bottom:14px;">
+            <div class="mob-section-title"><i class="fa-solid fa-masks-theater"></i> Mode Thèmes & Ambiances</div>
+            <div class="mob-section-desc">Choisissez votre ambiance (Amour ❤️, Halloween 🎃...) et téléchargez les morceaux cultes !</div>
+        </div>
+
+        <div id="mobThemesGrid" class="mob-themes-grid"></div>
+
+        <div id="mobThemeDetail" style="display:none;margin-top:16px;">
+            <div class="mob-theme-detail-header" style="background:var(--bg-card);padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:12px;">
+                <h3 id="mobThemeDetailTitle" style="font-size:1.1rem;display:flex;align-items:center;gap:6px;"></h3>
+                <p id="mobThemeDetailDesc" style="color:var(--text-muted);font-size:0.78rem;margin:4px 0 10px 0;"></p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button type="button" class="mob-btn mob-btn-primary mob-btn-full" id="btnMobDownloadThemeAll">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> Télécharger tout ce thème
+                    </button>
+                    <button type="button" class="mob-btn mob-btn-success mob-btn-full" id="btnMobSaveThemeMp3s" style="display:none;">
+                        <i class="fa-solid fa-file-audio"></i> 📲 Enregistrer tous les MP3 du thème sur mon téléphone
+                    </button>
+                </div>
+            </div>
+            <div id="mobThemeTracksList"></div>
+        </div>
+    </div>
+
     <!-- Bottom Tab Bar -->
     <nav class="mob-tabbar">
         <button class="mob-tab active" data-pane="search">
             <i class="fa-solid fa-magnifying-glass"></i>
             Recherche
+        </button>
+        <button class="mob-tab" data-pane="themes">
+            <i class="fa-solid fa-masks-theater"></i>
+            Thèmes
         </button>
         <button class="mob-tab" data-pane="singer">
             <i class="fa-solid fa-microphone-lines"></i>
@@ -366,6 +435,16 @@
                     <span class="fp-sample" style="font-family:'Audiowide',sans-serif">DJ Studio</span>
                 </button>
             </div>
+        </div>
+
+        <div class="mob-form-group">
+            <label class="mob-form-label"><i class="fa-solid fa-broom"></i> Réinitialisation Cloud</label>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">
+                Efface tous les MP3 temporaires stockés sur le serveur en ligne. Le serveur se réinitialise aussi automatiquement quand vous fermez le site.
+            </p>
+            <button class="mob-btn mob-btn-full" id="btnMobResetCloudNow" style="background:rgba(239,68,68,0.18);border:1px solid #ef4444;color:#fca5a5;">
+                <i class="fa-solid fa-broom"></i> Vider le Cloud maintenant
+            </button>
         </div>
 
         <div class="mob-form-group">
