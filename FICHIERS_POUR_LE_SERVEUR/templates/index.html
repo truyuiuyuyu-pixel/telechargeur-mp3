@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Téléchargeur MP3 | Téléphone & Ordinateur</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="icon" type="image/png" href="/static/icons/favicon.png">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- FontAwesome for music and control icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts — Polices Musique & Tech -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Exo+2:wght@400;700;800&family=Audiowide&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app" class="app-container">
+        
+        <!-- Header -->
+        <header class="navbar">
+            <div class="nav-brand">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-music"></i>
+                </div>
+                <div>
+                    <h1 class="logo-title">Téléchargeur MP3</h1>
+                    <span class="logo-subtitle">Pour Téléphone & Ordinateur</span>
+                </div>
+            </div>
+
+            <div class="nav-actions">
+                <button type="button" id="btnLocalMusic" class="btn-action mobile-pill" title="Vos musiques sont sauvegardées directement sur vos appareils (PC & Téléphone)" onclick="document.querySelector('[data-tab=\'tab-library\']').click();">
+                    <i class="fa-solid fa-hard-drive"></i>
+                    <span>Musique Locale</span>
+                </button>
+                <a href="/api/download-apk" class="btn-action mobile-pill" download title="Télécharger le fichier APK de la vraie application Android" style="text-decoration:none;background:linear-gradient(135deg,#10b981,#059669);color:#fff;">
+                    <i class="fa-brands fa-android"></i>
+                    <span>Télécharger l'App (.APK)</span>
+                </a>
+                <button id="btnMobileQR" class="btn-action mobile-pill" title="Ouvrir sur smartphone">
+                    <i class="fa-solid fa-qrcode"></i>
+                    <span>QR Code</span>
+                </button>
+                <button id="btnSettings" class="btn-icon" title="Paramètres (Site MP3 & Recherche)">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="tab-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <span>Recherche Rapide</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-themes" id="tabBtnThemes">
+                <i class="fa-solid fa-masks-theater"></i>
+                <span>Mode Thèmes (Amour, Halloween...)</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-singer" id="tabBtnSinger">
+                <i class="fa-solid fa-microphone-lines"></i>
+                <span>Mode Chanteur Complet</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-library" id="tabBtnLibrary">
+                <i class="fa-solid fa-folder-open"></i>
+                <span>Ma Musique (<span id="libraryCount">0</span>)</span>
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            
+            <!-- Tab 1: Recherche & Téléchargement -->
+            <section id="tab-search" class="tab-pane active">
+                <div class="search-header-card">
+                    <div class="configured-sites-badge">
+                        <span id="badgeMp3Site"><i class="fa-solid fa-download"></i> Source MP3 : <strong>YouTube / MP3</strong></span>
+                        <span id="badgeSearchSite"><i class="fa-solid fa-compass"></i> Recherche : <strong>YouTube Music</strong></span>
+                        <span class="badge-hd-pill"><i class="fa-solid fa-waveform-lines"></i> <strong>MP3 HD 320 kbps</strong></span>
+                    </div>
+
+                    <h2 class="section-title">Rechercher une musique ou coller un lien</h2>
+                    <p class="section-desc">Entrez le nom d'un chanteur, un titre de chanson ou collez directement une adresse web de n'importe quel site.</p>
+                    
+                    <!-- Sélecteur de source de musique -->
+                    <div class="search-sources-bar" id="searchSourcesBar" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                        <button type="button" class="source-pill active" data-source="all" style="padding:6px 14px;border-radius:20px;font-size:0.85rem;cursor:pointer;font-weight:600;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-main);"><i class="fa-solid fa-globe"></i> 🌐 Tous les sites (+1000)</button>
+                        <button type="button" class="source-pill" data-source="youtube" style="padding:6px 14px;border-radius:20px;font-size:0.85rem;cursor:pointer;font-weight:600;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-main);"><i class="fa-brands fa-youtube" style="color:#ef4444;"></i> YouTube Music</button>
+                        <button type="button" class="source-pill" data-source="soundcloud" style="padding:6px 14px;border-radius:20px;font-size:0.85rem;cursor:pointer;font-weight:600;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-main);"><i class="fa-brands fa-soundcloud" style="color:#f97316;"></i> SoundCloud MP3</button>
+                    </div>
+
+                    <form id="searchForm" class="search-form">
+                        <div class="search-input-wrapper">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="searchInput" placeholder="Ex : Céline Dion, Stromae, Adele ou lien https://..." autocomplete="off">
+                            <button type="button" id="btnClearSearch" class="btn-clear" style="display: none;">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <button type="submit" id="btnSearchSubmit" class="btn-primary">
+                            <i class="fa-solid fa-arrow-right"></i>
+                            <span>Rechercher</span>
+                        </button>
+                    </form>
+
+                    <!-- Styles & Ambiances de musique (Halloween, Noël, Fête, etc.) -->
+                    <div class="music-themes-bar">
+                        <span class="themes-label"><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>Styles & Ambiances :</strong></span>
+                        <div class="themes-pills" id="themesPillsContainer">
+                            <button type="button" class="theme-pill" data-theme="amour"><i class="fa-solid fa-heart" style="color:#f43f5e"></i> ❤️ Amour & Romantique</button>
+                            <button type="button" class="theme-pill" data-theme="halloween"><i class="fa-solid fa-ghost"></i> 🎃 Halloween</button>
+                            <button type="button" class="theme-pill" data-theme="noel"><i class="fa-solid fa-tree"></i> 🎄 Noël</button>
+                            <button type="button" class="theme-pill" data-theme="soiree"><i class="fa-solid fa-champagne-glasses"></i> 🎉 Fête / Soirée</button>
+                            <button type="button" class="theme-pill" data-theme="sport"><i class="fa-solid fa-dumbbell"></i> 🏋️ Sport / Workout</button>
+                            <button type="button" class="theme-pill" data-theme="chill"><i class="fa-solid fa-mug-hot"></i> 🧘 Détente & Calme</button>
+                            <button type="button" class="theme-pill" data-theme="gaming"><i class="fa-solid fa-gamepad"></i> 🎮 Gaming & Électro</button>
+                            <button type="button" class="theme-pill" data-theme="retro80"><i class="fa-solid fa-compact-disc"></i> 📻 Années 80/90</button>
+                            <button type="button" class="theme-pill" data-theme="latino"><i class="fa-solid fa-sun"></i> 🏖️ Latino & Soleil</button>
+                            <button type="button" class="theme-pill" data-theme="rap"><i class="fa-solid fa-microphone"></i> 🎤 Rap / Hip-Hop</button>
+                            <button type="button" class="theme-pill" data-theme="pop"><i class="fa-solid fa-star"></i> 🌟 Pop & Hits</button>
+                            <button type="button" class="theme-pill" data-theme="variete_fr"><i class="fa-solid fa-guitar"></i> 🇫🇷 Variété Française</button>
+                        </div>
+                    </div>
+
+                    <!-- Theme Banner quand un style est sélectionné -->
+                    <div id="themeBanner" class="theme-banner" style="display: none;"></div>
+                </div>
+
+                <!-- Active Downloads List -->
+                <div id="activeDownloadsContainer" class="downloads-container" style="display: none;">
+                    <h3 class="subsection-title"><i class="fa-solid fa-spinner fa-spin"></i> Téléchargements en cours &nbsp;<span class="badge-hd-pill-sm"><i class="fa-solid fa-waveform-lines"></i> MP3 HD 320 kbps</span></h3>
+                    <div id="downloadsList" class="downloads-list"></div>
+                </div>
+
+                <!-- Search Results -->
+                <div class="results-header" id="resultsHeader" style="display: none;">
+                    <h3 class="subsection-title">Résultats de recherche</h3>
+                    <span id="resultsCount" class="badge">0 morceaux trouvés</span>
+                </div>
+
+                <div id="searchLoader" class="loader-box" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Recherche des musiques en cours...</p>
+                </div>
+
+                <div id="resultsGrid" class="results-grid"></div>
+
+                <!-- Empty State -->
+                <div id="searchEmptyState" class="empty-state">
+                    <div class="empty-icon"><i class="fa-solid fa-compact-disc"></i></div>
+                    <h3>Prêt à télécharger vos musiques préférées</h3>
+                    <p>Chaque musique téléchargée sera automatiquement étiquetée avec son <strong>chanteur</strong> et rangée dans son <strong>dossier par chanteur</strong> pour votre lecteur de musique.</p>
+                </div>
+            </section>
+
+            <!-- Tab: Mode Thèmes & Ambiances Musicales (Amour, Halloween, etc.) -->
+            <section id="tab-themes" class="tab-pane">
+                <div class="search-header-card">
+                    <div class="configured-sites-badge">
+                        <span class="badge-hd-pill"><i class="fa-solid fa-masks-theater"></i> <strong>Mode Thèmes Musicaux</strong></span>
+                        <span class="badge-hd-pill-sm" style="background:rgba(244,63,94,0.15);color:#f43f5e;border:1px solid #f43f5e;"><i class="fa-solid fa-heart"></i> Amour</span>
+                        <span class="badge-hd-pill-sm" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid #f59e0b;"><i class="fa-solid fa-ghost"></i> Halloween</span>
+                    </div>
+
+                    <h2 class="section-title">Explorez par Thème & Ambiance</h2>
+                    <p class="section-desc">Choisissez une ambiance (Amour, Halloween, Fête, Sport...). Accédez aux meilleurs morceaux cultes et téléchargez-les directement en MP3 HD 320k !</p>
+                </div>
+
+                <!-- Grille des Thèmes -->
+                <div class="themes-catalog-grid" id="themesCatalogGrid">
+                    <!-- Rempli en JS -->
+                </div>
+
+                <!-- Détails du thème sélectionné avec ses musiques -->
+                <div id="themeDetailSection" style="display:none;margin-top:20px;">
+                    <div class="theme-detail-header-box">
+                        <div>
+                            <h3 id="themeDetailHeaderTitle" style="font-size:1.3rem;display:flex;align-items:center;gap:8px;"></h3>
+                            <p id="themeDetailHeaderDesc" style="color:var(--text-muted);font-size:0.9rem;margin-top:4px;"></p>
+                        </div>
+                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <button type="button" id="btnDownloadThemeAll" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;">
+                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                                <span>Télécharger tout ce thème</span>
+                            </button>
+                            <a id="btnDownloadThemeZip" class="btn-secondary" style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-main);text-decoration:none;font-weight:600;font-size:0.9rem;" href="#" download>
+                                <i class="fa-solid fa-file-zipper"></i>
+                                <span>Télécharger en ZIP</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div id="themeTracksGrid" class="results-grid" style="margin-top:16px;"></div>
+                </div>
+            </section>
+
+            <!-- Tab 2: Mode Chanteur Complet & Anti-Doublons -->
+            <section id="tab-singer" class="tab-pane">
+                <!-- Singer Header Card -->
+                <div class="search-header-card">
+                    <div class="anti-duplicate-banner">
+                        <div class="banner-info">
+                            <span class="shield-badge"><i class="fa-solid fa-shield-halved"></i> <strong>Scanner Anti-Doublons Actif</strong></span>
+                            <span id="scannerStatusText" class="scanner-text">Scan PC : <strong id="pcTrackCount">...</strong> musiques | Téléphone : <strong id="phoneTrackCount">0</strong></span>
+                        </div>
+                        <div class="banner-btn-group">
+                            <button type="button" id="btnScanPhone" class="btn-scan-phone" title="Scanner les musiques présentes sur ce téléphone">
+                                <i class="fa-solid fa-mobile-screen"></i>
+                                <span>Scanner ce Téléphone</span>
+                            </button>
+                            <input type="file" id="phoneFileInput" multiple accept="audio/*" style="display: none;">
+                        </div>
+                    </div>
+
+                    <h2 class="section-title">Téléchargeur Complet par Chanteur / Chanteuse</h2>
+                    <p class="section-desc">Entrez le nom d'un artiste. L'application recherche toute sa discographie, <strong>crée son dossier et ses fichiers récapitulatifs (.m3u8 et .json)</strong>, et <strong>scanne vos appareils pour éviter de télécharger des doublons</strong>.</p>
+                    
+                    <form id="singerForm" class="search-form">
+                        <div class="search-input-wrapper">
+                            <i class="fa-solid fa-microphone-lines search-icon"></i>
+                            <input type="text" id="singerInput" placeholder="Ex: Stromae, Céline Dion, Ed Sheeran, Renaud, Jul..." autocomplete="off">
+                            <button type="button" id="btnClearSinger" class="btn-clear" style="display: none;">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <button type="submit" id="btnSingerSubmit" class="btn-primary">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Trouver la Discographie</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Singer Results Container -->
+                <div id="singerResultsContainer" style="display: none;">
+                    
+                    <!-- Artist Summary & Created Files Banner -->
+                    <div class="artist-summary-card">
+                        <div class="artist-summary-left">
+                            <div class="artist-avatar">
+                                <i class="fa-solid fa-user-music"></i>
+                            </div>
+                            <div>
+                                <h3 id="artistNameDisplay" class="artist-summary-title">Nom du Chanteur</h3>
+                                <div class="artist-badges">
+                                    <span class="badge-total" id="badgeTotalFound">0 titres répertoriés</span>
+                                    <span class="badge-dup" id="badgeAlreadyPresent">0 déjà présents sur vos appareils</span>
+                                    <span class="badge-new" id="badgeNewToDownload">0 nouveaux morceaux</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="created-files-box">
+                            <div class="files-title"><i class="fa-solid fa-circle-check"></i> Fichiers créés pour ce chanteur :</div>
+                            <ul class="files-list">
+                                <li>📁 Dossier : <code id="createdArtistFolder">Musique/Artiste/</code></li>
+                                <li>📑 Fichier index : <code id="createdDiscographyFile">discographie.json</code></li>
+                                <li>🎶 Playlist mobile/PC : <code id="createdPlaylistFile">Playlist.m3u8</code></li>
+                                <li>📝 Liste texte : <code id="createdTxtFile">liste_des_titres.txt</code></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Batch Download Controls -->
+                    <div class="batch-action-bar">
+                        <div class="selection-info">
+                            <label class="select-all-label">
+                                <input type="checkbox" id="checkSelectAll" checked>
+                                <span>Sélectionner uniquement les nouveaux (<span id="selectedCountText">0</span>)</span>
+                            </label>
+                        </div>
+                        <div class="batch-btn-group">
+                            <button type="button" id="btnVerifySinger" class="btn-secondary" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;" title="Vérifier que chaque musique appartient bien à ce chanteur">
+                                <i class="fa-solid fa-user-check"></i>
+                                <span>Scanner & Vérifier le Chanteur</span>
+                            </button>
+                            <button type="button" id="btnDownloadAllSinger" class="btn-primary btn-batch-dl">
+                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                                <span>Télécharger Tout le Chanteur</span>
+                                <span class="hd-pill-inline">HD 320k</span>
+                            </button>
+                            <button type="button" id="btnDownloadZip" class="btn-secondary btn-zip-dl" style="display:none;" title="Télécharger tout le dossier en .ZIP pour le transférer sur votre téléphone">
+                                <i class="fa-solid fa-file-zipper"></i>
+                                <span>Télécharger le ZIP sur ce Téléphone</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Singer Verification Status Banner -->
+                    <div id="singerVerificationBanner" style="display:none;background:linear-gradient(135deg,rgba(14,165,233,0.12),rgba(99,102,241,0.1));border:1px solid rgba(14,165,233,0.4);border-radius:var(--radius-md);padding:14px 18px;margin-bottom:14px;">
+                        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                            <i class="fa-solid fa-user-shield" style="font-size:1.4rem;color:#0ea5e9;"></i>
+                            <div style="flex:1;">
+                                <strong id="verifyBannerTitle" style="display:block;font-size:0.95rem;">Scanner Vérificateur de Chanteur Actif</strong>
+                                <span id="verifyBannerSub" style="color:var(--text-muted);font-size:0.82rem;">Vérification de l'interprète officiel pour chaque musique</span>
+                            </div>
+                            <button type="button" id="btnFilterVerifiedOnly" class="btn-secondary" style="padding:6px 12px;font-size:0.8rem;background:rgba(16,185,129,0.2);border:1px solid var(--success);color:var(--success);">
+                                <i class="fa-solid fa-filter"></i> Garder seulement les officiels
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tracks Table -->
+                    <div class="discography-table-card">
+                        <div class="discography-header-row">
+                            <span class="col-check">Choix</span>
+                            <span class="col-thumb">Pochette</span>
+                            <span class="col-title">Titre & Album</span>
+                            <span class="col-status">État Anti-Doublon</span>
+                            <span class="col-actions">Action</span>
+                        </div>
+                        <div id="discographyList" class="discography-rows"></div>
+                    </div>
+                </div>
+
+                <!-- Loader -->
+                <div id="singerLoader" class="loader-box" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Recherche de la discographie et scan des doublons sur vos appareils...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div id="singerEmptyState" class="empty-state">
+                    <div class="empty-icon"><i class="fa-solid fa-record-vinyl"></i></div>
+                    <h3>Téléchargez l'intégralité des musiques d'un chanteur</h3>
+                    <p>Tapez simplement le nom d'un chanteur ou d'une chanteuse. Le mode complet créera son <strong>dossier et ses fichiers dédiés</strong>, et <strong>scannera vos appareils</strong> pour ne télécharger que ce que vous ne possédez pas encore !</p>
+                </div>
+            </section>
+
+            <!-- Tab 2: Ma Musique (Dossiers par Chanteur) -->
+            <section id="tab-library" class="tab-pane">
+                <div class="library-header">
+                    <div>
+                        <h2 class="section-title">Ma Musique</h2>
+                        <p class="section-desc">Rangement automatique par <strong>dossier de chanteur</strong> avec métadonnées reconnues dans l'application musique.</p>
+                    </div>
+                    <div class="library-actions">
+                        <button type="button" id="btnDownloadAllDirectMp3" class="btn-action mobile-pill" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;padding:8px 16px;border-radius:var(--radius-sm);font-weight:700;border:none;cursor:pointer;" title="Télécharge directement tous les vrais fichiers MP3 sur votre appareil (sans ZIP)">
+                            <i class="fa-solid fa-file-audio"></i>
+                            <span>📲 Télécharger TOUS les MP3 (Sans ZIP)</span>
+                        </button>
+                        <button id="btnRefreshLibrary" class="btn-secondary" title="Actualiser la liste">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>Actualiser</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="libraryLoader" class="loader-box" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Chargement des dossiers musicaux...</p>
+                </div>
+
+                <!-- Library Grid of Singer Folders -->
+                <div id="libraryContainer" class="library-container"></div>
+
+                <!-- Empty State Library -->
+                <div id="libraryEmptyState" class="empty-state" style="display: none;">
+                    <div class="empty-icon"><i class="fa-solid fa-folder-plus"></i></div>
+                    <h3>Aucune musique enregistrée pour le moment</h3>
+                    <p>Utilisez l'onglet <strong>Rechercher & Télécharger</strong> pour ajouter vos premiers titres !</p>
+                    <button class="btn-primary" onclick="document.querySelector('[data-tab=\'tab-search\']').click();">
+                        <i class="fa-solid fa-magnifying-glass"></i> Rechercher un titre
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Floating Player (Lecteur Audio Intégré) -->
+        <div id="musicPlayer" class="music-player" style="display: none;">
+            <div class="player-content">
+                <!-- Track Info -->
+                <div class="player-track">
+                    <div class="player-cover">
+                        <i class="fa-solid fa-music"></i>
+                    </div>
+                    <div class="player-details">
+                        <span id="playerTitle" class="track-title">Titre</span>
+                        <span id="playerArtist" class="track-artist">Chanteur</span>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="player-controls">
+                    <div class="control-buttons">
+                        <button id="btnPrevTrack" class="ctrl-btn" title="Morceau précédent">
+                            <i class="fa-solid fa-backward-step"></i>
+                        </button>
+                        <button id="btnPlayPause" class="ctrl-btn play-btn" title="Lecture / Pause">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                        <button id="btnNextTrack" class="ctrl-btn" title="Morceau suivant">
+                            <i class="fa-solid fa-forward-step"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="player-timeline">
+                        <span id="currentTime">0:00</span>
+                        <input type="range" id="seekSlider" min="0" max="100" value="0">
+                        <span id="totalDuration">0:00</span>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="player-extra">
+                    <button id="btnDownloadCurrent" class="btn-icon" title="Télécharger le MP3 sur cet appareil">
+                        <i class="fa-solid fa-download"></i>
+                    </button>
+                    <button id="btnClosePlayer" class="btn-icon" title="Fermer le lecteur">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+            <audio id="audioElement" preload="metadata"></audio>
+        </div>
+
+        <!-- Setup Wizard & Settings Modal (Demande du site MP3 et site de recherche) -->
+        <div id="modalSettings" class="modal-backdrop" style="display: none;">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <div class="modal-title-group">
+                        <div class="modal-icon"><i class="fa-solid fa-sliders"></i></div>
+                        <div>
+                            <h3 id="settingsModalTitle">Configuration de l'application</h3>
+                            <span class="modal-subtitle">Paramétrez votre source MP3 et votre site de recherche</span>
+                        </div>
+                    </div>
+                    <button class="modal-close" id="btnCloseSettings">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Question 1: Site MP3 -->
+                    <div class="form-group">
+                        <label for="inputMp3Site" class="form-label">
+                            <i class="fa-solid fa-file-audio"></i>
+                            <strong>1. Votre site MP3 préféré (Source & Convertisseur) :</strong>
+                        </label>
+                        <p class="form-hint">L'application convertit en MP3 haute qualité depuis vos plateformes préférées.</p>
+
+                        <!-- ✅ Bouton Tous les sites — Mode Maximal -->
+                        <button type="button" id="btnAllSources" class="btn-all-sources" title="Utiliser YouTube, SoundCloud, Deezer, Dailymotion et +1000 sites disponibles pour maximiser les chances de trouver chaque morceau">
+                            <i class="fa-solid fa-globe"></i>
+                            <div class="all-sources-text">
+                                <span><strong>⚡ Utiliser TOUS les Sites de Téléchargement</strong></span>
+                                <span class="all-sources-sub">YouTube · SoundCloud · Deezer · Dailymotion · Bandcamp · +1000 sites</span>
+                            </div>
+                            <span class="all-sources-badge" id="allSourcesBadge">Désactivé</span>
+                        </button>
+                        
+                        <div class="presets-pills" id="mp3Presets">
+                            <button type="button" class="preset-pill active" data-val="YouTube (Convertisseur MP3 haute qualité intégré)" data-url="https://www.youtube.com">YouTube MP3</button>
+                            <button type="button" class="preset-pill" data-val="SoundCloud MP3" data-url="https://soundcloud.com">SoundCloud</button>
+                            <button type="button" class="preset-pill" data-val="Jamendo Musique Libre" data-url="https://www.jamendo.com">Jamendo</button>
+                            <button type="button" class="preset-pill" data-val="Autre site / Personnalisé" data-url="">Autre site web...</button>
+                        </div>
+
+                        <input type="text" id="inputMp3Site" class="form-input" placeholder="Nom ou URL de votre site MP3 préféré (ex: YouTube MP3)">
+                    </div>
+
+                    <!-- Question 2: Site de recherche de musique -->
+                    <div class="form-group">
+                        <label for="inputSearchSite" class="form-label">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <strong>2. Votre site de recherche de musique :</strong>
+                        </label>
+                        <p class="form-hint">Le moteur ou catalogue utilisé pour trouver les titres et artistes.</p>
+                        
+                        <div class="presets-pills" id="searchPresets">
+                            <button type="button" class="preset-pill active" data-val="YouTube Music" data-url="https://music.youtube.com">YouTube Music</button>
+                            <button type="button" class="preset-pill" data-val="Deezer / Catalogue mondial" data-url="https://www.deezer.com">Deezer</button>
+                            <button type="button" class="preset-pill" data-val="Spotify & Moteurs" data-url="https://open.spotify.com">Spotify</button>
+                            <button type="button" class="preset-pill" data-val="Moteur personnalisé" data-url="">Personnalisé...</button>
+                        </div>
+
+                        <input type="text" id="inputSearchSite" class="form-input" placeholder="Nom ou URL de recherche de musique (ex: YouTube Music)">
+                    </div>
+
+                    <!-- Question 3: Dossier par chanteur -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fa-solid fa-folder-tree"></i>
+                            <strong>3. Organisation par chanteur :</strong>
+                        </label>
+                        <div class="checkbox-card">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="checkCreateArtistFolder" checked>
+                                <span class="slider round"></span>
+                            </label>
+                            <div class="checkbox-desc">
+                                <strong>Créer un sous-dossier par chanteur</strong>
+                                <p>Exemple : <code>Musique/Céline Dion/Pour que tu m'aimes encore.mp3</code></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quality -->
+                    <div class="form-group">
+                        <label for="selectAudioQuality" class="form-label">
+                            <i class="fa-solid fa-wave-square"></i>
+                            <strong>Qualité audio MP3 :</strong>
+                        </label>
+                        <select id="selectAudioQuality" class="form-input">
+                            <option value="320" selected>320 kbps (Qualité maximale Studio) ⭐</option>
+                            <option value="192">192 kbps (Excellente qualité, rapide)</option>
+                            <option value="128">128 kbps (Économie d'espace)</option>
+                        </select>
+                    </div>
+
+                    <!-- Music folder path -->
+                    <div class="form-group">
+                        <label for="inputMusicFolder" class="form-label">
+                            <i class="fa-solid fa-hard-drive"></i>
+                            <strong>Dossier de stockage sur l'ordinateur :</strong>
+                        </label>
+                        <input type="text" id="inputMusicFolder" class="form-input" placeholder="Chemin du dossier Musique">
+                    </div>
+
+                    <!-- Police / Style visuel -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fa-solid fa-font"></i>
+                            <strong>Style de police (Musique / Tech) :</strong>
+                        </label>
+                        <p class="form-hint">Personnalisez l'apparence de l'interface selon votre style.</p>
+                        <div class="font-picker" id="fontPicker">
+                            <button type="button" class="font-pill active" data-font="font-default">
+                                <span class="fp-name" style="font-family:sans-serif">Défaut</span>
+                                <span class="fp-sample" style="font-family:sans-serif">Aa Bb Cc</span>
+                            </button>
+                            <button type="button" class="font-pill" data-font="font-orbitron">
+                                <span class="fp-name" style="font-family:'Orbitron',sans-serif">Orbitron</span>
+                                <span class="fp-sample" style="font-family:'Orbitron',sans-serif">Tech Space</span>
+                            </button>
+                            <button type="button" class="font-pill" data-font="font-rajdhani">
+                                <span class="fp-name" style="font-family:'Rajdhani',sans-serif">Rajdhani</span>
+                                <span class="fp-sample" style="font-family:'Rajdhani',sans-serif">Music Modern</span>
+                            </button>
+                            <button type="button" class="font-pill" data-font="font-exo2">
+                                <span class="fp-name" style="font-family:'Exo 2',sans-serif">Exo 2</span>
+                                <span class="fp-sample" style="font-family:'Exo 2',sans-serif">Futuriste</span>
+                            </button>
+                            <button type="button" class="font-pill" data-font="font-audiowide">
+                                <span class="fp-name" style="font-family:'Audiowide',sans-serif">Audiowide</span>
+                                <span class="fp-sample" style="font-family:'Audiowide',sans-serif">DJ Studio</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="btnCancelSettings" class="btn-secondary">Annuler</button>
+                    <button type="button" id="btnSaveSettings" class="btn-primary">
+                        <i class="fa-solid fa-check"></i>
+                        <span>Enregistrer les préférences</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Code Modal (Connexion smartphone) -->
+        <div id="modalQR" class="modal-backdrop" style="display: none;">
+            <div class="modal-card modal-center">
+                <div class="modal-header">
+                    <div class="modal-title-group">
+                        <div class="modal-icon"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                        <div>
+                            <h3>Accéder depuis votre téléphone</h3>
+                            <span class="modal-subtitle">Utilisez l'application sur smartphone Android ou iPhone</span>
+                        </div>
+                    </div>
+                    <button class="modal-close" id="btnCloseQR">&times;</button>
+                </div>
+
+                <div class="modal-body text-center">
+                    <div class="qr-box">
+                        <img id="qrImage" src="/api/qr" alt="QR Code">
+                    </div>
+                    <p class="qr-instructions">
+                        1. Connectez votre téléphone au <strong>même réseau WiFi</strong>.<br>
+                        2. <strong>Scannez ce QR Code</strong> avec l'appareil photo de votre smartphone.<br>
+                        3. Ou tapez directement cette adresse dans le navigateur mobile :
+                    </p>
+                    <div class="url-copy-box">
+                        <input type="text" id="inputMobileUrl" readonly value="http://...">
+                        <button type="button" id="btnCopyMobileUrl" class="btn-copy" title="Copier l'adresse">
+                            <i class="fa-solid fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modal-footer modal-center">
+                    <button type="button" class="btn-primary" id="btnCloseQROk">Fermer</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Singer/Title Modal -->
+        <div id="modalEdit" class="modal-backdrop" style="display: none;">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <div class="modal-title-group">
+                        <div class="modal-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+                        <div>
+                            <h3>Modifier le chanteur et le titre</h3>
+                            <span class="modal-subtitle">Met à jour les métadonnées de l'application musique</span>
+                        </div>
+                    </div>
+                    <button class="modal-close" id="btnCloseEdit">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <input type="hidden" id="editRelPath">
+                    <div class="form-group">
+                        <label class="form-label"><strong>Nom du Chanteur / Artiste :</strong></label>
+                        <input type="text" id="editArtist" class="form-input" placeholder="Ex: Céline Dion">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><strong>Titre du morceau :</strong></label>
+                        <input type="text" id="editTitle" class="form-input" placeholder="Ex: Pour que tu m'aimes encore">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><strong>Album (Optionnel) :</strong></label>
+                        <input type="text" id="editAlbum" class="form-input" placeholder="Ex: D'eux">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" id="btnCancelEdit" class="btn-secondary">Annuler</button>
+                    <button type="button" id="btnSaveEdit" class="btn-primary">
+                        <i class="fa-solid fa-save"></i> Enregistrer & Déplacer
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast-notification"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
