@@ -310,6 +310,191 @@ def search_tracks(query: str, limit: int = 12, source: str = "all"):
 
     return results
 
+def process_single_track(url: str, chosen_artist: str = "", chosen_title: str = "", album: str = None, cover_url: str = None, progress_hook_cb = None):
+    """
+    Télécharge et convertit un morceau en MP3 HD 320k avec tags ID3 complets.
+    Place le fichier directement dans Musique/{Artiste}/{Titre}.mp3.
+    """
+    temp_dir = tempfile.mkdtemp(prefix="mp3_task_")
+    try:
+        cfg = load_config()
+        music_base = cfg.get("music_folder", "Musique")
+        create_folder_per_artist = cfg.get("create_artist_folder", True)
+        audio_quality = cfg.get("audio_quality", "320")
+        ffmpeg_path = get_ffmpeg_path()
+
+        final_artist = sanitize_filename(chosen_artist) if chosen_artist else "Artiste Inconnu"
+        final_title = sanitize_filename(chosen_title) if chosen_title else "Sans Titre"
+        final_album = album if album else f"{final_artist} Singles"
+
+        downloaded_audio_path = None
+        effective_cover = cover_url
+
+        # --- CAS A : Fichier MP3 / audio direct ---
+        if url.startswith("http") and is_direct_audio_url(url):
+            if progress_hook_cb:
+                progress_hook_cb(30, "Téléchargement direct du fichier MP3...")
+            direct_file = os.path.join(temp_dir, f"source_{int(time.time())}.mp3")
+            resp = requests.get(url, stream=True, timeout=30)
+            resp.raise_for_status()
+            with open(direct_file, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=65536):
+                    if chunk:
+                        f.write(chunk)
+            downloaded_audio_path = direct_file
+
+        # --- CAS B : URL web (YouTube, SoundCloud, Bandcamp...) ou recherche ---
+        else:
+            effective_url = url
+            # Si c'est un texte de recherche sans protocole HTTP
+            if not (url.startswith("http://") or url.startswith("https://")):
+                search_str = f"ytsearch5:{url}"
+                try:
+                    with yt_dlp.YoutubeDL({'quiet': True, 'extract_flat': True, 'noplaylist': True}) as ydl_s:
+                        s_res = ydl_s.extract_info(search_str, download=False)
+                        entries = s_res.get('entries', []) if s_res else []
+                        best = pick_best_studio_track(entries, chosen_artist, chosen_title, url)
+                        if best:
+                            effective_url = best.get('url') or best.get('webpage_url') or f"https://www.youtube.com/watch?v={best.get('id')}"
+                except Exception as ex_s:
+                    print(f"Recherche YT initiale échouée : {ex_s}")
+
+            def progress_hook(d):
+                if progress_hook_cb:
+                    if d.get('status') == 'downloading':
+                        total = d.get('total_bytes') or d.get('total_bytes_estimate') or 0
+                        downloaded = d.get('downloaded_bytes') or 0
+                        if total > 0:
+                            pct = int((downloaded / total) * 75)
+                            progress_hook_cb(max(10, min(pct, 75)), f"Téléchargement audio : {pct}%")
+                    elif d.get('status') == 'finished':
+                        progress_hook_cb(80, "Conversion en MP3 HD 320k (FFmpeg)...")
+
+            out_template = os.path.join(temp_dir, "%(title)s.%(ext)s")
+            ydl_opts = get_yt_dlp_common_opts()
+            ydl_opts.update({
+                'format': 'bestaudio/best',
+                'outtmpl': out_template,
+                'progress_hooks': [progress_hook],
+                'noplaylist': True,
+            })
+
+            if ffmpeg_path:
+                ydl_opts['ffmpeg_location'] = ffmpeg_path
+                ydl_opts['postprocessors'] = [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': audio_quality,
+                }]
+                ydl_opts['postprocessor_args'] = {
+                    'ffmpegextractaudio': ['-b:a', f'{audio_quality}k', '-ar', '44100']
+                }
+
+            # Tentative principale de téléchargement
+            info = None
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(effective_url, download=True)
+            except Exception as ex_main:
+                print(f"Échec source principale ({effective_url}) : {ex_main}")
+                # FALLBACK SUR SOUNDCLOUD si YouTube échoue
+                if progress_hook_cb:
+                    progress_hook_cb(40, "Source secondaire SoundCloud en cours...")
+                sc_query = f"scsearch3:{chosen_artist} {chosen_title}"
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl_sc:
+                    info = ydl_sc.extract_info(sc_query, download=True)
+
+            if info and not effective_cover:
+                effective_cover = info.get('thumbnail')
+                if not effective_cover and info.get('thumbnails'):
+                    effective_cover = info.get('thumbnails')[-1].get('url')
+
+            if info:
+                if (not chosen_artist or chosen_artist == "Artiste Inconnu"):
+                    ext_a = info.get('artist') or info.get('uploader') or ""
+                    if ext_a:
+                        final_artist = sanitize_filename(ext_a)
+                if (not chosen_title or chosen_title == "Sans Titre"):
+                    ext_t = info.get('track') or info.get('title') or ""
+                    if ext_t:
+                        final_title = sanitize_filename(ext_t)
+                if not album:
+                    final_album = f"{final_artist} Singles"
+
+            # Récupération du fichier généré
+            for f in os.listdir(temp_dir):
+                if f.lower().endswith(".mp3"):
+                    downloaded_audio_path = os.path.join(temp_dir, f)
+                    break
+
+            if not downloaded_audio_path:
+                files = os.listdir(temp_dir)
+                if files:
+                    downloaded_audio_path = os.path.join(temp_dir, files[0])
+                else:
+                    raise Exception("Aucun fichier audio n'a pu être extrait.")
+
+        # --- CAS C : Encodage direct en MP3 si nécessaire ---
+        if downloaded_audio_path and not downloaded_audio_path.lower().endswith(".mp3"):
+            if progress_hook_cb:
+                progress_hook_cb(85, "Encodage MP3 HD...")
+            mp3_converted = os.path.join(temp_dir, f"{final_title}.mp3")
+            if ffmpeg_path:
+                import subprocess
+                cmd = [ffmpeg_path, "-y", "-i", downloaded_audio_path, "-b:a", f"{audio_quality}k", "-ar", "44100", mp3_converted]
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                downloaded_audio_path = mp3_converted
+
+        if progress_hook_cb:
+            progress_hook_cb(90, "Application des tags ID3 (Chanteur, Titre)...")
+
+        # 1. Écriture des tags ID3
+        try:
+            tag_mp3(
+                file_path=downloaded_audio_path,
+                artist=final_artist,
+                title=final_title,
+                album=final_album,
+                cover_url=effective_cover
+            )
+        except Exception as e_tag:
+            print(f"Avertissement tag MP3 : {e_tag}")
+
+        # 2. Dossier par chanteur
+        if create_folder_per_artist:
+            dest_dir = os.path.join(music_base, final_artist)
+        else:
+            dest_dir = music_base
+
+        os.makedirs(dest_dir, exist_ok=True)
+
+        target_filename = f"{final_title}.mp3"
+        target_path = os.path.join(dest_dir, target_filename)
+
+        # Éviter l'écrasement en cas de doublon
+        counter = 1
+        base_target = os.path.splitext(target_path)[0]
+        while os.path.exists(target_path):
+            target_filename = f"{final_title} ({counter}).mp3"
+            target_path = f"{base_target} ({counter}).mp3"
+            counter += 1
+
+        shutil.move(downloaded_audio_path, target_path)
+        rel_path = os.path.relpath(target_path, music_base).replace("\\", "/")
+
+        return target_path, target_filename, rel_path, final_artist, final_title
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+def download_single_track_sync(url: str, chosen_artist: str = "", chosen_title: str = "", album: str = None, cover_url: str = None):
+    """
+    Téléchargement 100% direct et immédiat pour envoi direct dans la mémoire du téléphone.
+    """
+    target_path, target_filename, rel_path, final_artist, final_title = process_single_track(
+        url, chosen_artist, chosen_title, album, cover_url
+    )
+    return target_path, target_filename
+
 def download_track_async(url: str, chosen_artist: str, chosen_title: str, album: str = None, cover_url: str = None, task_id: str = None):
     """
     Télécharge et convertit en MP3 HD 320k en tâche de fond.
@@ -333,174 +518,21 @@ def download_track_async(url: str, chosen_artist: str, chosen_title: str, album:
     }
 
     def _worker():
-        temp_dir = tempfile.mkdtemp(prefix="mp3_task_")
         try:
-            cfg = load_config()
-            music_base = cfg.get("music_folder", "Musique")
-            create_folder_per_artist = cfg.get("create_artist_folder", True)
-            audio_quality = cfg.get("audio_quality", "320")
-            ffmpeg_path = get_ffmpeg_path()
-
             ACTIVE_DOWNLOADS[task_id]["status"] = "downloading"
-            ACTIVE_DOWNLOADS[task_id]["message"] = "Téléchargement du flux audio en cours..."
+            def hook_cb(pct, msg):
+                ACTIVE_DOWNLOADS[task_id]["progress"] = pct
+                ACTIVE_DOWNLOADS[task_id]["message"] = msg
 
-            final_artist = sanitize_filename(chosen_artist) if chosen_artist else "Artiste Inconnu"
-            final_title = sanitize_filename(chosen_title) if chosen_title else "Sans Titre"
-            final_album = album if album else f"{final_artist} Singles"
-
-            downloaded_audio_path = None
-            effective_cover = cover_url
-
-            # --- CAS A : Fichier MP3 / audio direct ---
-            if url.startswith("http") and is_direct_audio_url(url):
-                ACTIVE_DOWNLOADS[task_id]["progress"] = 30
-                ACTIVE_DOWNLOADS[task_id]["message"] = "Téléchargement direct du fichier MP3..."
-                direct_file = os.path.join(temp_dir, f"source_{int(time.time())}.mp3")
-                resp = requests.get(url, stream=True, timeout=30)
-                resp.raise_for_status()
-                with open(direct_file, "wb") as f:
-                    for chunk in resp.iter_content(chunk_size=65536):
-                        if chunk:
-                            f.write(chunk)
-                downloaded_audio_path = direct_file
-
-            # --- CAS B : URL web (YouTube, SoundCloud, Bandcamp...) ou recherche ---
-            else:
-                effective_url = url
-                # Si c'est un texte de recherche sans protocole HTTP
-                if not (url.startswith("http://") or url.startswith("https://")):
-                    # Tenter recherche YouTube
-                    search_str = f"ytsearch5:{url}"
-                    try:
-                        with yt_dlp.YoutubeDL({'quiet': True, 'extract_flat': True, 'noplaylist': True}) as ydl_s:
-                            s_res = ydl_s.extract_info(search_str, download=False)
-                            entries = s_res.get('entries', []) if s_res else []
-                            best = pick_best_studio_track(entries, chosen_artist, chosen_title, url)
-                            if best:
-                                effective_url = best.get('url') or best.get('webpage_url') or f"https://www.youtube.com/watch?v={best.get('id')}"
-                    except Exception as ex_s:
-                        print(f"Recherche YT initiale échouée : {ex_s}")
-
-                def progress_hook(d):
-                    if d.get('status') == 'downloading':
-                        total = d.get('total_bytes') or d.get('total_bytes_estimate') or 0
-                        downloaded = d.get('downloaded_bytes') or 0
-                        if total > 0:
-                            pct = int((downloaded / total) * 75)
-                            ACTIVE_DOWNLOADS[task_id]["progress"] = max(10, min(pct, 75))
-                            ACTIVE_DOWNLOADS[task_id]["message"] = f"Téléchargement audio : {pct}%"
-                    elif d.get('status') == 'finished':
-                        ACTIVE_DOWNLOADS[task_id]["progress"] = 80
-                        ACTIVE_DOWNLOADS[task_id]["status"] = "converting"
-                        ACTIVE_DOWNLOADS[task_id]["message"] = "Conversion en MP3 HD 320k (FFmpeg)..."
-
-                out_template = os.path.join(temp_dir, "%(title)s.%(ext)s")
-                ydl_opts = get_yt_dlp_common_opts()
-                ydl_opts.update({
-                    'format': 'bestaudio/best',
-                    'outtmpl': out_template,
-                    'progress_hooks': [progress_hook],
-                    'noplaylist': True,
-                })
-
-                if ffmpeg_path:
-                    ydl_opts['ffmpeg_location'] = ffmpeg_path
-                    ydl_opts['postprocessors'] = [{
-                        'key': 'FFmpegExtractAudio',
-                        'preferredcodec': 'mp3',
-                        'preferredquality': audio_quality,
-                    }]
-                    ydl_opts['postprocessor_args'] = {
-                        'ffmpegextractaudio': ['-b:a', f'{audio_quality}k', '-ar', '44100']
-                    }
-
-                # Tentative principale de téléchargement
-                info = None
-                try:
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(effective_url, download=True)
-                except Exception as ex_main:
-                    print(f"Échec source principale ({effective_url}) : {ex_main}")
-                    # FALLBACK SUR SOUNDCLOUD si YouTube échoue
-                    ACTIVE_DOWNLOADS[task_id]["message"] = "Source secondaire SoundCloud en cours..."
-                    sc_query = f"scsearch3:{chosen_artist} {chosen_title}"
-                    with yt_dlp.YoutubeDL(ydl_opts) as ydl_sc:
-                        info = ydl_sc.extract_info(sc_query, download=True)
-
-                if info and not effective_cover:
-                    effective_cover = info.get('thumbnail')
-                    if not effective_cover and info.get('thumbnails'):
-                        effective_cover = info.get('thumbnails')[-1].get('url')
-
-                # Récupération du fichier généré
-                for f in os.listdir(temp_dir):
-                    if f.lower().endswith(".mp3"):
-                        downloaded_audio_path = os.path.join(temp_dir, f)
-                        break
-
-                if not downloaded_audio_path:
-                    # Prendre le premier fichier si non mp3
-                    files = os.listdir(temp_dir)
-                    if files:
-                        downloaded_audio_path = os.path.join(temp_dir, files[0])
-                    else:
-                        raise Exception("Aucun fichier audio n'a pu être extrait.")
-
-            # --- CAS C : Encodage direct en MP3 si nécessaire ---
-            if downloaded_audio_path and not downloaded_audio_path.lower().endswith(".mp3"):
-                ACTIVE_DOWNLOADS[task_id]["status"] = "converting"
-                ACTIVE_DOWNLOADS[task_id]["message"] = "Encodage MP3 HD..."
-                mp3_converted = os.path.join(temp_dir, f"{final_title}.mp3")
-                if ffmpeg_path:
-                    import subprocess
-                    cmd = [ffmpeg_path, "-y", "-i", downloaded_audio_path, "-b:a", f"{audio_quality}k", "-ar", "44100", mp3_converted]
-                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-                    downloaded_audio_path = mp3_converted
-
-            ACTIVE_DOWNLOADS[task_id]["status"] = "tagging"
-            ACTIVE_DOWNLOADS[task_id]["progress"] = 90
-            ACTIVE_DOWNLOADS[task_id]["message"] = "Application des tags ID3 (Chanteur, Titre)..."
-
-            # 1. Écriture des tags ID3
-            try:
-                tag_mp3(
-                    file_path=downloaded_audio_path,
-                    artist=final_artist,
-                    title=final_title,
-                    album=final_album,
-                    cover_url=effective_cover
-                )
-            except Exception as e_tag:
-                print(f"Avertissement tag MP3 : {e_tag}")
-
-            # 2. Dossier par chanteur
-            if create_folder_per_artist:
-                dest_dir = os.path.join(music_base, final_artist)
-            else:
-                dest_dir = music_base
-
-            os.makedirs(dest_dir, exist_ok=True)
-
-            target_filename = f"{final_title}.mp3"
-            target_path = os.path.join(dest_dir, target_filename)
-
-            # Éviter l'écrasement en cas de doublon
-            counter = 1
-            base_target = os.path.splitext(target_path)[0]
-            while os.path.exists(target_path):
-                target_filename = f"{final_title} ({counter}).mp3"
-                target_path = f"{base_target} ({counter}).mp3"
-                counter += 1
-
-            shutil.move(downloaded_audio_path, target_path)
-
-            rel_path = os.path.relpath(target_path, music_base).replace("\\", "/")
+            target_path, target_filename, rel_path, final_artist, final_title = process_single_track(
+                url, chosen_artist, chosen_title, album, cover_url, progress_hook_cb=hook_cb
+            )
 
             ACTIVE_DOWNLOADS[task_id]["status"] = "completed"
             ACTIVE_DOWNLOADS[task_id]["progress"] = 100
             ACTIVE_DOWNLOADS[task_id]["message"] = f"✅ Téléchargé avec succès ! Prêt pour votre téléphone."
             ACTIVE_DOWNLOADS[task_id]["filepath"] = target_path
-            ACTIVE_DOWNLOADS[task_id]["filename"] = os.path.basename(target_path)
+            ACTIVE_DOWNLOADS[task_id]["filename"] = target_filename
             ACTIVE_DOWNLOADS[task_id]["rel_path"] = rel_path
             ACTIVE_DOWNLOADS[task_id]["artist"] = final_artist
             ACTIVE_DOWNLOADS[task_id]["title"] = final_title
@@ -510,8 +542,6 @@ def download_track_async(url: str, chosen_artist: str, chosen_title: str, album:
             ACTIVE_DOWNLOADS[task_id]["status"] = "error"
             ACTIVE_DOWNLOADS[task_id]["error"] = str(e)
             ACTIVE_DOWNLOADS[task_id]["message"] = f"Erreur : {e}"
-        finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
 
     thread = threading.Thread(target=_worker, daemon=True)
     thread.start()

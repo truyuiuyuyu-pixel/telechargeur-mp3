@@ -20,21 +20,29 @@
     const $ = id => document.getElementById(id);
     const mobAudio = $('mobAudio');
 
-    // ——— Enregistrement du Service Worker ———
+    // ——— Enregistrement du Service Worker avec rafraîchissement automatique ———
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
+        navigator.serviceWorker.register('/static/sw.js?v=10', { scope: '/' })
             .then(reg => {
-                console.log('SW enregistré:', reg.scope);
+                reg.update();
                 reg.addEventListener('updatefound', () => {
                     const nw = reg.installing;
                     nw.addEventListener('statechange', () => {
                         if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                            showToast('Mise à jour disponible — Redémarrez l\'app');
+                            window.location.reload();
                         }
                     });
                 });
             })
             .catch(err => console.warn('SW non enregistré:', err));
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+                refreshing = true;
+                window.location.reload();
+            }
+        });
     }
 
     // Si on tourne déjà dans la vraie application Android native, masquer les bannières d'installation
@@ -208,8 +216,100 @@
         setupSettings();
         setupScanPhone();
         setupMobThemes();
-        setupMobCloudCleaner();
+        initMobGlobalAudioPlayer();
         handleUrlParams();
+    }
+
+    // =========================================================
+    // LECTEUR AUDIO D'EXTRAIT (30s)
+    // =========================================================
+    let mobCurrentPreviewAudio = null;
+    let mobActivePreviewBtn = null;
+
+    function initMobGlobalAudioPlayer() {
+        mobCurrentPreviewAudio = $('mobGlobalPreviewAudio');
+        const bar = $('mobGlobalAudioPlayerBar');
+        const btnPlayPause = $('btnMobPlayerPlayPause');
+        const btnClose = $('btnMobPlayerClose');
+        if (!bar || !mobCurrentPreviewAudio) return;
+
+        if (btnPlayPause) {
+            btnPlayPause.onclick = () => {
+                if (mobCurrentPreviewAudio.paused) {
+                    mobCurrentPreviewAudio.play();
+                    btnPlayPause.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                } else {
+                    mobCurrentPreviewAudio.pause();
+                    btnPlayPause.innerHTML = '<i class="fa-solid fa-play"></i>';
+                }
+            };
+        }
+
+        if (btnClose) {
+            btnClose.onclick = () => {
+                mobCurrentPreviewAudio.pause();
+                mobCurrentPreviewAudio.currentTime = 0;
+                bar.style.display = 'none';
+                if (mobActivePreviewBtn) {
+                    mobActivePreviewBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                    mobActivePreviewBtn = null;
+                }
+            };
+        }
+
+        mobCurrentPreviewAudio.onended = () => {
+            if (btnPlayPause) btnPlayPause.innerHTML = '<i class="fa-solid fa-play"></i>';
+            if (mobActivePreviewBtn) {
+                mobActivePreviewBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                mobActivePreviewBtn = null;
+            }
+        };
+    }
+
+    async function playMobAudioPreview(artist, title, query, btn) {
+        mobCurrentPreviewAudio = $('mobGlobalPreviewAudio');
+        const bar = $('mobGlobalAudioPlayerBar');
+        const titleEl = $('mobGlobalPreviewTitle') || $('mobPlayerTitle');
+        const artistEl = $('mobGlobalPreviewArtist') || $('mobPlayerArtist');
+        const coverEl = $('mobGlobalPreviewCover') || $('mobPlayerCover');
+        const btnPlayPause = $('btnMobPlayerPlayPause');
+        if (!bar || !mobCurrentPreviewAudio) return;
+
+        if (mobActivePreviewBtn === btn && !mobCurrentPreviewAudio.paused) {
+            mobCurrentPreviewAudio.pause();
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            if (btnPlayPause) btnPlayPause.innerHTML = '<i class="fa-solid fa-play"></i>';
+            return;
+        }
+
+        if (mobActivePreviewBtn && mobActivePreviewBtn !== btn) {
+            mobActivePreviewBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        }
+
+        mobActivePreviewBtn = btn;
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+        try {
+            const res = await fetch(`/api/preview-track?artist=${encodeURIComponent(artist || '')}&title=${encodeURIComponent(title || '')}&q=${encodeURIComponent(query || '')}`);
+            if (!res.ok) throw new Error("Extrait non disponible");
+            const data = await res.json();
+
+            mobCurrentPreviewAudio.src = data.preview_url;
+            await mobCurrentPreviewAudio.play();
+
+            if (titleEl) titleEl.textContent = data.title || title;
+            if (artistEl) artistEl.innerHTML = `<i class="fa-solid fa-headphones" style="color:#3b82f6;"></i> ${esc(data.artist || artist)} (${data.source || '30s'})`;
+            if (coverEl) coverEl.src = data.cover || '/static/icons/icon-192.png';
+            bar.style.display = 'flex';
+
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            if (btnPlayPause) btnPlayPause.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            showToast(`🎵 Extrait en cours : ${title}`);
+        } catch (e) {
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            mobActivePreviewBtn = null;
+            showToast("Extrait audio non disponible pour ce titre", true);
+        }
     }
 
     async function loadConfig() {
@@ -390,27 +490,119 @@
             tracks.forEach((tr, idx) => {
                 const trCard = document.createElement('div');
                 trCard.className = 'mob-result-card';
-                trCard.style.padding = '10px 12px';
-                trCard.style.marginBottom = '8px';
+                trCard.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:10px;';
                 trCard.innerHTML = `
-                    <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg, ${theme.color || 'var(--primary)'}, #1e293b);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;flex-shrink:0">
-                        <i class="fa-solid ${theme.icon || 'fa-music'}"></i>
+                    <div style="display:flex;align-items:center;gap:10px;width:100%;">
+                        <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg, ${theme.color || 'var(--primary)'}, #1e293b);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;flex-shrink:0">
+                            <i class="fa-solid ${theme.icon || 'fa-music'}"></i>
+                        </div>
+                        <div style="flex:1;min-width:0;overflow:hidden;">
+                            <div style="font-size:0.95rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(tr.title)}</div>
+                            <div style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-microphone"></i> ${esc(tr.artist)}</div>
+                        </div>
                     </div>
-                    <div class="mob-card-info" style="margin-left:10px;flex:1;overflow:hidden;">
-                        <div class="mob-card-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;">${esc(tr.title)}</div>
-                        <div class="mob-card-artist" style="font-size:0.75rem;color:var(--text-muted);"><i class="fa-solid fa-microphone"></i> ${esc(tr.artist)}</div>
+                    <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+                        <button type="button" class="btn-preview-theme-item" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                            <i class="fa-solid fa-play"></i> <span>Écouter</span>
+                        </button>
+                        <a href="/api/direct-download?q=${encodeURIComponent(tr.query || `${tr.artist} ${tr.title} lyrics`)}&artist=${encodeURIComponent(tr.artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                            <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
+                        </a>
                     </div>
-                    <button class="mob-btn mob-btn-sm mob-btn-primary btn-dl-theme-item" style="flex-shrink:0;">
-                        <i class="fa-solid fa-download"></i> MP3
-                    </button>
                 `;
 
-                trCard.querySelector('.btn-dl-theme-item').addEventListener('click', () => {
-                    triggerDownload(tr.query || `${tr.artist} ${tr.title} lyrics`, tr.artist, tr.title, null);
-                });
+                const btnPrev = trCard.querySelector('.btn-preview-theme-item');
+                if (btnPrev) {
+                    btnPrev.onclick = () => playMobAudioPreview(tr.artist, tr.title, tr.query, btnPrev);
+                }
 
                 listEl.appendChild(trCard);
             });
+
+            // Bouton retour aux 26 thèmes
+            const btnBack = $('btnMobThemeBack');
+            if (btnBack) {
+                btnBack.onclick = () => {
+                    detail.style.display = 'none';
+                    const grid = $('mobThemesGrid');
+                    if (grid) grid.style.display = 'grid';
+                };
+            }
+
+            // Recherche & filtrage dans le thème mobile
+            const sInput = $('mobThemeSearchInput');
+            const btnSearchOnline = $('btnMobThemeSearchOnline');
+            const onlineResults = $('mobThemeOnlineResults');
+
+            if (sInput) {
+                sInput.value = '';
+                sInput.placeholder = `🔍 Chercher plus dans "${theme.name}"...`;
+                sInput.oninput = () => {
+                    const q = sInput.value.toLowerCase().trim();
+                    listEl.querySelectorAll('.mob-result-card').forEach(card => {
+                        const txt = card.textContent.toLowerCase();
+                        card.style.display = !q || txt.includes(q) ? 'flex' : 'none';
+                    });
+                };
+                sInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (btnSearchOnline) btnSearchOnline.click();
+                    }
+                };
+            }
+
+            if (btnSearchOnline && onlineResults) {
+                onlineResults.style.display = 'none';
+                onlineResults.innerHTML = '';
+                btnSearchOnline.onclick = async () => {
+                    const query = sInput ? sInput.value.trim() : '';
+                    onlineResults.style.display = 'block';
+                    onlineResults.innerHTML = '<div class="mob-loader"><div class="mob-spinner"></div><span>Recherche sur tous les sites pour ce thème…</span></div>';
+                    try {
+                        const res = await fetch(`/api/theme/${themeId}/search?q=${encodeURIComponent(query)}&limit=10`);
+                        const data = await res.json();
+                        const results = data.results || [];
+                        if (!results.length) {
+                            onlineResults.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding:8px;">Aucun morceau supplémentaire trouvé.</div>';
+                            return;
+                        }
+                        onlineResults.innerHTML = '<div style="font-size:0.8rem;font-weight:700;color:#10b981;margin-bottom:8px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Plus de titres trouvés en ligne :</div>';
+                        results.forEach((r) => {
+                            const card = document.createElement('div');
+                            card.className = 'mob-result-card';
+                            card.style.cssText = 'display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;';
+                            const thumb = r.thumbnail || '/static/icons/icon-192.png';
+                            card.innerHTML = `
+                                <div style="display:flex;align-items:center;gap:10px;width:100%;">
+                                    <img src="${esc(thumb)}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;">
+                                    <div style="flex:1;min-width:0;overflow:hidden;">
+                                        <div style="font-size:0.75rem;color:var(--primary);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-microphone"></i> ${esc(r.artist || 'Artiste')}</div>
+                                        <div style="font-size:0.9rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0;">${esc(r.title || 'Titre')}</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex;gap:8px;width:100%;">
+                                    <button type="button" class="btn-theme-online-prev" style="flex:1;padding:8px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
+                                        <i class="fa-solid fa-play"></i> <span>Écouter</span>
+                                    </button>
+                                    <a href="/api/direct-download?url=${encodeURIComponent(r.url)}&artist=${encodeURIComponent(r.artist)}&title=${encodeURIComponent(r.title)}" download="${esc(r.title)}.mp3" style="flex:1.3;padding:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:0.8rem;display:flex;align-items:center;justify-content:center;gap:4px;">
+                                        <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
+                                    </a>
+                                </div>
+                            `;
+
+                            const btnPrev = card.querySelector('.btn-theme-online-prev');
+                            if (btnPrev) {
+                                btnPrev.onclick = () => playMobAudioPreview(r.artist, r.title, r.title, btnPrev);
+                            }
+
+                            onlineResults.appendChild(card);
+                        });
+                    } catch (e) {
+                        onlineResults.innerHTML = '<div style="font-size:0.8rem;color:var(--danger);text-align:center;padding:8px;">Erreur lors de la recherche.</div>';
+                    }
+                };
+            }
 
             if (btnAll) {
                 btnAll.onclick = async () => {
@@ -573,23 +765,32 @@
     function createResultCard(item) {
         const card = document.createElement('div');
         card.className = 'mob-result-card';
+        card.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:10px;';
         const thumb = item.thumbnail || '/static/icons/icon-192.png';
         card.innerHTML = `
-            <img src="${esc(thumb)}" class="mob-result-thumb" alt="" onerror="this.src='/static/icons/icon-192.png'">
-            <div class="mob-result-body">
-                <div class="mob-result-artist">${esc(item.artist || 'Artiste')}</div>
-                <div class="mob-result-title">${esc(item.title || item.raw_title || 'Titre')}</div>
-                <div class="mob-result-dur">${item.duration || '0:00'}</div>
+            <div style="display:flex;align-items:center;gap:10px;width:100%;">
+                <img src="${esc(thumb)}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+                <div style="flex:1;min-width:0;overflow:hidden;">
+                    <div style="font-size:0.75rem;color:var(--primary);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-microphone"></i> ${esc(item.artist || 'Artiste')}</div>
+                    <div style="font-size:0.95rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0;">${esc(item.title || item.raw_title || 'Titre')}</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted);">${item.duration || '0:00'}</div>
+                </div>
             </div>
-            <div class="mob-result-actions">
-                <button class="mob-btn mob-btn-sm mob-btn-primary btn-dl-track" title="Télécharger en MP3 HD">
-                    <i class="fa-solid fa-cloud-arrow-down"></i>
+            <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+                <button type="button" class="btn-mob-card-preview" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    <i class="fa-solid fa-play"></i> <span>Écouter</span>
                 </button>
+                <a href="/api/direct-download?url=${encodeURIComponent(item.url)}&artist=${encodeURIComponent(item.artist)}&title=${encodeURIComponent(item.title)}" download="${esc(item.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
+                </a>
             </div>
         `;
-        card.querySelector('.btn-dl-track').addEventListener('click', () => {
-            triggerDownload(item.url, item.artist, item.title, item.thumbnail);
-        });
+
+        const btnPrev = card.querySelector('.btn-mob-card-preview');
+        if (btnPrev) {
+            btnPrev.onclick = () => playMobAudioPreview(item.artist, item.title, item.title, btnPrev);
+        }
+
         return card;
     }
 
@@ -652,7 +853,23 @@
                     showToast(`✅ "${title}" téléchargé !`);
                     loadLibrary();
 
-                    // ✅ Bouton permanent "Enregistrer sur ce téléphone"
+                    // 1. Déclencher le téléchargement navigateur direct sur mobile
+                    try {
+                        window.location.href = `/api/download-ready/${taskId}`;
+                    } catch (e) {}
+
+                    // 2. Afficher la bannière persistante tout en haut
+                    const sticky = $('mobStickyAlert');
+                    const stickyTitle = $('mobStickyAlertTitle');
+                    const stickyLink = $('mobStickyAlertLink');
+                    if (sticky && stickyTitle && stickyLink) {
+                        stickyTitle.textContent = `${artist ? artist + ' — ' : ''}${title}`;
+                        stickyLink.href = `/api/download-ready/${taskId}`;
+                        stickyLink.setAttribute('download', info.filename || `${title}.mp3`);
+                        sticky.style.display = 'block';
+                    }
+
+                    // 3. Carte avec gros bouton permanent
                     const dlCard = $(`mobDl_${taskId}`);
                     if (dlCard) {
                         const saveLink = document.createElement('a');
@@ -662,12 +879,6 @@
                         saveLink.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:var(--radius-sm);text-decoration:none;font-weight:700;margin-top:10px;';
                         saveLink.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> 📲 Enregistrer sur ce téléphone (MP3 HD)';
                         dlCard.appendChild(saveLink);
-
-                        // Déclencher le téléchargement directement sur le smartphone
-                        try {
-                            saveLink.click();
-                            showToast(`📲 Téléchargement direct sur votre téléphone démarré !`);
-                        } catch (e) {}
 
                         // Bouton pour fermer manuellement la carte
                         const closeBtn = document.createElement('button');
@@ -877,27 +1088,46 @@
     function renderDiscography(tracks) {
         const container = $('mobDiscographyList');
         container.innerHTML = '';
+        const artist = state.currentSinger || '';
         tracks.forEach(tr => {
             const row = document.createElement('div');
             row.className = 'mob-discography-row';
+            row.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:10px;';
             const thumb = tr.thumbnail || '/static/icons/icon-192.png';
+            const fullQuery = (artist + ' ' + (tr.title || '')).trim();
             row.innerHTML = `
-                <img src="${esc(thumb)}" class="mob-disco-thumb" alt="" onerror="this.src='/static/icons/icon-192.png'">
-                <div class="mob-disco-info">
-                    <div class="mob-disco-title">${esc(tr.title)}</div>
-                    <div class="mob-disco-album">${esc(tr.album || 'Single')} ${tr.release_year ? '• ' + tr.release_year : ''}</div>
+                <div style="display:flex;align-items:center;gap:10px;width:100%;">
+                    <img src="${esc(thumb)}" class="mob-disco-thumb" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:46px;height:46px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+                    <div class="mob-disco-info" style="flex:1;min-width:0;overflow:hidden;">
+                        <div class="mob-disco-title" style="font-size:0.92rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(tr.title)}</div>
+                        <div class="mob-disco-album" style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(tr.album || 'Single')} ${tr.release_year ? '• ' + tr.release_year : ''}</div>
+                    </div>
+                    <div class="mob-disco-status" style="flex-shrink:0;display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+                        ${tr.belongs_to_artist === false 
+                            ? '<span class="mob-badge-dup" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.4);color:var(--danger);font-size:0.7rem;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-triangle-exclamation"></i> Autre</span>' 
+                            : '<span class="mob-badge-new" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:var(--success);font-size:0.7rem;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-circle-check"></i> Officiel</span>'
+                        }
+                        ${tr.is_duplicate
+                            ? '<span class="mob-badge-dup" style="font-size:0.7rem;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-check"></i> Présent</span>'
+                            : '<span class="mob-badge-new" style="font-size:0.7rem;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-sparkles"></i> Nouveau</span>'
+                        }
+                    </div>
                 </div>
-                <div class="mob-disco-status">
-                    ${tr.belongs_to_artist === false 
-                        ? '<span class="mob-badge-dup" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.4);color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Autre</span>' 
-                        : '<span class="mob-badge-new" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:var(--success);"><i class="fa-solid fa-circle-check"></i> Officiel</span>'
-                    }
-                    ${tr.is_duplicate
-                        ? '<span class="mob-badge-dup"><i class="fa-solid fa-check"></i> Présent</span>'
-                        : '<span class="mob-badge-new"><i class="fa-solid fa-sparkles"></i> Nouveau</span>'
-                    }
+                <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+                    <button type="button" class="btn-disco-preview" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-play"></i> <span>Écouter</span>
+                    </button>
+                    <a href="/api/direct-download?q=${encodeURIComponent(fullQuery)}&artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
+                    </a>
                 </div>
             `;
+
+            const btnPrev = row.querySelector('.btn-disco-preview');
+            if (btnPrev) {
+                btnPrev.onclick = () => playMobAudioPreview(artist, tr.title, fullQuery, btnPrev);
+            }
+
             container.appendChild(row);
         });
     }

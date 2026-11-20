@@ -17,6 +17,7 @@ import threading
 import json
 import time
 import zipfile
+import requests
 from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, abort, redirect, url_for
 
 from config import load_config, save_config, DEFAULT_CONFIG
@@ -35,9 +36,19 @@ from downloader import (
 import scanner
 import themes
 import qrcode
-from cloud_cleaner import reset_cloud_storage, auto_clean_old_temp_files
+from temp_cleaner import reset_temp_storage, auto_clean_old_temp_files
+from downloader import download_single_track_sync
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+@app.after_request
+def add_no_cache_headers(response):
+    if 'Cache-Control' not in response.headers:
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 def _start_server_cleanup_daemon():
     def _loop():
@@ -199,6 +210,89 @@ def api_theme(theme_id):
         return jsonify({"error": "Thème introuvable"}), 404
     return jsonify(theme)
 
+@app.route('/api/theme/<theme_id>/search')
+def api_theme_search(theme_id):
+    """
+    Recherche en ligne des musiques spécifiques dans le cadre d'un thème musical.
+    Permet de trouver une infinité de musiques pour n'importe quel thème.
+    """
+    theme = themes.get_theme_by_id(theme_id)
+    if not theme:
+        return jsonify({"error": "Thème introuvable"}), 404
+
+    q = request.args.get('q', '').strip()
+    limit = int(request.args.get('limit', 12))
+    theme_name = theme.get("name", "")
+    keywords = theme.get("keywords", [])
+    main_keyword = keywords[0] if keywords else theme_name
+
+    if q:
+        query = f"{main_keyword} {q}"
+    else:
+        query = f"{theme_name} music"
+
+    results = search_tracks(query=query, limit=limit, source="all")
+    return jsonify({
+        "theme_id": theme_id,
+        "theme_name": theme_name,
+        "query": q,
+        "results": results
+    })
+
+@app.route('/api/preview-track')
+def api_preview_track():
+    """
+    Renvoie une URL d'extrait audio de 30 secondes pour écouter un bout de la musique
+    avant de la télécharger. Utilise Deezer puis iTunes en cascade ultra-rapide.
+    """
+    artist = request.args.get('artist', '').strip()
+    title = request.args.get('title', '').strip()
+    q = request.args.get('q', '').strip()
+
+    search_term = f"{artist} {title}".strip() or q
+    if not search_term:
+        return jsonify({"error": "Terme de recherche manquant"}), 400
+
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+
+    # 1. Tentative Deezer (MP3 officiel 30s haute fidélité)
+    try:
+        r = requests.get('https://api.deezer.com/search', params={'q': search_term, 'limit': 1}, headers=headers, timeout=4).json()
+        if r.get('data') and len(r['data']) > 0:
+            track_data = r['data'][0]
+            preview = track_data.get('preview')
+            if preview:
+                return jsonify({
+                    "preview_url": preview,
+                    "title": track_data.get('title') or title,
+                    "artist": (track_data.get('artist') or {}).get('name') or artist,
+                    "cover": (track_data.get('album') or {}).get('cover_medium'),
+                    "duration": 30,
+                    "source": "Deezer HD"
+                })
+    except Exception as e:
+        pass
+
+    # 2. Tentative iTunes / Apple Music (AAC/M4A officiel 30s)
+    try:
+        r = requests.get('https://itunes.apple.com/search', params={'term': search_term, 'limit': 1, 'media': 'music'}, headers=headers, timeout=4).json()
+        if r.get('results') and len(r['results']) > 0:
+            item = r['results'][0]
+            preview = item.get('previewUrl')
+            if preview:
+                return jsonify({
+                    "preview_url": preview,
+                    "title": item.get('trackName') or title,
+                    "artist": item.get('artistName') or artist,
+                    "cover": item.get('artworkUrl100'),
+                    "duration": 30,
+                    "source": "Apple Music"
+                })
+    except Exception as e:
+        pass
+
+    return jsonify({"error": "Aucun extrait disponible pour ce morceau"}), 404
+
 @app.route('/api/theme/<theme_id>/download-all', methods=['POST'])
 def api_theme_download_all(theme_id):
     """Télécharge l'ensemble des titres d'un thème musical complet."""
@@ -249,11 +343,49 @@ def api_theme_download_zip(theme_id):
 # API TÉLÉCHARGEMENT & FICHIERS
 # =====================================================================
 
+@app.route('/api/clean-temp', methods=['GET', 'POST'])
 @app.route('/api/cloud/reset', methods=['GET', 'POST'])
-def api_cloud_reset():
+def api_clean_temp():
     """Libère l'espace temporaire du serveur pour éviter la saturation du disque."""
-    res = reset_cloud_storage()
+    res = reset_temp_storage()
     return jsonify(res)
+
+@app.route('/api/direct-download')
+def api_direct_download():
+    """
+    Téléchargement 100% direct dans la mémoire du smartphone ou PC.
+    Le navigateur du téléphone reçoit directement le fichier audio MP3 HD 320k
+    en pièce jointe sans passer par un cloud.
+    """
+    url = request.args.get('url', '').strip()
+    q = request.args.get('q', '').strip()
+    artist = request.args.get('artist', '').strip()
+    title = request.args.get('title', '').strip()
+
+    target = url or q
+    if not target:
+        return abort(400, "Aucun lien ou titre fourni")
+
+    try:
+        target_path, filename = download_single_track_sync(
+            url=target,
+            chosen_artist=artist,
+            chosen_title=title
+        )
+        if not target_path or not os.path.exists(target_path):
+            return abort(500, "Erreur génération fichier MP3")
+
+        response = send_file(
+            target_path,
+            mimetype='audio/mpeg',
+            as_attachment=True,
+            download_name=filename
+        )
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response.headers['Content-Type'] = 'audio/mpeg'
+        return response
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/download', methods=['POST'])
 def start_download():
