@@ -201,7 +201,49 @@ def search():
 
 @app.route('/api/themes')
 def api_themes():
+    q = request.args.get('q', '').strip()
+    if q:
+        return jsonify(themes.search_themes_catalog(q))
     return jsonify(themes.get_all_themes())
+
+@app.route('/api/themes/dynamic')
+def api_themes_dynamic():
+    """
+    Recherche ou création dynamique d'un thème complet sur le web.
+    Permet à l'utilisateur de chercher n'importe quel univers (ex: Iron Man, Spider-Man, Star Wars, Batman, Zelda...)
+    et de recevoir automatiquement une sélection complète de musiques de ce thème !
+    """
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify({"error": "Requête vide"}), 400
+    
+    # 1. Vérifier si un thème existant correspond
+    theme_match = themes.match_theme_by_query(query)
+    if theme_match:
+        return jsonify(theme_match)
+        
+    # 2. Sinon, générer un thème dynamique avec les musiques en ligne
+    search_q = f"{query} soundtrack theme song OST"
+    results = downloader.search_tracks(search_q, source='all', limit=15)
+    
+    dynamic_theme = {
+        "id": "dyn_" + sanitize_filename(query).lower()[:20],
+        "name": query.title(),
+        "icon": "fa-film",
+        "color": "#6366f1",
+        "badge": f"🎬 Thème {query.title()}",
+        "description": f"Sélection de bandes originales et thèmes cultes pour {query.title()}",
+        "tracks": [
+            {
+                "title": r.get("title") or r.get("raw_title") or "Titre",
+                "artist": r.get("artist") or query.title(),
+                "query": f"{r.get('artist', '')} {r.get('title', '')}".strip() or r.get("url"),
+                "url": r.get("url")
+            } for r in results
+        ],
+        "track_count": len(results)
+    }
+    return jsonify(dynamic_theme)
 
 @app.route('/api/theme/<theme_id>')
 def api_theme(theme_id):

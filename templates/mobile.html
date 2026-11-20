@@ -12,7 +12,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <link rel="icon" type="image/png" href="/static/icons/favicon.png">
-    <link rel="stylesheet" href="/static/css/mobile.css?v=10.0">
+    <link rel="stylesheet" href="/static/css/mobile.css?v=11.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts — Polices Musique & Tech -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -329,15 +329,33 @@
     <!-- ===== TAB: THÈMES & AMBIANCES (Amour, Halloween, etc.) ===== -->
     <div class="mob-tab-pane" id="mobPane-themes">
         <div class="mob-search-box" style="margin-bottom:14px;">
-            <div class="mob-section-title"><i class="fa-solid fa-masks-theater"></i> Mode Thèmes & Ambiances</div>
-            <div class="mob-section-desc">Choisissez votre ambiance (Amour ❤️, Halloween 🎃...) et téléchargez les morceaux cultes !</div>
+            <div class="mob-section-title"><i class="fa-solid fa-masks-theater"></i> Mode Thèmes & Univers</div>
+            <div class="mob-section-desc">Recherchez n'importe quel univers (Iron Man, Spider-Man, Star Wars, Marvel...) ou choisissez une ambiance culte !</div>
+            
+            <div class="mob-theme-catalog-search" style="margin-top:12px;">
+                <div style="display:flex;gap:6px;">
+                    <input type="text" id="mobThemesCatalogSearchInput" placeholder="🔍 Ex: Iron Man, Spider-Man, Marvel, Star Wars..." style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg-elevated);color:#fff;font-size:0.9rem;font-weight:600;">
+                    <button type="button" id="btnMobSearchThemeDynamic" class="mob-btn mob-btn-primary" style="padding:0 14px;border-radius:12px;" title="Rechercher / Créer ce thème">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </div>
+                <!-- Suggestions rapides en pilules -->
+                <div style="display:flex;gap:6px;overflow-x:auto;padding:8px 0;scrollbar-width:none;">
+                    <button type="button" class="mob-fast-theme-pill" data-theme="marvel" style="padding:5px 12px;border-radius:12px;border:1px solid #ef4444;background:rgba(239,68,68,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-shield-halved"></i> 🛡️ Marvel</button>
+                    <button type="button" class="mob-fast-theme-pill" data-theme="ironman" style="padding:5px 12px;border-radius:12px;border:1px solid #dc2626;background:rgba(220,38,38,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-robot"></i> 🦾 Iron Man</button>
+                    <button type="button" class="mob-fast-theme-pill" data-theme="spiderman" style="padding:5px 12px;border-radius:12px;border:1px solid #e11d48;background:rgba(225,29,72,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-spider"></i> 🕷️ Spider-Man</button>
+                    <button type="button" class="mob-fast-theme-pill" data-theme="starwars" style="padding:5px 12px;border-radius:12px;border:1px solid #3b82f6;background:rgba(59,130,246,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-jedi"></i> ⚔️ Star Wars</button>
+                    <button type="button" class="mob-fast-theme-pill" data-theme="cinema_soundtracks" style="padding:5px 12px;border-radius:12px;border:1px solid #f59e0b;background:rgba(245,158,11,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🎬 Cinéma OST</button>
+                    <button type="button" class="mob-fast-theme-pill" data-theme="manga_anime" style="padding:5px 12px;border-radius:12px;border:1px solid #ec4899;background:rgba(236,72,153,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-dragon"></i> 🎌 Manga</button>
+                </div>
+            </div>
         </div>
 
         <div id="mobThemesGrid" class="mob-themes-grid"></div>
 
         <div id="mobThemeDetail" style="display:none;margin-top:16px;">
             <button type="button" id="btnMobThemeBack" class="mob-btn mob-btn-sm" style="margin-bottom:10px;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-main);display:flex;align-items:center;gap:6px;">
-                <i class="fa-solid fa-arrow-left"></i> <span>Tous les 26 Thèmes</span>
+                <i class="fa-solid fa-arrow-left"></i> <span>Tous les Thèmes</span>
             </button>
 
             <div class="mob-theme-detail-header" style="background:var(--bg-card);padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:12px;">
@@ -505,6 +523,6 @@
 <!-- Toast -->
 <div class="mob-toast" id="mobToast"></div>
 
-<script src="/static/js/mobile-app.js?v=10.0"></script>
+<script src="/static/js/mobile-app.js?v=11.0"></script>
 </body>
 </html>

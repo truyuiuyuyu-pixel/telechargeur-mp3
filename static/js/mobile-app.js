@@ -415,6 +415,8 @@
         });
     }
 
+    let mobAllThemesData = [];
+
     async function loadMobThemes() {
         const grid = $('mobThemesGrid');
         if (!grid) return;
@@ -422,58 +424,129 @@
 
         try {
             const res = await fetch('/api/themes');
-            const list = await res.json();
-            grid.innerHTML = '';
-
-            list.forEach(t => {
-                const card = document.createElement('div');
-                card.className = 'mob-theme-card';
-                card.dataset.id = t.id;
-                card.innerHTML = `
-                    <div class="mob-theme-icon" style="color:${t.color || 'var(--primary)'};background:${t.color ? t.color + '22' : 'var(--bg-elevated)'}">
-                        <i class="fa-solid ${t.icon || 'fa-music'}"></i>
-                    </div>
-                    <div class="mob-theme-info">
-                        <div class="mob-theme-name">${esc(t.name)}</div>
-                        <div class="mob-theme-desc">${esc(t.description || '')}</div>
-                        <span style="font-size:0.7rem;color:var(--text-muted);font-weight:600;">${t.track_count || 0} titres cultes</span>
-                    </div>
-                    <div class="mob-theme-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-                `;
-                card.addEventListener('click', () => {
-                    openMobThemeDetail(t.id);
-                });
-                grid.appendChild(card);
-            });
-
-            if (!currentMobSelectedThemeId && list.length > 0) {
-                openMobThemeDetail(list[0].id);
-            } else if (currentMobSelectedThemeId) {
-                openMobThemeDetail(currentMobSelectedThemeId);
-            }
+            mobAllThemesData = await res.json();
+            renderMobThemesGrid(mobAllThemesData);
+            setupMobThemeCatalogSearch();
         } catch (e) {
             grid.innerHTML = '<div class="mob-empty">Erreur chargement thèmes</div>';
         }
     }
 
-    async function openMobThemeDetail(themeId) {
+    function renderMobThemesGrid(themesList) {
+        const grid = $('mobThemesGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        if (!themesList || !themesList.length) {
+            grid.innerHTML = '<div class="mob-empty"><i class="fa-solid fa-search"></i><h3>Aucun thème trouvé</h3><p>Tapez un univers comme Iron Man, Spider-Man ou Star Wars ci-dessus.</p></div>';
+            return;
+        }
+
+        themesList.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'mob-theme-card';
+            card.dataset.id = t.id;
+            card.innerHTML = `
+                <div class="mob-theme-icon" style="color:${t.color || 'var(--primary)'};background:${t.color ? t.color + '22' : 'var(--bg-elevated)'}">
+                    <i class="fa-solid ${t.icon || 'fa-music'}"></i>
+                </div>
+                <div class="mob-theme-info">
+                    <div class="mob-theme-name">${esc(t.name)}</div>
+                    <div class="mob-theme-desc">${esc(t.description || '')}</div>
+                    <span style="font-size:0.7rem;color:var(--text-muted);font-weight:600;">${t.track_count || (t.tracks ? t.tracks.length : 0)} titres cultes</span>
+                </div>
+                <div class="mob-theme-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            `;
+            card.addEventListener('click', () => {
+                openMobThemeDetail(t.id, t);
+            });
+            grid.appendChild(card);
+        });
+    }
+
+    function setupMobThemeCatalogSearch() {
+        const sInput = $('mobThemesCatalogSearchInput');
+        const sBtn = $('btnMobSearchThemeDynamic');
+
+        // Pilules rapides (Marvel, Iron Man, Spider-Man, Star Wars, etc.)
+        document.querySelectorAll('.mob-fast-theme-pill').forEach(pill => {
+            pill.onclick = () => {
+                const themeId = pill.dataset.theme;
+                if (themeId) openMobThemeDetail(themeId);
+            };
+        });
+
+        if (sInput) {
+            sInput.oninput = () => {
+                const q = sInput.value.toLowerCase().trim();
+                if (!q) {
+                    renderMobThemesGrid(mobAllThemesData);
+                    return;
+                }
+                const filtered = mobAllThemesData.filter(t => {
+                    const name = (t.name || '').toLowerCase();
+                    const desc = (t.description || '').toLowerCase();
+                    const kws = (t.keywords || []).map(k => k.toLowerCase());
+                    return name.includes(q) || desc.includes(q) || kws.some(k => k.includes(q));
+                });
+                renderMobThemesGrid(filtered);
+            };
+
+            const doDynamicThemeSearch = async () => {
+                const q = sInput.value.trim();
+                if (!q) return;
+                // Si trouvé dans les thèmes locaux
+                const exact = mobAllThemesData.find(t => t.name.toLowerCase().includes(q.toLowerCase()) || t.id.toLowerCase() === q.toLowerCase());
+                if (exact) {
+                    openMobThemeDetail(exact.id, exact);
+                    return;
+                }
+                // Sinon recherche dynamique en ligne pour n'importe quel univers !
+                showToast(`🎬 Recherche des musiques du thème "${q}" en ligne...`);
+                try {
+                    const res = await fetch(`/api/themes/dynamic?q=${encodeURIComponent(q)}`);
+                    const data = await res.json();
+                    if (data && data.tracks && data.tracks.length) {
+                        openMobThemeDetail(data.id, data);
+                    } else {
+                        showToast(`Aucun morceau trouvé pour le thème "${q}"`, true);
+                    }
+                } catch {
+                    showToast("Erreur recherche thème en ligne", true);
+                }
+            };
+
+            sInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    doDynamicThemeSearch();
+                }
+            };
+            if (sBtn) sBtn.onclick = doDynamicThemeSearch;
+        }
+    }
+
+    async function openMobThemeDetail(themeId, prefetchedTheme) {
         currentMobSelectedThemeId = themeId;
         const detail = $('mobThemeDetail');
         const titleEl = $('mobThemeDetailTitle');
         const descEl = $('mobThemeDetailDesc');
         const listEl = $('mobThemeTracksList');
         const btnAll = $('btnMobDownloadThemeAll');
-        const btnZip = $('btnMobDownloadThemeZip');
+        const grid = $('mobThemesGrid');
 
         if (!detail || !listEl) return;
+        if (grid) grid.style.display = 'none';
         detail.style.display = 'block';
         listEl.innerHTML = '<div class="mob-loader"><div class="mob-spinner"></div><span>Chargement des morceaux…</span></div>';
 
         detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         try {
-            const res = await fetch(`/api/theme/${themeId}`);
-            const theme = await res.json();
+            let theme = prefetchedTheme;
+            if (!theme || !theme.tracks) {
+                const res = await fetch(`/api/theme/${themeId}`);
+                theme = await res.json();
+            }
 
             titleEl.innerHTML = `<i class="fa-solid ${theme.icon || 'fa-music'}" style="color:${theme.color || 'var(--primary)'}"></i> ${esc(theme.name)}`;
             descEl.textContent = theme.description || '';
@@ -505,15 +578,21 @@
                         <button type="button" class="btn-preview-theme-item" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                             <i class="fa-solid fa-play"></i> <span>Écouter</span>
                         </button>
-                        <a href="/api/direct-download?q=${encodeURIComponent(tr.query || `${tr.artist} ${tr.title} lyrics`)}&artist=${encodeURIComponent(tr.artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <button type="button" class="btn-theme-item-dl" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                             <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
-                        </a>
+                        </button>
                     </div>
                 `;
 
                 const btnPrev = trCard.querySelector('.btn-preview-theme-item');
                 if (btnPrev) {
                     btnPrev.onclick = () => playMobAudioPreview(tr.artist, tr.title, tr.query, btnPrev);
+                }
+
+                const btnDl = trCard.querySelector('.btn-theme-item-dl');
+                if (btnDl) {
+                    const targetQ = tr.query || `${tr.artist} ${tr.title} audio`;
+                    btnDl.onclick = () => triggerDownload(targetQ, tr.artist, tr.title, null, btnDl);
                 }
 
                 listEl.appendChild(trCard);
@@ -585,15 +664,20 @@
                                     <button type="button" class="btn-theme-online-prev" style="flex:1;padding:8px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
                                         <i class="fa-solid fa-play"></i> <span>Écouter</span>
                                     </button>
-                                    <a href="/api/direct-download?url=${encodeURIComponent(r.url)}&artist=${encodeURIComponent(r.artist)}&title=${encodeURIComponent(r.title)}" download="${esc(r.title)}.mp3" style="flex:1.3;padding:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:0.8rem;display:flex;align-items:center;justify-content:center;gap:4px;">
+                                    <button type="button" class="btn-theme-online-dl" style="flex:1.3;padding:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
                                         <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
-                                    </a>
+                                    </button>
                                 </div>
                             `;
 
                             const btnPrev = card.querySelector('.btn-theme-online-prev');
                             if (btnPrev) {
                                 btnPrev.onclick = () => playMobAudioPreview(r.artist, r.title, r.title, btnPrev);
+                            }
+
+                            const btnDl = card.querySelector('.btn-theme-online-dl');
+                            if (btnDl) {
+                                btnDl.onclick = () => triggerDownload(r.url, r.artist, r.title, r.thumbnail, btnDl);
                             }
 
                             onlineResults.appendChild(card);
@@ -780,9 +864,9 @@
                 <button type="button" class="btn-mob-card-preview" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                     <i class="fa-solid fa-play"></i> <span>Écouter</span>
                 </button>
-                <a href="/api/direct-download?url=${encodeURIComponent(item.url)}&artist=${encodeURIComponent(item.artist)}&title=${encodeURIComponent(item.title)}" download="${esc(item.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                <button type="button" class="btn-mob-card-dl" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                     <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
-                </a>
+                </button>
             </div>
         `;
 
@@ -791,14 +875,24 @@
             btnPrev.onclick = () => playMobAudioPreview(item.artist, item.title, item.title, btnPrev);
         }
 
+        const btnDl = card.querySelector('.btn-mob-card-dl');
+        if (btnDl) {
+            btnDl.onclick = () => triggerDownload(item.url, item.artist, item.title, thumb, btnDl);
+        }
+
         return card;
     }
 
     // =========================================================
-    // TÉLÉCHARGEMENT
+    // TÉLÉCHARGEMENT DIRECT ET ASYNCHRONE
     // =========================================================
-    async function triggerDownload(url, artist, title, coverUrl) {
+    async function triggerDownload(url, artist, title, coverUrl, btnEl) {
         showToast(`Démarrage : ${title}`);
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.style.background = '#0284c7';
+            btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Préparation…</span>';
+        }
         try {
             const res = await fetch('/api/download', {
                 method: 'POST',
@@ -807,17 +901,24 @@
             });
             const data = await res.json();
             if (data.task_id) {
-                trackProgress(data.task_id, artist, title);
+                trackProgress(data.task_id, artist, title, btnEl);
+            } else {
+                throw new Error("Erreur démarrage tâche");
             }
         } catch (err) {
             showToast('Erreur de téléchargement', true);
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                btnEl.innerHTML = '<i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>';
+            }
         }
     }
 
-    function trackProgress(taskId, artist, title) {
+    function trackProgress(taskId, artist, title, btnEl) {
         const wrap = $('mobDownloadsWrap');
         const list = $('mobDownloadsList');
-        wrap.style.display = 'block';
+        if (wrap) wrap.style.display = 'block';
 
         const card = document.createElement('div');
         card.className = 'mob-dl-card';
@@ -832,7 +933,7 @@
             </div>
             <div class="mob-dl-status" id="mobDlMsg_${taskId}">Démarrage…</div>
         `;
-        list.prepend(card);
+        if (list) list.prepend(card);
 
         const interval = setInterval(async () => {
             try {
@@ -843,22 +944,45 @@
                 const fill = $(`mobDlFill_${taskId}`);
                 const pct = $(`mobDlPct_${taskId}`);
                 const msg = $(`mobDlMsg_${taskId}`);
-                if (fill) fill.style.width = `${info.progress || 0}%`;
-                if (pct) pct.textContent = `${info.progress || 0}%`;
+                const progressNum = info.progress || 0;
+                if (fill) fill.style.width = `${progressNum}%`;
+                if (pct) pct.textContent = `${progressNum}%`;
                 if (msg) msg.textContent = info.message || '';
+
+                if (btnEl && info.status !== 'completed' && info.status !== 'error') {
+                    btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${progressNum}%</span>`;
+                }
 
                 if (info.status === 'completed') {
                     clearInterval(interval);
                     if (fill) fill.style.background = 'var(--success)';
-                    showToast(`✅ "${title}" téléchargé !`);
+                    showToast(`✅ "${title}" prêt et enregistré !`);
                     loadLibrary();
 
-                    // 1. Déclencher le téléchargement navigateur direct sur mobile
-                    try {
-                        window.location.href = `/api/download-ready/${taskId}`;
-                    } catch (e) {}
+                    // 1. Bouton sur la carte transformé en bouton direct
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                        btnEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> <span>Enregistrer MP3</span>';
+                        btnEl.onclick = (e) => {
+                            e.preventDefault();
+                            window.location.href = `/api/download-ready/${taskId}`;
+                        };
+                    }
 
-                    // 2. Afficher la bannière persistante tout en haut
+                    // 2. Déclencher automatiquement le téléchargement du vrai fichier MP3
+                    try {
+                        const dlLink = document.createElement('a');
+                        dlLink.href = `/api/download-ready/${taskId}`;
+                        dlLink.setAttribute('download', info.filename || `${title}.mp3`);
+                        document.body.appendChild(dlLink);
+                        dlLink.click();
+                        setTimeout(() => dlLink.remove(), 1000);
+                    } catch (e) {
+                        window.location.href = `/api/download-ready/${taskId}`;
+                    }
+
+                    // 3. Afficher la bannière persistante tout en haut
                     const sticky = $('mobStickyAlert');
                     const stickyTitle = $('mobStickyAlertTitle');
                     const stickyLink = $('mobStickyAlertLink');
@@ -869,7 +993,7 @@
                         sticky.style.display = 'block';
                     }
 
-                    // 3. Carte avec gros bouton permanent
+                    // 4. Carte avec gros bouton permanent
                     const dlCard = $(`mobDl_${taskId}`);
                     if (dlCard) {
                         const saveLink = document.createElement('a');
@@ -880,13 +1004,12 @@
                         saveLink.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> 📲 Enregistrer sur ce téléphone (MP3 HD)';
                         dlCard.appendChild(saveLink);
 
-                        // Bouton pour fermer manuellement la carte
                         const closeBtn = document.createElement('button');
                         closeBtn.innerHTML = '&times;';
                         closeBtn.style.cssText = 'position:absolute;top:4px;right:8px;background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;';
                         closeBtn.onclick = () => {
                             dlCard.remove();
-                            if (!list.children.length) wrap.style.display = 'none';
+                            if (list && !list.children.length && wrap) wrap.style.display = 'none';
                         };
                         dlCard.style.position = 'relative';
                         dlCard.appendChild(closeBtn);
@@ -895,6 +1018,15 @@
                     clearInterval(interval);
                     showToast(`❌ Erreur : ${info.message}`, true);
                     if ($(`mobDlFill_${taskId}`)) $(`mobDlFill_${taskId}`).style.background = 'var(--danger)';
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.style.background = '#ef4444';
+                        btnEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span>Réessayer</span>';
+                        setTimeout(() => {
+                            btnEl.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                            btnEl.innerHTML = '<i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>';
+                        }, 3000);
+                    }
                 }
             } catch { clearInterval(interval); }
         }, 1200);
@@ -1117,15 +1249,20 @@
                     <button type="button" class="btn-disco-preview" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                         <i class="fa-solid fa-play"></i> <span>Écouter</span>
                     </button>
-                    <a href="/api/direct-download?q=${encodeURIComponent(fullQuery)}&artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    <button type="button" class="btn-disco-dl" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                         <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
-                    </a>
+                    </button>
                 </div>
             `;
 
             const btnPrev = row.querySelector('.btn-disco-preview');
             if (btnPrev) {
                 btnPrev.onclick = () => playMobAudioPreview(artist, tr.title, fullQuery, btnPrev);
+            }
+
+            const btnDl = row.querySelector('.btn-disco-dl');
+            if (btnDl) {
+                btnDl.onclick = () => triggerDownload(fullQuery, artist, tr.title, thumb, btnDl);
             }
 
             container.appendChild(row);

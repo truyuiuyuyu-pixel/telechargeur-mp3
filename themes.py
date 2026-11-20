@@ -527,6 +527,129 @@ THEMES_CATALOG = {
             {"title": "Ocean Waves Calm", "artist": "Meditation Sounds", "query": "ocean waves relaxing calm sound"},
             {"title": "Spiegel im Spiegel", "artist": "Arvo Pärt", "query": "Arvo Part Spiegel im Spiegel audio"}
         ]
+    },
+    "marvel": {
+        "id": "marvel",
+        "name": "Marvel & Super-Héros",
+        "icon": "fa-shield-halved",
+        "color": "#e11d48",
+        "badge": "🛡️ Marvel & Avengers",
+        "keywords": ["marvel", "avengers", "super heros", "super-heros", "superhero", "iron man", "spiderman", "spider-man", "thor", "captain america", "thanos", "hulk", "doctor strange", "black panther", "guardians of the galaxy", "mcu"],
+        "description": "Les thèmes épiques des Avengers, Iron Man, Spider-Man, Black Panther et Gardiens de la Galaxie",
+        "tracks": [
+            {"title": "The Avengers Main Theme", "artist": "Alan Silvestri", "query": "Alan Silvestri The Avengers Main Theme OST"},
+            {"title": "Back in Black", "artist": "AC/DC", "query": "AC DC Back in Black Iron Man lyrics"},
+            {"title": "Sunflower", "artist": "Post Malone & Swae Lee", "query": "Post Malone Swae Lee Sunflower Spider-Man Into the Spider-Verse lyrics"},
+            {"title": "Spider-Man Main Theme", "artist": "Danny Elfman", "query": "Danny Elfman Spider-Man Main Theme 2002 OST"},
+            {"title": "What's Up Danger", "artist": "Blackway & Black Caviar", "query": "Blackway Black Caviar Whats Up Danger Spider-Man lyrics"},
+            {"title": "Shoot to Thrill", "artist": "AC/DC", "query": "AC DC Shoot to Thrill Iron Man 2 lyrics"},
+            {"title": "Hooked on a Feeling", "artist": "Blue Swede", "query": "Blue Swede Hooked on a Feeling Guardians of the Galaxy lyrics"},
+            {"title": "Come and Get Your Love", "artist": "Redbone", "query": "Redbone Come and Get Your Love Guardians of the Galaxy lyrics"},
+            {"title": "All the Stars", "artist": "Kendrick Lamar & SZA", "query": "Kendrick Lamar SZA All The Stars Black Panther lyrics"},
+            {"title": "Immigrant Song", "artist": "Led Zeppelin", "query": "Led Zeppelin Immigrant Song Thor Ragnarok lyrics"},
+            {"title": "Hero", "artist": "Chad Kroeger & Josey Scott", "query": "Chad Kroeger Hero Spider-Man lyrics"},
+            {"title": "Spider-Man No Way Home Main Theme", "artist": "Michael Giacchino", "query": "Michael Giacchino Spider-Man No Way Home Theme"},
+            {"title": "Iron Man", "artist": "Black Sabbath", "query": "Black Sabbath Iron Man audio lyrics"}
+        ]
+    },
+    "ironman": {
+        "id": "ironman",
+        "name": "Iron Man (Tony Stark & Rock)",
+        "icon": "fa-robot",
+        "color": "#dc2626",
+        "badge": "🦾 Iron Man & Tony Stark",
+        "keywords": ["iron man", "ironman", "tony stark", "stark", "jarvis", "mark", "ac dc iron man"],
+        "description": "L'univers explosif de Tony Stark : AC/DC, hard rock légendaire et thèmes métalliques",
+        "tracks": [
+            {"title": "Back in Black", "artist": "AC/DC", "query": "AC DC Back in Black Iron Man lyrics"},
+            {"title": "Shoot to Thrill", "artist": "AC/DC", "query": "AC DC Shoot to Thrill lyrics"},
+            {"title": "Highway to Hell", "artist": "AC/DC", "query": "AC DC Highway to Hell lyrics"},
+            {"title": "Iron Man", "artist": "Black Sabbath", "query": "Black Sabbath Iron Man lyrics"},
+            {"title": "Thunderstruck", "artist": "AC/DC", "query": "AC DC Thunderstruck lyrics"},
+            {"title": "Driving with the Top Down", "artist": "Ramin Djawadi", "query": "Ramin Djawadi Driving with the Top Down Iron Man OST"},
+            {"title": "T.N.T.", "artist": "AC/DC", "query": "AC DC TNT lyrics"},
+            {"title": "War Machine Theme", "artist": "Ramin Djawadi", "query": "Ramin Djawadi Iron Man War Machine theme"},
+            {"title": "Robot Rock", "artist": "Daft Punk", "query": "Daft Punk Robot Rock audio"}
+        ]
+    },
+    "spiderman": {
+        "id": "spiderman",
+        "name": "Spider-Man Universe",
+        "icon": "fa-spider",
+        "color": "#b91c1c",
+        "badge": "🕷️ Spider-Man Universe",
+        "keywords": ["spiderman", "spider-man", "spider man", "miles morales", "peter parker", "spiderverse", "spider-verse", "spider"],
+        "description": "De Danny Elfman à Miles Morales : Sunflower, What's Up Danger et les hymnes cultes de New York",
+        "tracks": [
+            {"title": "Sunflower", "artist": "Post Malone & Swae Lee", "query": "Post Malone Swae Lee Sunflower Spider-Man Into the Spider-Verse lyrics"},
+            {"title": "Spider-Man Main Theme", "artist": "Danny Elfman", "query": "Danny Elfman Spider-Man Main Theme 2002 OST"},
+            {"title": "What's Up Danger", "artist": "Blackway & Black Caviar", "query": "Blackway Black Caviar Whats Up Danger lyrics"},
+            {"title": "Hero", "artist": "Chad Kroeger & Josey Scott", "query": "Chad Kroeger Hero Spider-Man lyrics"},
+            {"title": "Vindicated", "artist": "Dashboard Confessional", "query": "Dashboard Confessional Vindicated Spider-Man 2 lyrics"},
+            {"title": "Am I Dreaming", "artist": "Metro Boomin, A$AP Rocky & Roisee", "query": "Metro Boomin Am I Dreaming Across the Spider-Verse lyrics"},
+            {"title": "Calling", "artist": "Metro Boomin & Swae Lee", "query": "Metro Boomin Calling Across the Spider-Verse lyrics"},
+            {"title": "Spider-Man No Way Home Suite", "artist": "Michael Giacchino", "query": "Michael Giacchino Spider-Man No Way Home Theme"},
+            {"title": "Signal Fire", "artist": "Snow Patrol", "query": "Snow Patrol Signal Fire Spider-Man 3 lyrics"}
+        ]
+    },
+    "starwars": {
+        "id": "starwars",
+        "name": "Star Wars Légendes",
+        "icon": "fa-jedi",
+        "color": "#2563eb",
+        "badge": "⚔️ Star Wars Galaxie",
+        "keywords": ["star wars", "starwars", "jedi", "sith", "dark vador", "darth vader", "luke skywalker", "yoda", "mandalorian", "lucasfilm", "etoile de la mort"],
+        "description": "Les plus grands chefs-d'œuvre de John Williams : Marche Impériale, Duel of the Fates, The Mandalorian...",
+        "tracks": [
+            {"title": "The Imperial March (Darth Vader Theme)", "artist": "John Williams", "query": "John Williams The Imperial March Darth Vader theme original"},
+            {"title": "Star Wars Main Title", "artist": "John Williams", "query": "John Williams Star Wars Main Title theme"},
+            {"title": "Duel of the Fates", "artist": "John Williams", "query": "John Williams Duel of the Fates Star Wars Episode 1"},
+            {"title": "The Mandalorian Theme", "artist": "Ludwig Göransson", "query": "Ludwig Goransson The Mandalorian Main Theme audio"},
+            {"title": "The Force Theme (Binary Sunset)", "artist": "John Williams", "query": "John Williams The Force Theme Binary Sunset"},
+            {"title": "Cantina Band", "artist": "John Williams", "query": "John Williams Cantina Band Star Wars"},
+            {"title": "Across the Stars (Love Theme)", "artist": "John Williams", "query": "John Williams Across the Stars Star Wars"},
+            {"title": "Battle of the Heroes", "artist": "John Williams", "query": "John Williams Battle of the Heroes Revenge of the Sith"}
+        ]
+    },
+    "cinema_soundtracks": {
+        "id": "cinema_soundtracks",
+        "name": "Films Cultes & Bandes Originales",
+        "icon": "fa-film",
+        "color": "#f59e0b",
+        "badge": "🎬 Films Cultes & OST",
+        "keywords": ["cinema", "cinéma", "film", "films", "soundtrack", "ost", "musique de film", "hans zimmer", "harry potter", "seigneur des anneaux", "pirates des caraibes", "interstellar", "gladiator"],
+        "description": "Les musiques les plus mythiques du cinéma : Pirates des Caraïbes, Harry Potter, Gladiator, Inception...",
+        "tracks": [
+            {"title": "He's a Pirate", "artist": "Klaus Badelt & Hans Zimmer", "query": "Hes a Pirate Pirates of the Caribbean theme original"},
+            {"title": "Hedwig's Theme", "artist": "John Williams", "query": "John Williams Hedwigs Theme Harry Potter"},
+            {"title": "Time", "artist": "Hans Zimmer", "query": "Hans Zimmer Time Inception OST audio"},
+            {"title": "Now We Are Free", "artist": "Hans Zimmer & Lisa Gerrard", "query": "Hans Zimmer Now We Are Free Gladiator theme"},
+            {"title": "Cornfield Chase", "artist": "Hans Zimmer", "query": "Hans Zimmer Cornfield Chase Interstellar audio"},
+            {"title": "The Fellowship of the Ring", "artist": "Howard Shore", "query": "Howard Shore The Lord of the Rings theme"},
+            {"title": "Mission: Impossible Theme", "artist": "Lalo Schifrin", "query": "Lalo Schifrin Mission Impossible Main Title Theme"},
+            {"title": "James Bond 007 Theme", "artist": "Monty Norman", "query": "James Bond 007 Theme Monty Norman"},
+            {"title": "Eye of the Tiger", "artist": "Survivor", "query": "Survivor Eye of the Tiger Rocky lyrics"},
+            {"title": "Jurassic Park Main Theme", "artist": "John Williams", "query": "John Williams Jurassic Park Theme original"}
+        ]
+    },
+    "manga_anime": {
+        "id": "manga_anime",
+        "name": "Manga & Animés Japonais",
+        "icon": "fa-dragon",
+        "color": "#ec4899",
+        "badge": "🎌 Manga & Animés",
+        "keywords": ["manga", "anime", "animes", "japan", "japon", "naruto", "dragon ball", "one piece", "demon slayer", "attack on titan", "shingeki", "otaku"],
+        "description": "Les plus grands openings et musiques d'animés : Naruto, Demon Slayer, Attack on Titan, One Piece...",
+        "tracks": [
+            {"title": "Gurenge", "artist": "LiSA", "query": "LiSA Gurenge Demon Slayer Opening lyrics"},
+            {"title": "Blue Bird", "artist": "Ikimonogakari", "query": "Ikimonogakari Blue Bird Naruto Shippuden lyrics"},
+            {"title": "Shinzou wo Sasageyo!", "artist": "Linked Horizon", "query": "Linked Horizon Shinzou wo Sasageyo Attack on Titan lyrics"},
+            {"title": "We Are!", "artist": "Hiroshi Kitadani", "query": "Hiroshi Kitadani We Are One Piece Opening lyrics"},
+            {"title": "Cha-La Head-Cha-La", "artist": "Hironobu Kageyama", "query": "Hironobu Kageyama Cha-La Head-Cha-La Dragon Ball Z lyrics"},
+            {"title": "Unravel", "artist": "TK from Ling Tosite Sigure", "query": "TK from Ling Tosite Sigure Unravel Tokyo Ghoul lyrics"},
+            {"title": "The Rumbling", "artist": "SiM", "query": "SiM The Rumbling Attack on Titan lyrics"},
+            {"title": "Silhouette", "artist": "KANA-BOON", "query": "KANA-BOON Silhouette Naruto Shippuden lyrics"}
+        ]
     }
 }
 
@@ -564,3 +687,37 @@ def match_theme_by_query(query: str):
 def get_theme_by_id(theme_id: str):
     """Renvoie le thème par son identifiant."""
     return THEMES_CATALOG.get(theme_id)
+
+def search_themes_catalog(query: str):
+    """Recherche parmi tous les thèmes par nom, mot-clé ou description."""
+    if not query:
+        return get_all_themes()
+    q = query.lower().strip()
+    words = q.split()
+    matched = []
+    for tid, info in THEMES_CATALOG.items():
+        score = 0
+        name = info["name"].lower()
+        desc = info.get("description", "").lower()
+        kws = [k.lower() for k in info.get("keywords", [])]
+        
+        if q == tid.lower() or q in name:
+            score += 10
+        for w in words:
+            if w in name: score += 5
+            if any(w in k for k in kws): score += 4
+            if w in desc: score += 2
+            
+        if score > 0:
+            matched.append((score, {
+                "id": tid,
+                "name": info["name"],
+                "icon": info["icon"],
+                "color": info.get("color", "#6366f1"),
+                "badge": info["badge"],
+                "description": info["description"],
+                "tracks": info.get("tracks", []),
+                "track_count": len(info.get("tracks", []))
+            }))
+    matched.sort(key=lambda x: x[0], reverse=True)
+    return [m[1] for m in matched]
