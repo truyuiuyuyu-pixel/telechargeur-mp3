@@ -182,7 +182,7 @@
                         </div>
                         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                             <button type="button" id="btnDownloadThemeAll" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;">
-                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                                <i class="fa-solid fa-download"></i>
                                 <span>Télécharger tout ce thème</span>
                             </button>
                             <button type="button" id="btnDownloadThemeDirectMp3s" class="btn-success" style="display:none;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;font-weight:600;font-size:0.9rem;cursor:pointer;">
@@ -191,6 +191,26 @@
                             </button>
                         </div>
                     </div>
+
+                    <!-- Barre de recherche spécifique au thème -->
+                    <div class="theme-search-bar-box" style="margin: 16px 0; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <button type="button" id="btnThemeBackToGrid" class="btn-secondary" style="white-space:nowrap;padding:10px 16px;border-radius:var(--radius-sm);background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-main);cursor:pointer;">
+                            <i class="fa-solid fa-arrow-left"></i> <span>Tous les 26 Thèmes</span>
+                        </button>
+                        <div style="flex:1;min-width:240px;position:relative;">
+                            <input type="text" id="themeSearchInput" placeholder="🔍 Filtrer ou trouver plus de musiques pour ce thème..." style="width:100%;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-main);font-size:0.95rem;">
+                        </div>
+                        <button type="button" id="btnThemeSearchOnline" class="btn-primary" style="white-space:nowrap;padding:10px 16px;display:inline-flex;align-items:center;gap:8px;">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>Chercher plus sur le web</span>
+                        </button>
+                    </div>
+
+                    <div id="themeOnlineResultsSection" style="display:none;margin-top:16px;margin-bottom:20px;padding:16px;background:var(--bg-card);border-radius:var(--radius-md);border:1px solid var(--border);">
+                        <h4 style="margin-bottom:12px;color:#10b981;display:flex;align-items:center;gap:8px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Plus de morceaux trouvés pour ce thème :</h4>
+                        <div id="themeOnlineResultsGrid" class="results-grid"></div>
+                    </div>
+
                     <div id="themeTracksGrid" class="results-grid" style="margin-top:16px;"></div>
                 </div>
             </section>
@@ -275,7 +295,7 @@
                                 <span>Scanner & Vérifier le Chanteur</span>
                             </button>
                             <button type="button" id="btnDownloadAllSinger" class="btn-primary btn-batch-dl">
-                                <i class="fa-solid fa-cloud-arrow-down"></i>
+                                <i class="fa-solid fa-download"></i>
                                 <span>Télécharger Tout le Chanteur</span>
                                 <span class="hd-pill-inline">HD 320k</span>
                             </button>

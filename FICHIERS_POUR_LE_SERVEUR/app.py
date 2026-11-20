@@ -35,7 +35,8 @@ from downloader import (
 import scanner
 import themes
 import qrcode
-from cloud_cleaner import reset_cloud_storage, auto_clean_old_temp_files
+from temp_cleaner import reset_temp_storage, auto_clean_old_temp_files
+from downloader import download_single_track_sync
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
@@ -199,6 +200,35 @@ def api_theme(theme_id):
         return jsonify({"error": "Thème introuvable"}), 404
     return jsonify(theme)
 
+@app.route('/api/theme/<theme_id>/search')
+def api_theme_search(theme_id):
+    """
+    Recherche en ligne des musiques spécifiques dans le cadre d'un thème musical.
+    Permet de trouver une infinité de musiques pour n'importe quel thème.
+    """
+    theme = themes.get_theme_by_id(theme_id)
+    if not theme:
+        return jsonify({"error": "Thème introuvable"}), 404
+
+    q = request.args.get('q', '').strip()
+    limit = int(request.args.get('limit', 12))
+    theme_name = theme.get("name", "")
+    keywords = theme.get("keywords", [])
+    main_keyword = keywords[0] if keywords else theme_name
+
+    if q:
+        query = f"{main_keyword} {q}"
+    else:
+        query = f"{theme_name} music"
+
+    results = search_tracks(query=query, limit=limit, source="all")
+    return jsonify({
+        "theme_id": theme_id,
+        "theme_name": theme_name,
+        "query": q,
+        "results": results
+    })
+
 @app.route('/api/theme/<theme_id>/download-all', methods=['POST'])
 def api_theme_download_all(theme_id):
     """Télécharge l'ensemble des titres d'un thème musical complet."""
@@ -249,11 +279,49 @@ def api_theme_download_zip(theme_id):
 # API TÉLÉCHARGEMENT & FICHIERS
 # =====================================================================
 
+@app.route('/api/clean-temp', methods=['GET', 'POST'])
 @app.route('/api/cloud/reset', methods=['GET', 'POST'])
-def api_cloud_reset():
+def api_clean_temp():
     """Libère l'espace temporaire du serveur pour éviter la saturation du disque."""
-    res = reset_cloud_storage()
+    res = reset_temp_storage()
     return jsonify(res)
+
+@app.route('/api/direct-download')
+def api_direct_download():
+    """
+    Téléchargement 100% direct dans la mémoire du smartphone ou PC.
+    Le navigateur du téléphone reçoit directement le fichier audio MP3 HD 320k
+    en pièce jointe sans passer par un cloud.
+    """
+    url = request.args.get('url', '').strip()
+    q = request.args.get('q', '').strip()
+    artist = request.args.get('artist', '').strip()
+    title = request.args.get('title', '').strip()
+
+    target = url or q
+    if not target:
+        return abort(400, "Aucun lien ou titre fourni")
+
+    try:
+        target_path, filename = download_single_track_sync(
+            url=target,
+            chosen_artist=artist,
+            chosen_title=title
+        )
+        if not target_path or not os.path.exists(target_path):
+            return abort(500, "Erreur génération fichier MP3")
+
+        response = send_file(
+            target_path,
+            mimetype='audio/mpeg',
+            as_attachment=True,
+            download_name=filename
+        )
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response.headers['Content-Type'] = 'audio/mpeg'
+        return response
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/download', methods=['POST'])
 def start_download():

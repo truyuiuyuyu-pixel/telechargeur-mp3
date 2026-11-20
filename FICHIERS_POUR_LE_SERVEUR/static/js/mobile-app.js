@@ -208,7 +208,6 @@
         setupSettings();
         setupScanPhone();
         setupMobThemes();
-        setupMobCloudCleaner();
         handleUrlParams();
     }
 
@@ -400,17 +399,86 @@
                         <div class="mob-card-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;">${esc(tr.title)}</div>
                         <div class="mob-card-artist" style="font-size:0.75rem;color:var(--text-muted);"><i class="fa-solid fa-microphone"></i> ${esc(tr.artist)}</div>
                     </div>
-                    <button class="mob-btn mob-btn-sm mob-btn-primary btn-dl-theme-item" style="flex-shrink:0;">
+                    <a href="/api/direct-download?q=${encodeURIComponent(tr.query || `${tr.artist} ${tr.title} lyrics`)}&artist=${encodeURIComponent(tr.artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" class="mob-btn mob-btn-sm mob-btn-primary" style="flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Télécharger directement ce MP3 sur le téléphone">
                         <i class="fa-solid fa-download"></i> MP3
-                    </button>
+                    </a>
                 `;
-
-                trCard.querySelector('.btn-dl-theme-item').addEventListener('click', () => {
-                    triggerDownload(tr.query || `${tr.artist} ${tr.title} lyrics`, tr.artist, tr.title, null);
-                });
 
                 listEl.appendChild(trCard);
             });
+
+            // Bouton retour aux 26 thèmes
+            const btnBack = $('btnMobThemeBack');
+            if (btnBack) {
+                btnBack.onclick = () => {
+                    detail.style.display = 'none';
+                    const grid = $('mobThemesGrid');
+                    if (grid) grid.style.display = 'grid';
+                };
+            }
+
+            // Recherche & filtrage dans le thème mobile
+            const sInput = $('mobThemeSearchInput');
+            const btnSearchOnline = $('btnMobThemeSearchOnline');
+            const onlineResults = $('mobThemeOnlineResults');
+
+            if (sInput) {
+                sInput.value = '';
+                sInput.placeholder = `🔍 Chercher plus dans "${theme.name}"...`;
+                sInput.oninput = () => {
+                    const q = sInput.value.toLowerCase().trim();
+                    listEl.querySelectorAll('.mob-result-card').forEach(card => {
+                        const txt = card.textContent.toLowerCase();
+                        card.style.display = !q || txt.includes(q) ? 'flex' : 'none';
+                    });
+                };
+                sInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (btnSearchOnline) btnSearchOnline.click();
+                    }
+                };
+            }
+
+            if (btnSearchOnline && onlineResults) {
+                onlineResults.style.display = 'none';
+                onlineResults.innerHTML = '';
+                btnSearchOnline.onclick = async () => {
+                    const query = sInput ? sInput.value.trim() : '';
+                    onlineResults.style.display = 'block';
+                    onlineResults.innerHTML = '<div class="mob-loader"><div class="mob-spinner"></div><span>Recherche sur tous les sites pour ce thème…</span></div>';
+                    try {
+                        const res = await fetch(`/api/theme/${themeId}/search?q=${encodeURIComponent(query)}&limit=10`);
+                        const data = await res.json();
+                        const results = data.results || [];
+                        if (!results.length) {
+                            onlineResults.innerHTML = '<div style="font-size:0.8rem;color:var(--text-muted);text-align:center;padding:8px;">Aucun morceau supplémentaire trouvé.</div>';
+                            return;
+                        }
+                        onlineResults.innerHTML = '<div style="font-size:0.8rem;font-weight:700;color:#10b981;margin-bottom:8px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Plus de titres trouvés en ligne :</div>';
+                        results.forEach((r) => {
+                            const card = document.createElement('div');
+                            card.className = 'mob-result-card';
+                            card.style.padding = '8px 10px';
+                            card.style.marginBottom = '6px';
+                            const thumb = r.thumbnail || '/static/icons/icon-192.png';
+                            card.innerHTML = `
+                                <img src="${esc(thumb)}" class="mob-result-thumb" alt="" onerror="this.src='/static/icons/icon-192.png'">
+                                <div class="mob-result-body">
+                                    <div class="mob-result-artist">${esc(r.artist || 'Artiste')}</div>
+                                    <div class="mob-result-title">${esc(r.title || 'Titre')}</div>
+                                </div>
+                                <a href="/api/direct-download?url=${encodeURIComponent(r.url)}&artist=${encodeURIComponent(r.artist)}&title=${encodeURIComponent(r.title)}" download="${esc(r.title)}.mp3" class="mob-btn mob-btn-sm mob-btn-primary" style="flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Télécharger sur téléphone">
+                                    <i class="fa-solid fa-download"></i> MP3
+                                </a>
+                            `;
+                            onlineResults.appendChild(card);
+                        });
+                    } catch (e) {
+                        onlineResults.innerHTML = '<div style="font-size:0.8rem;color:var(--danger);text-align:center;padding:8px;">Erreur lors de la recherche.</div>';
+                    }
+                };
+            }
 
             if (btnAll) {
                 btnAll.onclick = async () => {
@@ -581,10 +649,10 @@
                 <div class="mob-result-title">${esc(item.title || item.raw_title || 'Titre')}</div>
                 <div class="mob-result-dur">${item.duration || '0:00'}</div>
             </div>
-            <div class="mob-result-actions">
-                <button class="mob-btn mob-btn-sm mob-btn-primary btn-dl-track" title="Télécharger en MP3 HD">
-                    <i class="fa-solid fa-cloud-arrow-down"></i>
-                </button>
+            <div class="mob-result-actions" style="display:flex;gap:6px;align-items:center;">
+                <a href="/api/direct-download?url=${encodeURIComponent(item.url)}&artist=${encodeURIComponent(item.artist)}&title=${encodeURIComponent(item.title)}" download="${esc(item.title)}.mp3" class="mob-btn mob-btn-sm mob-btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Télécharger directement sur ce téléphone">
+                    <i class="fa-solid fa-download"></i> MP3
+                </a>
             </div>
         `;
         card.querySelector('.btn-dl-track').addEventListener('click', () => {
@@ -652,7 +720,23 @@
                     showToast(`✅ "${title}" téléchargé !`);
                     loadLibrary();
 
-                    // ✅ Bouton permanent "Enregistrer sur ce téléphone"
+                    // 1. Déclencher le téléchargement navigateur direct sur mobile
+                    try {
+                        window.location.href = `/api/download-ready/${taskId}`;
+                    } catch (e) {}
+
+                    // 2. Afficher la bannière persistante tout en haut
+                    const sticky = $('mobStickyAlert');
+                    const stickyTitle = $('mobStickyAlertTitle');
+                    const stickyLink = $('mobStickyAlertLink');
+                    if (sticky && stickyTitle && stickyLink) {
+                        stickyTitle.textContent = `${artist ? artist + ' — ' : ''}${title}`;
+                        stickyLink.href = `/api/download-ready/${taskId}`;
+                        stickyLink.setAttribute('download', info.filename || `${title}.mp3`);
+                        sticky.style.display = 'block';
+                    }
+
+                    // 3. Carte avec gros bouton permanent
                     const dlCard = $(`mobDl_${taskId}`);
                     if (dlCard) {
                         const saveLink = document.createElement('a');
@@ -662,12 +746,6 @@
                         saveLink.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border-radius:var(--radius-sm);text-decoration:none;font-weight:700;margin-top:10px;';
                         saveLink.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> 📲 Enregistrer sur ce téléphone (MP3 HD)';
                         dlCard.appendChild(saveLink);
-
-                        // Déclencher le téléchargement directement sur le smartphone
-                        try {
-                            saveLink.click();
-                            showToast(`📲 Téléchargement direct sur votre téléphone démarré !`);
-                        } catch (e) {}
 
                         // Bouton pour fermer manuellement la carte
                         const closeBtn = document.createElement('button');

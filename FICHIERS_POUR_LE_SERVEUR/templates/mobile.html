@@ -21,6 +21,18 @@
 </head>
 <body>
 
+<!-- Notification persistante de téléchargement direct sur téléphone -->
+<div id="mobStickyAlert" style="display:none;position:fixed;top:10px;left:10px;right:10px;z-index:999999;background:linear-gradient(135deg,#064e3b,#065f46);border:2px solid #10b981;border-radius:14px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,0.6);animation:slideDown 0.3s ease;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="color:#6ee7b7;font-weight:800;font-size:0.85rem;"><i class="fa-solid fa-circle-check"></i> MP3 PRÊT POUR VOTRE TÉLÉPHONE</span>
+        <button type="button" onclick="document.getElementById('mobStickyAlert').style.display='none'" style="background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;line-height:1;">&times;</button>
+    </div>
+    <div id="mobStickyAlertTitle" style="color:#fff;font-weight:700;font-size:0.95rem;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+    <a id="mobStickyAlertLink" href="#" download="" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:#10b981;color:#fff;border-radius:10px;font-weight:800;font-size:0.95rem;text-decoration:none;box-shadow:0 4px 12px rgba(16,185,129,0.4);">
+        <i class="fa-solid fa-mobile-screen-button"></i> 📲 ENREGISTRER SUR MON TÉLÉPHONE (.MP3)
+    </a>
+</div>
+
 <!-- ============================================================
      SPLASH SCREEN — Affiché au premier lancement (scan auto)
      ============================================================ -->
@@ -255,7 +267,7 @@
                         Scanner & Vérifier le Chanteur (Anti-Intrus)
                     </button>
                     <button class="mob-btn mob-btn-primary mob-btn-full" id="mobBtnDlAll">
-                        <i class="fa-solid fa-cloud-arrow-down"></i>
+                        <i class="fa-solid fa-download"></i>
                         Télécharger toute la discographie
                     </button>
                     <button type="button" class="mob-btn mob-btn-success mob-btn-full" id="mobBtnSaveSingerMp3s" style="display:none;">
@@ -324,18 +336,33 @@
         <div id="mobThemesGrid" class="mob-themes-grid"></div>
 
         <div id="mobThemeDetail" style="display:none;margin-top:16px;">
+            <button type="button" id="btnMobThemeBack" class="mob-btn mob-btn-sm" style="margin-bottom:10px;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-main);display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-arrow-left"></i> <span>Tous les 26 Thèmes</span>
+            </button>
+
             <div class="mob-theme-detail-header" style="background:var(--bg-card);padding:12px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:12px;">
                 <h3 id="mobThemeDetailTitle" style="font-size:1.1rem;display:flex;align-items:center;gap:6px;"></h3>
                 <p id="mobThemeDetailDesc" style="color:var(--text-muted);font-size:0.78rem;margin:4px 0 10px 0;"></p>
                 <div style="display:flex;flex-direction:column;gap:8px;">
                     <button type="button" class="mob-btn mob-btn-primary mob-btn-full" id="btnMobDownloadThemeAll">
-                        <i class="fa-solid fa-cloud-arrow-down"></i> Télécharger tout ce thème
+                        <i class="fa-solid fa-download"></i> Télécharger tout ce thème sur mon téléphone
                     </button>
                     <button type="button" class="mob-btn mob-btn-success mob-btn-full" id="btnMobSaveThemeMp3s" style="display:none;">
                         <i class="fa-solid fa-file-audio"></i> 📲 Enregistrer tous les MP3 du thème sur mon téléphone
                     </button>
                 </div>
             </div>
+
+            <!-- Recherche spécifique au thème sur mobile -->
+            <div style="margin: 10px 0; display:flex; gap:6px;">
+                <input type="text" id="mobThemeSearchInput" placeholder="🔍 Chercher plus de musiques dans ce thème..." style="flex:1;padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-main);font-size:0.85rem;">
+                <button type="button" id="btnMobThemeSearchOnline" class="mob-btn mob-btn-primary" style="padding:8px 14px;white-space:nowrap;font-size:0.85rem;" title="Chercher plus de musiques pour ce thème sur le web">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </div>
+
+            <div id="mobThemeOnlineResults" style="display:none;margin-bottom:12px;padding:8px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);"></div>
+
             <div id="mobThemeTracksList"></div>
         </div>
     </div>
@@ -437,15 +464,7 @@
             </div>
         </div>
 
-        <div class="mob-form-group">
-            <label class="mob-form-label"><i class="fa-solid fa-broom"></i> Réinitialisation Cloud</label>
-            <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">
-                Efface tous les MP3 temporaires stockés sur le serveur en ligne. Le serveur se réinitialise aussi automatiquement quand vous fermez le site.
-            </p>
-            <button class="mob-btn mob-btn-full" id="btnMobResetCloudNow" style="background:rgba(239,68,68,0.18);border:1px solid #ef4444;color:#fca5a5;">
-                <i class="fa-solid fa-broom"></i> Vider le Cloud maintenant
-            </button>
-        </div>
+
 
         <div class="mob-form-group">
             <label class="mob-form-label">Scanner mon téléphone</label>

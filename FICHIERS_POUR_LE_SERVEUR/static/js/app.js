@@ -125,7 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setupPresets();
         setupSingerMode();
         setupThemes();
-        setupCloudCleaner();
     }
 
     function applyFontStyle(fontClass) {
@@ -503,10 +502,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <h4 class="result-title" style="margin:4px 0;">${escapeHtml(tr.title)}</h4>
                         <div class="result-artist" style="color:var(--text-muted);font-size:0.85rem;"><i class="fa-solid fa-microphone"></i> ${escapeHtml(tr.artist)}</div>
-                        <div class="result-actions" style="margin-top:12px;">
-                            <button type="button" class="btn-download" id="btnDlThemeTr_${idx}">
-                                <i class="fa-solid fa-cloud-arrow-down"></i>
-                                <span>Télécharger MP3</span>
+                        <div class="result-actions" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                            <a href="/api/direct-download?q=${encodeURIComponent(tr.query || `${tr.artist} ${tr.title} lyrics`)}&artist=${encodeURIComponent(tr.artist)}&title=${encodeURIComponent(tr.title)}" download="${escapeHtml(tr.title)}.mp3" class="btn-download" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;" title="Télécharger directement le fichier MP3 sur votre appareil">
+                                <i class="fa-solid fa-download"></i> MP3 Direct
+                            </a>
+                            <button type="button" class="btn-download" id="btnDlThemeTr_${idx}" style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-main);">
+                                <i class="fa-solid fa-play"></i>
+                                <span>Convertir</span>
                             </button>
                         </div>
                     </div>
@@ -518,6 +520,82 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 tracksGrid.appendChild(trCard);
             });
+
+            // Bouton retour à la grille des thèmes
+            const btnBack = document.getElementById('btnThemeBackToGrid');
+            if (btnBack) {
+                btnBack.onclick = () => {
+                    section.style.display = 'none';
+                    const grid = document.getElementById('themesCatalogGrid');
+                    if (grid) grid.style.display = 'grid';
+                };
+            }
+
+            // Recherche & filtrage dans le thème
+            const sInput = document.getElementById('themeSearchInput');
+            const btnSearchOnline = document.getElementById('btnThemeSearchOnline');
+            const onlineSection = document.getElementById('themeOnlineResultsSection');
+            const onlineGrid = document.getElementById('themeOnlineResultsGrid');
+
+            if (sInput) {
+                sInput.value = '';
+                sInput.placeholder = `🔍 Rechercher plus de titres dans "${theme.name}"...`;
+                sInput.oninput = () => {
+                    const q = sInput.value.toLowerCase().trim();
+                    document.querySelectorAll('.theme-track-card').forEach(card => {
+                        const txt = card.textContent.toLowerCase();
+                        card.style.display = !q || txt.includes(q) ? 'block' : 'none';
+                    });
+                };
+                sInput.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (btnSearchOnline) btnSearchOnline.click();
+                    }
+                };
+            }
+
+            if (btnSearchOnline && onlineSection && onlineGrid) {
+                onlineSection.style.display = 'none';
+                onlineGrid.innerHTML = '';
+                btnSearchOnline.onclick = async () => {
+                    const query = sInput ? sInput.value.trim() : '';
+                    onlineSection.style.display = 'block';
+                    onlineGrid.innerHTML = '<div class="loader-box"><div class="spinner"></div><p>Recherche de musiques sur tous les sites pour ce thème...</p></div>';
+                    try {
+                        const res = await fetch(`/api/theme/${themeId}/search?q=${encodeURIComponent(query)}&limit=12`);
+                        const data = await res.json();
+                        const results = data.results || [];
+                        if (!results.length) {
+                            onlineGrid.innerHTML = '<p style="color:var(--text-muted);padding:10px;">Aucun morceau supplémentaire trouvé.</p>';
+                            return;
+                        }
+                        onlineGrid.innerHTML = '';
+                        results.forEach((r) => {
+                            const card = document.createElement('div');
+                            card.className = 'result-card';
+                            card.innerHTML = `
+                                <div class="result-thumb-wrapper">
+                                    <img src="${escapeHtml(r.thumbnail || '/static/icons/icon-192.png')}" alt="" class="result-thumb" onerror="this.src='/static/icons/icon-192.png'">
+                                </div>
+                                <div class="result-body">
+                                    <div class="result-source-badge">${escapeHtml(r.source || 'MP3')} • ${escapeHtml(r.duration || '')}</div>
+                                    <h4 class="result-title">${escapeHtml(r.title)}</h4>
+                                    <div class="result-artist"><i class="fa-solid fa-microphone"></i> ${escapeHtml(r.artist)}</div>
+                                    <div class="result-actions" style="margin-top:12px;display:flex;gap:8px;">
+                                        <a href="/api/direct-download?url=${encodeURIComponent(r.url)}&artist=${encodeURIComponent(r.artist)}&title=${encodeURIComponent(r.title)}" download="${escapeHtml(r.title)}.mp3" class="btn-download" style="text-decoration:none;display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;">
+                                            <i class="fa-solid fa-download"></i> MP3 Direct
+                                        </a>
+                                    </div>
+                                </div>
+                            `;
+                            onlineGrid.appendChild(card);
+                        });
+                    } catch (e) {
+                        onlineGrid.innerHTML = '<p style="color:var(--danger);padding:10px;">Erreur lors de la recherche.</p>';
+                    }
+                };
+            }
 
             if (btnDlAll) {
                 btnDlAll.onclick = async () => {
@@ -631,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h4 class="result-title" id="titleDisplay_${index}">${escapeHtml(title)}</h4>
                 <div class="result-footer">
                     <button class="btn-download-action" id="btnDl_${index}">
-                        <i class="fa-solid fa-cloud-arrow-down"></i>
+                        <i class="fa-solid fa-download"></i>
                         <span>Télécharger MP3</span>
                     </button>
                     <button class="btn-edit-singer" id="btnEditPre_${index}" title="Modifier le chanteur ou le titre avant téléchargement">
@@ -1288,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             artistNameDisplay.textContent = data.artist;
             badgeTotalFound.textContent = `${data.total_tracks} titres répertoriés`;
             badgeAlreadyPresent.innerHTML = `<i class="fa-solid fa-check"></i> ${data.existing_count} déjà présents sur vos appareils (0 doublon)`;
-            badgeNewToDownload.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> ${data.new_count} nouveaux morceaux à télécharger`;
+            badgeNewToDownload.innerHTML = `<i class="fa-solid fa-download"></i> ${data.new_count} nouveaux morceaux à télécharger`;
 
             // Mettre à jour les chemins des fichiers créés pour l'artiste
             const cleanFolder = data.artist.replace(/[<>:"/\\|?*]/g, '').trim();
