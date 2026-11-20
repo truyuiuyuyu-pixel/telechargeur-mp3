@@ -409,6 +409,18 @@ def process_single_track(url: str, chosen_artist: str = "", chosen_title: str = 
                 if not effective_cover and info.get('thumbnails'):
                     effective_cover = info.get('thumbnails')[-1].get('url')
 
+            if info:
+                if (not chosen_artist or chosen_artist == "Artiste Inconnu"):
+                    ext_a = info.get('artist') or info.get('uploader') or ""
+                    if ext_a:
+                        final_artist = sanitize_filename(ext_a)
+                if (not chosen_title or chosen_title == "Sans Titre"):
+                    ext_t = info.get('track') or info.get('title') or ""
+                    if ext_t:
+                        final_title = sanitize_filename(ext_t)
+                if not album:
+                    final_album = f"{final_artist} Singles"
+
             # Récupération du fichier généré
             for f in os.listdir(temp_dir):
                 if f.lower().endswith(".mp3"):
