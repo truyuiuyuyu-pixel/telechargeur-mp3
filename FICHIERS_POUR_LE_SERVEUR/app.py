@@ -229,6 +229,60 @@ def api_theme_search(theme_id):
         "results": results
     })
 
+@app.route('/api/preview-track')
+def api_preview_track():
+    """
+    Renvoie une URL d'extrait audio de 30 secondes pour écouter un bout de la musique
+    avant de la télécharger. Utilise Deezer puis iTunes en cascade ultra-rapide.
+    """
+    artist = request.args.get('artist', '').strip()
+    title = request.args.get('title', '').strip()
+    q = request.args.get('q', '').strip()
+
+    search_term = f"{artist} {title}".strip() or q
+    if not search_term:
+        return jsonify({"error": "Terme de recherche manquant"}), 400
+
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+
+    # 1. Tentative Deezer (MP3 officiel 30s haute fidélité)
+    try:
+        r = requests.get('https://api.deezer.com/search', params={'q': search_term, 'limit': 1}, headers=headers, timeout=4).json()
+        if r.get('data') and len(r['data']) > 0:
+            track_data = r['data'][0]
+            preview = track_data.get('preview')
+            if preview:
+                return jsonify({
+                    "preview_url": preview,
+                    "title": track_data.get('title') or title,
+                    "artist": (track_data.get('artist') or {}).get('name') or artist,
+                    "cover": (track_data.get('album') or {}).get('cover_medium'),
+                    "duration": 30,
+                    "source": "Deezer HD"
+                })
+    except Exception as e:
+        pass
+
+    # 2. Tentative iTunes / Apple Music (AAC/M4A officiel 30s)
+    try:
+        r = requests.get('https://itunes.apple.com/search', params={'term': search_term, 'limit': 1, 'media': 'music'}, headers=headers, timeout=4).json()
+        if r.get('results') and len(r['results']) > 0:
+            item = r['results'][0]
+            preview = item.get('previewUrl')
+            if preview:
+                return jsonify({
+                    "preview_url": preview,
+                    "title": item.get('trackName') or title,
+                    "artist": item.get('artistName') or artist,
+                    "cover": item.get('artworkUrl100'),
+                    "duration": 30,
+                    "source": "Apple Music"
+                })
+    except Exception as e:
+        pass
+
+    return jsonify({"error": "Aucun extrait disponible pour ce morceau"}), 404
+
 @app.route('/api/theme/<theme_id>/download-all', methods=['POST'])
 def api_theme_download_all(theme_id):
     """Télécharge l'ensemble des titres d'un thème musical complet."""

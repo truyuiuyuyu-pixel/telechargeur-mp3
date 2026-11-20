@@ -208,7 +208,100 @@
         setupSettings();
         setupScanPhone();
         setupMobThemes();
+        initMobGlobalAudioPlayer();
         handleUrlParams();
+    }
+
+    // =========================================================
+    // LECTEUR AUDIO D'EXTRAIT (30s)
+    // =========================================================
+    let mobCurrentPreviewAudio = null;
+    let mobActivePreviewBtn = null;
+
+    function initMobGlobalAudioPlayer() {
+        mobCurrentPreviewAudio = $('mobGlobalPreviewAudio');
+        const bar = $('mobGlobalAudioPlayerBar');
+        const btnPlayPause = $('btnMobPlayerPlayPause');
+        const btnClose = $('btnMobPlayerClose');
+        if (!bar || !mobCurrentPreviewAudio) return;
+
+        if (btnPlayPause) {
+            btnPlayPause.onclick = () => {
+                if (mobCurrentPreviewAudio.paused) {
+                    mobCurrentPreviewAudio.play();
+                    btnPlayPause.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                } else {
+                    mobCurrentPreviewAudio.pause();
+                    btnPlayPause.innerHTML = '<i class="fa-solid fa-play"></i>';
+                }
+            };
+        }
+
+        if (btnClose) {
+            btnClose.onclick = () => {
+                mobCurrentPreviewAudio.pause();
+                mobCurrentPreviewAudio.currentTime = 0;
+                bar.style.display = 'none';
+                if (mobActivePreviewBtn) {
+                    mobActivePreviewBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                    mobActivePreviewBtn = null;
+                }
+            };
+        }
+
+        mobCurrentPreviewAudio.onended = () => {
+            if (btnPlayPause) btnPlayPause.innerHTML = '<i class="fa-solid fa-play"></i>';
+            if (mobActivePreviewBtn) {
+                mobActivePreviewBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                mobActivePreviewBtn = null;
+            }
+        };
+    }
+
+    async function playMobAudioPreview(artist, title, query, btn) {
+        mobCurrentPreviewAudio = $('mobGlobalPreviewAudio');
+        const bar = $('mobGlobalAudioPlayerBar');
+        const titleEl = $('mobPlayerTitle');
+        const artistEl = $('mobPlayerArtist');
+        const coverEl = $('mobPlayerCover');
+        const btnPlayPause = $('btnMobPlayerPlayPause');
+        if (!bar || !mobCurrentPreviewAudio) return;
+
+        if (mobActivePreviewBtn === btn && !mobCurrentPreviewAudio.paused) {
+            mobCurrentPreviewAudio.pause();
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            if (btnPlayPause) btnPlayPause.innerHTML = '<i class="fa-solid fa-play"></i>';
+            return;
+        }
+
+        if (mobActivePreviewBtn && mobActivePreviewBtn !== btn) {
+            mobActivePreviewBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+        }
+
+        mobActivePreviewBtn = btn;
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+        try {
+            const res = await fetch(`/api/preview-track?artist=${encodeURIComponent(artist || '')}&title=${encodeURIComponent(title || '')}&q=${encodeURIComponent(query || '')}`);
+            if (!res.ok) throw new Error("Extrait non disponible");
+            const data = await res.json();
+
+            mobCurrentPreviewAudio.src = data.preview_url;
+            await mobCurrentPreviewAudio.play();
+
+            if (titleEl) titleEl.textContent = data.title || title;
+            if (artistEl) artistEl.innerHTML = `<i class="fa-solid fa-headphones" style="color:#3b82f6;"></i> ${esc(data.artist || artist)} (${data.source || '30s'})`;
+            if (coverEl) coverEl.src = data.cover || '/static/icons/icon-192.png';
+            bar.style.display = 'flex';
+
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            if (btnPlayPause) btnPlayPause.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            showToast(`🎵 Extrait en cours : ${title}`);
+        } catch (e) {
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            mobActivePreviewBtn = null;
+            showToast("Extrait audio non disponible pour ce titre", true);
+        }
     }
 
     async function loadConfig() {
@@ -399,10 +492,20 @@
                         <div class="mob-card-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;">${esc(tr.title)}</div>
                         <div class="mob-card-artist" style="font-size:0.75rem;color:var(--text-muted);"><i class="fa-solid fa-microphone"></i> ${esc(tr.artist)}</div>
                     </div>
-                    <a href="/api/direct-download?q=${encodeURIComponent(tr.query || `${tr.artist} ${tr.title} lyrics`)}&artist=${encodeURIComponent(tr.artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" class="mob-btn mob-btn-sm mob-btn-primary" style="flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Télécharger directement ce MP3 sur le téléphone">
-                        <i class="fa-solid fa-download"></i> MP3
-                    </a>
+                    <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                        <button type="button" class="mob-btn mob-btn-sm btn-preview-theme-item" style="background:#0ea5e9;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-size:0.8rem;" title="Écouter un extrait de 30 secondes">
+                            <i class="fa-solid fa-play"></i>
+                        </button>
+                        <a href="/api/direct-download?q=${encodeURIComponent(tr.query || `${tr.artist} ${tr.title} lyrics`)}&artist=${encodeURIComponent(tr.artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" class="mob-btn mob-btn-sm mob-btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Télécharger directement ce MP3 sur le téléphone">
+                            <i class="fa-solid fa-download"></i> MP3
+                        </a>
+                    </div>
                 `;
+
+                const btnPrev = trCard.querySelector('.btn-preview-theme-item');
+                if (btnPrev) {
+                    btnPrev.onclick = () => playMobAudioPreview(tr.artist, tr.title, tr.query, btnPrev);
+                }
 
                 listEl.appendChild(trCard);
             });
@@ -650,14 +753,20 @@
                 <div class="mob-result-dur">${item.duration || '0:00'}</div>
             </div>
             <div class="mob-result-actions" style="display:flex;gap:6px;align-items:center;">
+                <button type="button" class="mob-btn mob-btn-sm btn-mob-card-preview" style="background:#0ea5e9;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-size:0.8rem;" title="Écouter un extrait de 30 secondes">
+                    <i class="fa-solid fa-play"></i>
+                </button>
                 <a href="/api/direct-download?url=${encodeURIComponent(item.url)}&artist=${encodeURIComponent(item.artist)}&title=${encodeURIComponent(item.title)}" download="${esc(item.title)}.mp3" class="mob-btn mob-btn-sm mob-btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Télécharger directement sur ce téléphone">
                     <i class="fa-solid fa-download"></i> MP3
                 </a>
             </div>
         `;
-        card.querySelector('.btn-dl-track').addEventListener('click', () => {
-            triggerDownload(item.url, item.artist, item.title, item.thumbnail);
-        });
+
+        const btnPrev = card.querySelector('.btn-mob-card-preview');
+        if (btnPrev) {
+            btnPrev.onclick = () => playMobAudioPreview(item.artist, item.title, item.title, btnPrev);
+        }
+
         return card;
     }
 
