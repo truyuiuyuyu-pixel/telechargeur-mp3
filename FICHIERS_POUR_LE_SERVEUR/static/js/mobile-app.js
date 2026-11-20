@@ -20,21 +20,29 @@
     const $ = id => document.getElementById(id);
     const mobAudio = $('mobAudio');
 
-    // ——— Enregistrement du Service Worker ———
+    // ——— Enregistrement du Service Worker avec rafraîchissement automatique ———
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/sw.js', { scope: '/' })
+        navigator.serviceWorker.register('/static/sw.js?v=10', { scope: '/' })
             .then(reg => {
-                console.log('SW enregistré:', reg.scope);
+                reg.update();
                 reg.addEventListener('updatefound', () => {
                     const nw = reg.installing;
                     nw.addEventListener('statechange', () => {
                         if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                            showToast('Mise à jour disponible — Redémarrez l\'app');
+                            window.location.reload();
                         }
                     });
                 });
             })
             .catch(err => console.warn('SW non enregistré:', err));
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+                refreshing = true;
+                window.location.reload();
+            }
+        });
     }
 
     // Si on tourne déjà dans la vraie application Android native, masquer les bannières d'installation

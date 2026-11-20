@@ -40,6 +40,15 @@ from temp_cleaner import reset_temp_storage, auto_clean_old_temp_files
 from downloader import download_single_track_sync
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+@app.after_request
+def add_no_cache_headers(response):
+    if 'Cache-Control' not in response.headers:
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 def _start_server_cleanup_daemon():
     def _loop():
