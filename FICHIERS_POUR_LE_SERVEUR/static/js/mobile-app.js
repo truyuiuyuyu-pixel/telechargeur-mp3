@@ -261,9 +261,9 @@
     async function playMobAudioPreview(artist, title, query, btn) {
         mobCurrentPreviewAudio = $('mobGlobalPreviewAudio');
         const bar = $('mobGlobalAudioPlayerBar');
-        const titleEl = $('mobPlayerTitle');
-        const artistEl = $('mobPlayerArtist');
-        const coverEl = $('mobPlayerCover');
+        const titleEl = $('mobGlobalPreviewTitle') || $('mobPlayerTitle');
+        const artistEl = $('mobGlobalPreviewArtist') || $('mobPlayerArtist');
+        const coverEl = $('mobGlobalPreviewCover') || $('mobPlayerCover');
         const btnPlayPause = $('btnMobPlayerPlayPause');
         if (!bar || !mobCurrentPreviewAudio) return;
 
@@ -482,22 +482,23 @@
             tracks.forEach((tr, idx) => {
                 const trCard = document.createElement('div');
                 trCard.className = 'mob-result-card';
-                trCard.style.padding = '10px 12px';
-                trCard.style.marginBottom = '8px';
+                trCard.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:10px;';
                 trCard.innerHTML = `
-                    <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg, ${theme.color || 'var(--primary)'}, #1e293b);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;flex-shrink:0">
-                        <i class="fa-solid ${theme.icon || 'fa-music'}"></i>
+                    <div style="display:flex;align-items:center;gap:10px;width:100%;">
+                        <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg, ${theme.color || 'var(--primary)'}, #1e293b);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;flex-shrink:0">
+                            <i class="fa-solid ${theme.icon || 'fa-music'}"></i>
+                        </div>
+                        <div style="flex:1;min-width:0;overflow:hidden;">
+                            <div style="font-size:0.95rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(tr.title)}</div>
+                            <div style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-microphone"></i> ${esc(tr.artist)}</div>
+                        </div>
                     </div>
-                    <div class="mob-card-info" style="margin-left:10px;flex:1;overflow:hidden;">
-                        <div class="mob-card-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;">${esc(tr.title)}</div>
-                        <div class="mob-card-artist" style="font-size:0.75rem;color:var(--text-muted);"><i class="fa-solid fa-microphone"></i> ${esc(tr.artist)}</div>
-                    </div>
-                    <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-                        <button type="button" class="mob-btn mob-btn-sm btn-preview-theme-item" style="background:#0ea5e9;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-size:0.8rem;" title="Écouter un extrait de 30 secondes">
-                            <i class="fa-solid fa-play"></i>
+                    <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+                        <button type="button" class="btn-preview-theme-item" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                            <i class="fa-solid fa-play"></i> <span>Écouter</span>
                         </button>
-                        <a href="/api/direct-download?q=${encodeURIComponent(tr.query || `${tr.artist} ${tr.title} lyrics`)}&artist=${encodeURIComponent(tr.artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" class="mob-btn mob-btn-sm mob-btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Télécharger directement ce MP3 sur le téléphone">
-                            <i class="fa-solid fa-download"></i> MP3
+                        <a href="/api/direct-download?q=${encodeURIComponent(tr.query || `${tr.artist} ${tr.title} lyrics`)}&artist=${encodeURIComponent(tr.artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                            <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
                         </a>
                     </div>
                 `;
@@ -562,19 +563,31 @@
                         results.forEach((r) => {
                             const card = document.createElement('div');
                             card.className = 'mob-result-card';
-                            card.style.padding = '8px 10px';
-                            card.style.marginBottom = '6px';
+                            card.style.cssText = 'display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;';
                             const thumb = r.thumbnail || '/static/icons/icon-192.png';
                             card.innerHTML = `
-                                <img src="${esc(thumb)}" class="mob-result-thumb" alt="" onerror="this.src='/static/icons/icon-192.png'">
-                                <div class="mob-result-body">
-                                    <div class="mob-result-artist">${esc(r.artist || 'Artiste')}</div>
-                                    <div class="mob-result-title">${esc(r.title || 'Titre')}</div>
+                                <div style="display:flex;align-items:center;gap:10px;width:100%;">
+                                    <img src="${esc(thumb)}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;">
+                                    <div style="flex:1;min-width:0;overflow:hidden;">
+                                        <div style="font-size:0.75rem;color:var(--primary);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-microphone"></i> ${esc(r.artist || 'Artiste')}</div>
+                                        <div style="font-size:0.9rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0;">${esc(r.title || 'Titre')}</div>
+                                    </div>
                                 </div>
-                                <a href="/api/direct-download?url=${encodeURIComponent(r.url)}&artist=${encodeURIComponent(r.artist)}&title=${encodeURIComponent(r.title)}" download="${esc(r.title)}.mp3" class="mob-btn mob-btn-sm mob-btn-primary" style="flex-shrink:0;text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Télécharger sur téléphone">
-                                    <i class="fa-solid fa-download"></i> MP3
-                                </a>
+                                <div style="display:flex;gap:8px;width:100%;">
+                                    <button type="button" class="btn-theme-online-prev" style="flex:1;padding:8px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
+                                        <i class="fa-solid fa-play"></i> <span>Écouter</span>
+                                    </button>
+                                    <a href="/api/direct-download?url=${encodeURIComponent(r.url)}&artist=${encodeURIComponent(r.artist)}&title=${encodeURIComponent(r.title)}" download="${esc(r.title)}.mp3" style="flex:1.3;padding:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:0.8rem;display:flex;align-items:center;justify-content:center;gap:4px;">
+                                        <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
+                                    </a>
+                                </div>
                             `;
+
+                            const btnPrev = card.querySelector('.btn-theme-online-prev');
+                            if (btnPrev) {
+                                btnPrev.onclick = () => playMobAudioPreview(r.artist, r.title, r.title, btnPrev);
+                            }
+
                             onlineResults.appendChild(card);
                         });
                     } catch (e) {
@@ -744,20 +757,23 @@
     function createResultCard(item) {
         const card = document.createElement('div');
         card.className = 'mob-result-card';
+        card.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:10px;';
         const thumb = item.thumbnail || '/static/icons/icon-192.png';
         card.innerHTML = `
-            <img src="${esc(thumb)}" class="mob-result-thumb" alt="" onerror="this.src='/static/icons/icon-192.png'">
-            <div class="mob-result-body">
-                <div class="mob-result-artist">${esc(item.artist || 'Artiste')}</div>
-                <div class="mob-result-title">${esc(item.title || item.raw_title || 'Titre')}</div>
-                <div class="mob-result-dur">${item.duration || '0:00'}</div>
+            <div style="display:flex;align-items:center;gap:10px;width:100%;">
+                <img src="${esc(thumb)}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+                <div style="flex:1;min-width:0;overflow:hidden;">
+                    <div style="font-size:0.75rem;color:var(--primary);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-microphone"></i> ${esc(item.artist || 'Artiste')}</div>
+                    <div style="font-size:0.95rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0;">${esc(item.title || item.raw_title || 'Titre')}</div>
+                    <div style="font-size:0.72rem;color:var(--text-muted);">${item.duration || '0:00'}</div>
+                </div>
             </div>
-            <div class="mob-result-actions" style="display:flex;gap:6px;align-items:center;">
-                <button type="button" class="mob-btn mob-btn-sm btn-mob-card-preview" style="background:#0ea5e9;color:#fff;border:none;padding:6px 10px;border-radius:8px;font-size:0.8rem;" title="Écouter un extrait de 30 secondes">
-                    <i class="fa-solid fa-play"></i>
+            <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+                <button type="button" class="btn-mob-card-preview" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    <i class="fa-solid fa-play"></i> <span>Écouter</span>
                 </button>
-                <a href="/api/direct-download?url=${encodeURIComponent(item.url)}&artist=${encodeURIComponent(item.artist)}&title=${encodeURIComponent(item.title)}" download="${esc(item.title)}.mp3" class="mob-btn mob-btn-sm mob-btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;" title="Télécharger directement sur ce téléphone">
-                    <i class="fa-solid fa-download"></i> MP3
+                <a href="/api/direct-download?url=${encodeURIComponent(item.url)}&artist=${encodeURIComponent(item.artist)}&title=${encodeURIComponent(item.title)}" download="${esc(item.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
                 </a>
             </div>
         `;
@@ -1064,27 +1080,46 @@
     function renderDiscography(tracks) {
         const container = $('mobDiscographyList');
         container.innerHTML = '';
+        const artist = state.currentSinger || '';
         tracks.forEach(tr => {
             const row = document.createElement('div');
             row.className = 'mob-discography-row';
+            row.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:10px;';
             const thumb = tr.thumbnail || '/static/icons/icon-192.png';
+            const fullQuery = (artist + ' ' + (tr.title || '')).trim();
             row.innerHTML = `
-                <img src="${esc(thumb)}" class="mob-disco-thumb" alt="" onerror="this.src='/static/icons/icon-192.png'">
-                <div class="mob-disco-info">
-                    <div class="mob-disco-title">${esc(tr.title)}</div>
-                    <div class="mob-disco-album">${esc(tr.album || 'Single')} ${tr.release_year ? '• ' + tr.release_year : ''}</div>
+                <div style="display:flex;align-items:center;gap:10px;width:100%;">
+                    <img src="${esc(thumb)}" class="mob-disco-thumb" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:46px;height:46px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+                    <div class="mob-disco-info" style="flex:1;min-width:0;overflow:hidden;">
+                        <div class="mob-disco-title" style="font-size:0.92rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(tr.title)}</div>
+                        <div class="mob-disco-album" style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(tr.album || 'Single')} ${tr.release_year ? '• ' + tr.release_year : ''}</div>
+                    </div>
+                    <div class="mob-disco-status" style="flex-shrink:0;display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+                        ${tr.belongs_to_artist === false 
+                            ? '<span class="mob-badge-dup" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.4);color:var(--danger);font-size:0.7rem;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-triangle-exclamation"></i> Autre</span>' 
+                            : '<span class="mob-badge-new" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:var(--success);font-size:0.7rem;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-circle-check"></i> Officiel</span>'
+                        }
+                        ${tr.is_duplicate
+                            ? '<span class="mob-badge-dup" style="font-size:0.7rem;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-check"></i> Présent</span>'
+                            : '<span class="mob-badge-new" style="font-size:0.7rem;padding:2px 6px;border-radius:4px;"><i class="fa-solid fa-sparkles"></i> Nouveau</span>'
+                        }
+                    </div>
                 </div>
-                <div class="mob-disco-status">
-                    ${tr.belongs_to_artist === false 
-                        ? '<span class="mob-badge-dup" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.4);color:var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i> Autre</span>' 
-                        : '<span class="mob-badge-new" style="background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:var(--success);"><i class="fa-solid fa-circle-check"></i> Officiel</span>'
-                    }
-                    ${tr.is_duplicate
-                        ? '<span class="mob-badge-dup"><i class="fa-solid fa-check"></i> Présent</span>'
-                        : '<span class="mob-badge-new"><i class="fa-solid fa-sparkles"></i> Nouveau</span>'
-                    }
+                <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+                    <button type="button" class="btn-disco-preview" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-play"></i> <span>Écouter</span>
+                    </button>
+                    <a href="/api/direct-download?q=${encodeURIComponent(fullQuery)}&artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
+                    </a>
                 </div>
             `;
+
+            const btnPrev = row.querySelector('.btn-disco-preview');
+            if (btnPrev) {
+                btnPrev.onclick = () => playMobAudioPreview(artist, tr.title, fullQuery, btnPrev);
+            }
+
             container.appendChild(row);
         });
     }
