@@ -1,6 +1,6 @@
 // Service Worker — Téléchargeur MP3 HD
-// Version du cache : mp3dl-v10-fresh
-const CACHE_VERSION = 'mp3dl-v10-fresh';
+// Version du cache : mp3dl-v12-human-themes-nobatchtabs
+const CACHE_VERSION = 'mp3dl-v12-human-themes-nobatchtabs';
 
 // ——— Installation : Activer immédiatement sans attendre ———
 self.addEventListener('install', (event) => {

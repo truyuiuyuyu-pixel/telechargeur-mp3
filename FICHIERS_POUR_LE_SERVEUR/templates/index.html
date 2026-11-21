@@ -7,7 +7,7 @@
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#6366f1">
     <link rel="icon" type="image/png" href="/static/icons/favicon.png">
-    <link rel="stylesheet" href="/static/css/style.css?v=10.0">
+    <link rel="stylesheet" href="/static/css/style.css?v=11.0">
     <!-- FontAwesome for music and control icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts — Polices Musique & Tech -->
@@ -164,8 +164,29 @@
                         <span class="badge-hd-pill-sm" style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid #f59e0b;"><i class="fa-solid fa-ghost"></i> Halloween</span>
                     </div>
 
-                    <h2 class="section-title">Explorez par Thème & Ambiance</h2>
-                    <p class="section-desc">Choisissez une ambiance (Amour, Halloween, Fête, Sport...). Accédez aux meilleurs morceaux cultes et téléchargez-les directement en MP3 HD 320k !</p>
+                    <h2 class="section-title">Explorez par Thème & Univers</h2>
+                    <p class="section-desc">Recherchez n'importe quel univers (Iron Man, Spider-Man, Marvel, Star Wars, Cinéma...) ou choisissez une ambiance culte !</p>
+                </div>
+
+                <!-- Barre de recherche globale dans les thèmes -->
+                <div class="themes-search-container" style="margin-bottom:20px;">
+                    <div style="display:flex;gap:10px;max-width:700px;margin:0 auto 12px auto;">
+                        <input type="text" id="themesSearchInput" placeholder="🔍 Rechercher un thème (ex: Iron Man, Spider-Man, Marvel, Star Wars...)" style="flex:1;padding:12px 18px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-elevated);color:#fff;font-size:1rem;font-weight:600;">
+                        <button type="button" id="btnThemesSearchDynamic" class="btn-primary" style="padding:12px 24px;border-radius:var(--radius-sm);font-weight:700;">
+                            <i class="fa-solid fa-magnifying-glass"></i> Rechercher
+                        </button>
+                    </div>
+                    <!-- Pilules de thèmes cultes -->
+                    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:15px;">
+                        <button type="button" class="desk-fast-theme-pill" data-theme="marvel" style="padding:6px 14px;border-radius:20px;border:1px solid #ef4444;background:rgba(239,68,68,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🛡️ Marvel & Avengers</button>
+                        <button type="button" class="desk-fast-theme-pill" data-theme="ironman" style="padding:6px 14px;border-radius:20px;border:1px solid #dc2626;background:rgba(220,38,38,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🦾 Iron Man (AC/DC)</button>
+                        <button type="button" class="desk-fast-theme-pill" data-theme="spiderman" style="padding:6px 14px;border-radius:20px;border:1px solid #e11d48;background:rgba(225,29,72,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🕷️ Spider-Man</button>
+                        <button type="button" class="desk-fast-theme-pill" data-theme="batman" style="padding:6px 14px;border-radius:20px;border:1px solid #64748b;background:rgba(100,116,139,0.25);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🦇 Batman & Gotham</button>
+                        <button type="button" class="desk-fast-theme-pill" data-theme="starwars" style="padding:6px 14px;border-radius:20px;border:1px solid #3b82f6;background:rgba(59,130,246,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">⚔️ Star Wars</button>
+                        <button type="button" class="desk-fast-theme-pill" data-theme="dragonball" style="padding:6px 14px;border-radius:20px;border:1px solid #ea580c;background:rgba(234,88,12,0.2);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🔥 Dragon Ball & Shonen</button>
+                        <button type="button" class="desk-fast-theme-pill" data-theme="cinema_soundtracks" style="padding:6px 14px;border-radius:20px;border:1px solid #f59e0b;background:rgba(245,158,11,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🎬 Cinéma & OST</button>
+                        <button type="button" class="desk-fast-theme-pill" data-theme="manga_anime" style="padding:6px 14px;border-radius:20px;border:1px solid #ec4899;background:rgba(236,72,153,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🎌 Manga & Animés</button>
+                    </div>
                 </div>
 
                 <!-- Grille des Thèmes -->
@@ -291,8 +312,8 @@
                         </div>
                         <div class="batch-btn-group">
                             <button type="button" id="btnVerifySinger" class="btn-secondary" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;" title="Vérifier que chaque musique appartient bien à ce chanteur">
-                                <i class="fa-solid fa-user-check"></i>
-                                <span>Scanner & Vérifier le Chanteur</span>
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>✨ Vérifier les morceaux officiels</span>
                             </button>
                             <button type="button" id="btnDownloadAllSinger" class="btn-primary btn-batch-dl">
                                 <i class="fa-solid fa-download"></i>
@@ -676,6 +697,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=10.0"></script>
+    <script src="/static/js/app.js?v=12.0"></script>
 </body>
 </html>

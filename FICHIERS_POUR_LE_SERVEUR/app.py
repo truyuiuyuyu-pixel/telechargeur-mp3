@@ -201,7 +201,83 @@ def search():
 
 @app.route('/api/themes')
 def api_themes():
+    q = request.args.get('q', '').strip()
+    if q:
+        return jsonify(themes.search_themes_catalog(q))
     return jsonify(themes.get_all_themes())
+
+@app.route('/api/themes/dynamic')
+def api_themes_dynamic():
+    """
+    Recherche ou création dynamique d'un thème complet sur le web.
+    Permet à l'utilisateur de chercher n'importe quel univers (ex: Iron Man, Spider-Man, Star Wars, Batman, Zelda...)
+    et de recevoir automatiquement une sélection complète et riche de plus de 30 musiques de ce thème !
+    """
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify({"error": "Requête vide"}), 400
+    
+    # 1. Vérifier si un thème existant correspond
+    theme_match = themes.match_theme_by_query(query)
+    
+    # 2. Effectuer des requêtes multiples pour trouver des dizaines de morceaux variés
+    queries = [
+        f"{query} theme song official soundtrack",
+        f"{query} ost music original",
+        f"{query} best tracks full album"
+    ]
+    seen_ids = set()
+    web_results = []
+    
+    for q_item in queries:
+        try:
+            res = downloader.search_tracks(q_item, source='all', limit=15)
+            for r in res:
+                uid = r.get("id") or r.get("url") or f"{r.get('artist')}_{r.get('title')}".lower()
+                if uid and uid not in seen_ids:
+                    seen_ids.add(uid)
+                    web_results.append(r)
+        except Exception as e:
+            print(f"Erreur recherche query dynamic '{q_item}': {e}")
+
+    combined_tracks = []
+    if theme_match and theme_match.get("tracks"):
+        for t in theme_match.get("tracks"):
+            combined_tracks.append({
+                "title": t.get("title"),
+                "artist": t.get("artist"),
+                "query": t.get("query"),
+                "url": t.get("url"),
+                "thumbnail": t.get("thumbnail")
+            })
+            
+    for r in web_results:
+        tit = r.get("title") or r.get("raw_title") or "Titre"
+        if not any(tit.lower() in (ct.get("title") or "").lower() for ct in combined_tracks):
+            combined_tracks.append({
+                "title": tit,
+                "artist": r.get("artist") or query.title(),
+                "query": f"{r.get('artist', '')} {r.get('title', '')}".strip() or r.get("url"),
+                "url": r.get("url"),
+                "thumbnail": r.get("thumbnail")
+            })
+
+    dyn_id = "dyn_" + sanitize_filename(query).lower()[:20]
+    icon = theme_match.get("icon", "fa-film") if theme_match else "fa-film"
+    color = theme_match.get("color", "#6366f1") if theme_match else "#6366f1"
+    
+    dynamic_theme = {
+        "id": dyn_id,
+        "name": (theme_match.get("name") if theme_match else query.title()),
+        "icon": icon,
+        "color": color,
+        "badge": f"🎬 Thème {query.title()}",
+        "description": f"Sélection enrichie de {len(combined_tracks)} musiques cultes pour l'univers {query.title()}",
+        "tracks": combined_tracks,
+        "track_count": len(combined_tracks)
+    }
+    themes.DYNAMIC_THEMES[dyn_id] = dynamic_theme
+    return jsonify(dynamic_theme)
 
 @app.route('/api/theme/<theme_id>')
 def api_theme(theme_id):
@@ -221,7 +297,7 @@ def api_theme_search(theme_id):
         return jsonify({"error": "Thème introuvable"}), 404
 
     q = request.args.get('q', '').strip()
-    limit = int(request.args.get('limit', 12))
+    limit = int(request.args.get('limit', 30))
     theme_name = theme.get("name", "")
     keywords = theme.get("keywords", [])
     main_keyword = keywords[0] if keywords else theme_name

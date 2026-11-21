@@ -8,6 +8,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Elements
     const audio = document.getElementById('audioElement');
+
+    async function downloadBlobFile(url, filename) {
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error("Fichier non disponible");
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = filename || 'musique.mp3';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                a.remove();
+                URL.revokeObjectURL(blobUrl);
+            }, 3000);
+        } catch (e) {
+            console.error("Erreur téléchargement blob:", e);
+        }
+    }
     const toast = document.getElementById('toast');
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchInput');
@@ -472,6 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    let allThemesDesktopData = [];
+
     async function loadThemesCatalog() {
         const grid = document.getElementById('themesCatalogGrid');
         if (!grid) return;
@@ -479,44 +502,109 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const res = await fetch('/api/themes');
-            const list = await res.json();
-            grid.innerHTML = '';
-
-            list.forEach(t => {
-                const card = document.createElement('div');
-                card.className = 'theme-card-box';
-                card.dataset.id = t.id;
-                card.innerHTML = `
-                    <div class="theme-card-header">
-                        <div class="theme-card-icon" style="color:${t.color || 'var(--primary)'};background:${t.color ? t.color + '22' : 'var(--primary-light)'}">
-                            <i class="fa-solid ${t.icon || 'fa-music'}"></i>
-                        </div>
-                        <div>
-                            <div class="theme-card-name">${escapeHtml(t.name)}</div>
-                            <span class="theme-card-badge" style="color:var(--text-muted);font-size:0.8rem;">${t.track_count || 0} titres cultes</span>
-                        </div>
-                    </div>
-                    <p class="theme-card-desc" style="font-size:0.85rem;color:var(--text-muted);margin-top:6px;">${escapeHtml(t.description || '')}</p>
-                `;
-                card.addEventListener('click', () => {
-                    document.querySelectorAll('.theme-card-box').forEach(c => c.classList.remove('active'));
-                    card.classList.add('active');
-                    openThemeDetail(t.id);
-                });
-                grid.appendChild(card);
-            });
-
-            if (!currentSelectedThemeId && list.length > 0) {
-                openThemeDetail(list[0].id);
-            } else if (currentSelectedThemeId) {
-                openThemeDetail(currentSelectedThemeId);
-            }
+            allThemesDesktopData = await res.json();
+            renderThemesDesktopGrid(allThemesDesktopData);
+            setupThemesDesktopSearch();
         } catch (e) {
             grid.innerHTML = '<div class="empty-state"><p>Erreur lors du chargement des thèmes.</p></div>';
         }
     }
 
-    async function openThemeDetail(themeId) {
+    function renderThemesDesktopGrid(themesList) {
+        const grid = document.getElementById('themesCatalogGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+        if (!themesList || !themesList.length) {
+            grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;text-align:center;padding:30px;"><i class="fa-solid fa-search" style="font-size:2rem;color:var(--text-muted);margin-bottom:10px;"></i><p>Aucun thème prédéfini ne correspond. Cliquez sur « Rechercher » pour chercher cet univers sur le web !</p></div>';
+            return;
+        }
+
+        themesList.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'theme-card-box';
+            card.dataset.id = t.id;
+            card.innerHTML = `
+                <div class="theme-card-header">
+                    <div class="theme-card-icon" style="color:${t.color || 'var(--primary)'};background:${t.color ? t.color + '22' : 'var(--primary-light)'}">
+                        <i class="fa-solid ${t.icon || 'fa-music'}"></i>
+                    </div>
+                    <div>
+                        <div class="theme-card-name">${escapeHtml(t.name)}</div>
+                        <span class="theme-card-badge" style="color:var(--text-muted);font-size:0.8rem;">${t.track_count || (t.tracks ? t.tracks.length : 0)} titres cultes</span>
+                    </div>
+                </div>
+                <p class="theme-card-desc" style="font-size:0.85rem;color:var(--text-muted);margin-top:6px;">${escapeHtml(t.description || '')}</p>
+            `;
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.theme-card-box').forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                openThemeDetail(t.id, t);
+            });
+            grid.appendChild(card);
+        });
+    }
+
+    function setupThemesDesktopSearch() {
+        const sInput = document.getElementById('themesSearchInput');
+        const sBtn = document.getElementById('btnThemesSearchDynamic');
+
+        // Pilules rapides
+        document.querySelectorAll('.desk-fast-theme-pill').forEach(pill => {
+            pill.onclick = () => {
+                const tid = pill.dataset.theme;
+                if (tid) openThemeDetail(tid);
+            };
+        });
+
+        if (sInput) {
+            sInput.oninput = () => {
+                const q = sInput.value.toLowerCase().trim();
+                if (!q) {
+                    renderThemesDesktopGrid(allThemesDesktopData);
+                    return;
+                }
+                const filtered = allThemesDesktopData.filter(t => {
+                    const name = (t.name || '').toLowerCase();
+                    const desc = (t.description || '').toLowerCase();
+                    const kws = (t.keywords || []).map(k => k.toLowerCase());
+                    return name.includes(q) || desc.includes(q) || kws.some(k => k.includes(q));
+                });
+                renderThemesDesktopGrid(filtered);
+            };
+
+            const doDesktopThemeSearch = async () => {
+                const q = sInput.value.trim();
+                if (!q) return;
+                const match = allThemesDesktopData.find(t => t.name.toLowerCase().includes(q.toLowerCase()) || t.id.toLowerCase() === q.toLowerCase());
+                if (match) {
+                    openThemeDetail(match.id, match);
+                    return;
+                }
+                showToast(`🎬 Recherche des musiques du thème "${q}" en ligne...`);
+                try {
+                    const res = await fetch(`/api/themes/dynamic?q=${encodeURIComponent(q)}`);
+                    const data = await res.json();
+                    if (data && data.tracks && data.tracks.length) {
+                        openThemeDetail(data.id, data);
+                    } else {
+                        showToast(`Aucun morceau trouvé pour le thème "${q}"`, true);
+                    }
+                } catch {
+                    showToast("Erreur recherche thème en ligne", true);
+                }
+            };
+
+            sInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    doDesktopThemeSearch();
+                }
+            };
+            if (sBtn) sBtn.onclick = doDesktopThemeSearch;
+        }
+    }
+
+    async function openThemeDetail(themeId, prefetchedTheme) {
         currentSelectedThemeId = themeId;
         const section = document.getElementById('themeDetailSection');
         const titleEl = document.getElementById('themeDetailHeaderTitle');
@@ -530,8 +618,11 @@ document.addEventListener('DOMContentLoaded', () => {
         tracksGrid.innerHTML = '<div class="loader-box"><div class="spinner"></div><p>Chargement des titres du thème...</p></div>';
 
         try {
-            const res = await fetch(`/api/theme/${themeId}`);
-            const theme = await res.json();
+            let theme = prefetchedTheme;
+            if (!theme || !theme.tracks) {
+                const res = await fetch(`/api/theme/${themeId}`);
+                theme = await res.json();
+            }
 
             titleEl.innerHTML = `<i class="fa-solid ${theme.icon || 'fa-music'}" style="color:${theme.color || 'var(--primary)'}"></i> ${escapeHtml(theme.name)}`;
             descEl.textContent = theme.description || '';
@@ -559,13 +650,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         showToast(`📲 Enregistrement de ${toDownload.length} fichiers MP3 réels...`);
                         for (let i = 0; i < toDownload.length; i++) {
                             const tr = toDownload[i];
-                            const link = document.createElement('a');
-                            link.href = `/api/download-file/${encodeURIComponent(tr.rel_path)}`;
-                            link.setAttribute('download', tr.filename || `${tr.title}.mp3`);
-                            document.body.appendChild(link);
-                            link.click();
-                            link.remove();
-                            await new Promise(r => setTimeout(r, 750));
+                            await downloadBlobFile(`/api/download-file/${encodeURIComponent(tr.rel_path)}`, tr.filename || `${tr.title}.mp3`);
+                            await new Promise(r => setTimeout(r, 800));
                         }
                         showToast(`✅ ${toDownload.length} MP3 enregistrés directement sans ZIP !`);
                     } catch (e) {
@@ -1011,16 +1097,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const track = allTracks[i];
                     const title = track.title || track.filename;
                     showToast(`MP3 ${i + 1}/${allTracks.length} : ${title}`);
-
-                    const link = document.createElement('a');
-                    link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
-                    link.setAttribute('download', track.filename || `${title}.mp3`);
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
+                    await downloadBlobFile(`/api/download-file/${encodeURIComponent(track.rel_path)}`, track.filename || `${title}.mp3`);
                     downloaded++;
-
-                    await new Promise(r => setTimeout(r, 750));
+                    await new Promise(r => setTimeout(r, 800));
                 }
 
                 showToast(`✅ ${downloaded} fichiers MP3 téléchargés directement sans ZIP !`);
@@ -1457,13 +1536,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         showToast(`📲 Enregistrement de ${sObj.tracks.length} fichiers MP3 réels...`);
                         for (let i = 0; i < sObj.tracks.length; i++) {
                             const tr = sObj.tracks[i];
-                            const link = document.createElement('a');
-                            link.href = `/api/download-file/${encodeURIComponent(tr.rel_path)}`;
-                            link.setAttribute('download', tr.filename || `${tr.title}.mp3`);
-                            document.body.appendChild(link);
-                            link.click();
-                            link.remove();
-                            await new Promise(r => setTimeout(r, 750));
+                            await downloadBlobFile(`/api/download-file/${encodeURIComponent(tr.rel_path)}`, tr.filename || `${tr.title}.mp3`);
+                            await new Promise(r => setTimeout(r, 800));
                         }
                         showToast(`✅ ${sObj.tracks.length} MP3 enregistrés directement sans ZIP !`);
                     } catch (e) {

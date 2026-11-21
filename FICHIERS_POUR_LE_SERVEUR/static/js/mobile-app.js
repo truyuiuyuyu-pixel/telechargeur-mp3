@@ -415,6 +415,8 @@
         });
     }
 
+    let mobAllThemesData = [];
+
     async function loadMobThemes() {
         const grid = $('mobThemesGrid');
         if (!grid) return;
@@ -422,58 +424,151 @@
 
         try {
             const res = await fetch('/api/themes');
-            const list = await res.json();
-            grid.innerHTML = '';
-
-            list.forEach(t => {
-                const card = document.createElement('div');
-                card.className = 'mob-theme-card';
-                card.dataset.id = t.id;
-                card.innerHTML = `
-                    <div class="mob-theme-icon" style="color:${t.color || 'var(--primary)'};background:${t.color ? t.color + '22' : 'var(--bg-elevated)'}">
-                        <i class="fa-solid ${t.icon || 'fa-music'}"></i>
-                    </div>
-                    <div class="mob-theme-info">
-                        <div class="mob-theme-name">${esc(t.name)}</div>
-                        <div class="mob-theme-desc">${esc(t.description || '')}</div>
-                        <span style="font-size:0.7rem;color:var(--text-muted);font-weight:600;">${t.track_count || 0} titres cultes</span>
-                    </div>
-                    <div class="mob-theme-arrow"><i class="fa-solid fa-chevron-right"></i></div>
-                `;
-                card.addEventListener('click', () => {
-                    openMobThemeDetail(t.id);
-                });
-                grid.appendChild(card);
-            });
-
-            if (!currentMobSelectedThemeId && list.length > 0) {
-                openMobThemeDetail(list[0].id);
-            } else if (currentMobSelectedThemeId) {
-                openMobThemeDetail(currentMobSelectedThemeId);
-            }
+            mobAllThemesData = await res.json();
+            renderMobThemesGrid(mobAllThemesData);
+            setupMobThemeCatalogSearch();
         } catch (e) {
             grid.innerHTML = '<div class="mob-empty">Erreur chargement thèmes</div>';
         }
     }
 
-    async function openMobThemeDetail(themeId) {
+    function renderMobThemesGrid(themesList, searchQ) {
+        const grid = $('mobThemesGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        if (searchQ && searchQ.trim()) {
+            const qClean = searchQ.trim();
+            const dynCard = document.createElement('div');
+            dynCard.className = 'mob-theme-card';
+            dynCard.style.cssText = 'border:2px dashed var(--primary);background:rgba(99,102,241,0.15);margin-bottom:12px;';
+            dynCard.innerHTML = `
+                <div class="mob-theme-icon" style="color:var(--primary);background:rgba(99,102,241,0.25);">
+                    <i class="fa-solid fa-sparkles"></i>
+                </div>
+                <div class="mob-theme-info">
+                    <div class="mob-theme-name" style="color:#a5b4fc">✨ Trouver 30+ musiques pour "${esc(qClean)}"</div>
+                    <div class="mob-theme-desc">Recherche ultra-puissante en direct sur le web</div>
+                </div>
+                <div class="mob-theme-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            `;
+            dynCard.onclick = () => doDynamicThemeSearch();
+            grid.appendChild(dynCard);
+        }
+
+        if (!themesList || !themesList.length) {
+            if (!searchQ) {
+                grid.innerHTML = '<div class="mob-empty"><i class="fa-solid fa-search"></i><h3>Aucun thème trouvé</h3><p>Tapez un univers comme Iron Man, Spider-Man ou Star Wars ci-dessus.</p></div>';
+            }
+            return;
+        }
+
+        themesList.forEach(t => {
+            const card = document.createElement('div');
+            card.className = 'mob-theme-card';
+            card.dataset.id = t.id;
+            card.innerHTML = `
+                <div class="mob-theme-icon" style="color:${t.color || 'var(--primary)'};background:${t.color ? t.color + '22' : 'var(--bg-elevated)'}">
+                    <i class="fa-solid ${t.icon || 'fa-music'}"></i>
+                </div>
+                <div class="mob-theme-info">
+                    <div class="mob-theme-name">${esc(t.name)}</div>
+                    <div class="mob-theme-desc">${esc(t.description || '')}</div>
+                    <span style="font-size:0.7rem;color:var(--text-muted);font-weight:600;">${t.track_count || (t.tracks ? t.tracks.length : 0)} titres cultes</span>
+                </div>
+                <div class="mob-theme-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            `;
+            card.addEventListener('click', () => {
+                openMobThemeDetail(t.id, t);
+            });
+            grid.appendChild(card);
+        });
+    }
+
+    function setupMobThemeCatalogSearch() {
+        const sInput = $('mobThemesCatalogSearchInput');
+        const sBtn = $('btnMobSearchThemeDynamic');
+
+        // Pilules rapides (Marvel, Iron Man, Spider-Man, Star Wars, etc.)
+        document.querySelectorAll('.mob-fast-theme-pill').forEach(pill => {
+            pill.onclick = () => {
+                const themeId = pill.dataset.theme;
+                if (themeId) openMobThemeDetail(themeId);
+            };
+        });
+
+        if (sInput) {
+            sInput.oninput = () => {
+                const q = sInput.value.toLowerCase().trim();
+                if (!q) {
+                    renderMobThemesGrid(mobAllThemesData);
+                    return;
+                }
+                const filtered = mobAllThemesData.filter(t => {
+                    const name = (t.name || '').toLowerCase();
+                    const desc = (t.description || '').toLowerCase();
+                    const kws = (t.keywords || []).map(k => k.toLowerCase());
+                    return name.includes(q) || desc.includes(q) || kws.some(k => k.includes(q));
+                });
+                renderMobThemesGrid(filtered, q);
+            };
+
+            const doDynamicThemeSearch = async () => {
+                const q = sInput.value.trim();
+                if (!q) return;
+                // Si trouvé dans les thèmes locaux
+                const exact = mobAllThemesData.find(t => t.name.toLowerCase().includes(q.toLowerCase()) || t.id.toLowerCase() === q.toLowerCase());
+                if (exact) {
+                    openMobThemeDetail(exact.id, exact);
+                    return;
+                }
+                // Sinon recherche dynamique en ligne pour n'importe quel univers !
+                showToast(`🎬 Recherche des musiques du thème "${q}" en ligne...`);
+                try {
+                    const res = await fetch(`/api/themes/dynamic?q=${encodeURIComponent(q)}`);
+                    const data = await res.json();
+                    if (data && data.tracks && data.tracks.length) {
+                        openMobThemeDetail(data.id, data);
+                    } else {
+                        showToast(`Aucun morceau trouvé pour le thème "${q}"`, true);
+                    }
+                } catch {
+                    showToast("Erreur recherche thème en ligne", true);
+                }
+            };
+
+            sInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    doDynamicThemeSearch();
+                }
+            };
+            if (sBtn) sBtn.onclick = doDynamicThemeSearch;
+        }
+    }
+
+    async function openMobThemeDetail(themeId, prefetchedTheme) {
         currentMobSelectedThemeId = themeId;
         const detail = $('mobThemeDetail');
         const titleEl = $('mobThemeDetailTitle');
         const descEl = $('mobThemeDetailDesc');
         const listEl = $('mobThemeTracksList');
         const btnAll = $('btnMobDownloadThemeAll');
-        const btnZip = $('btnMobDownloadThemeZip');
+        const grid = $('mobThemesGrid');
 
         if (!detail || !listEl) return;
+        if (grid) grid.style.display = 'none';
         detail.style.display = 'block';
         listEl.innerHTML = '<div class="mob-loader"><div class="mob-spinner"></div><span>Chargement des morceaux…</span></div>';
 
         detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         try {
-            const res = await fetch(`/api/theme/${themeId}`);
-            const theme = await res.json();
+            let theme = prefetchedTheme;
+            if (!theme || !theme.tracks) {
+                const res = await fetch(`/api/theme/${themeId}`);
+                theme = await res.json();
+            }
 
             titleEl.innerHTML = `<i class="fa-solid ${theme.icon || 'fa-music'}" style="color:${theme.color || 'var(--primary)'}"></i> ${esc(theme.name)}`;
             descEl.textContent = theme.description || '';
@@ -505,15 +600,21 @@
                         <button type="button" class="btn-preview-theme-item" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                             <i class="fa-solid fa-play"></i> <span>Écouter</span>
                         </button>
-                        <a href="/api/direct-download?q=${encodeURIComponent(tr.query || `${tr.artist} ${tr.title} lyrics`)}&artist=${encodeURIComponent(tr.artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <button type="button" class="btn-theme-item-dl" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                             <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
-                        </a>
+                        </button>
                     </div>
                 `;
 
                 const btnPrev = trCard.querySelector('.btn-preview-theme-item');
                 if (btnPrev) {
                     btnPrev.onclick = () => playMobAudioPreview(tr.artist, tr.title, tr.query, btnPrev);
+                }
+
+                const btnDl = trCard.querySelector('.btn-theme-item-dl');
+                if (btnDl) {
+                    const targetQ = tr.query || `${tr.artist} ${tr.title} audio`;
+                    btnDl.onclick = () => triggerDownload(targetQ, tr.artist, tr.title, null, btnDl);
                 }
 
                 listEl.appendChild(trCard);
@@ -585,9 +686,9 @@
                                     <button type="button" class="btn-theme-online-prev" style="flex:1;padding:8px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
                                         <i class="fa-solid fa-play"></i> <span>Écouter</span>
                                     </button>
-                                    <a href="/api/direct-download?url=${encodeURIComponent(r.url)}&artist=${encodeURIComponent(r.artist)}&title=${encodeURIComponent(r.title)}" download="${esc(r.title)}.mp3" style="flex:1.3;padding:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:0.8rem;display:flex;align-items:center;justify-content:center;gap:4px;">
+                                    <button type="button" class="btn-theme-online-dl" style="flex:1.3;padding:8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;">
                                         <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
-                                    </a>
+                                    </button>
                                 </div>
                             `;
 
@@ -596,10 +697,69 @@
                                 btnPrev.onclick = () => playMobAudioPreview(r.artist, r.title, r.title, btnPrev);
                             }
 
+                            const btnDl = card.querySelector('.btn-theme-online-dl');
+                            if (btnDl) {
+                                btnDl.onclick = () => triggerDownload(r.url, r.artist, r.title, r.thumbnail, btnDl);
+                            }
+
                             onlineResults.appendChild(card);
                         });
                     } catch (e) {
                         onlineResults.innerHTML = '<div style="font-size:0.8rem;color:var(--danger);text-align:center;padding:8px;">Erreur lors de la recherche.</div>';
+                    }
+                };
+            }
+
+            const btnLoadMore = $('btnMobLoadMoreTheme');
+            if (btnLoadMore) {
+                btnLoadMore.onclick = async () => {
+                    btnLoadMore.disabled = true;
+                    btnLoadMore.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Recherche de 30 musiques...</span>';
+                    try {
+                        const sRes = await fetch(`/api/theme/${themeId}/search?limit=30`);
+                        const sData = await sRes.json();
+                        const extraTracks = sData.results || [];
+                        if (extraTracks.length === 0) {
+                            showToast("Aucun titre supplémentaire trouvé", true);
+                        } else {
+                            extraTracks.forEach(r => {
+                                const trCard = document.createElement('div');
+                                trCard.className = 'mob-result-card';
+                                trCard.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:10px;';
+                                trCard.innerHTML = `
+                                    <div style="display:flex;align-items:center;gap:10px;width:100%;">
+                                        <img src="${esc(r.thumbnail || '/static/icons/icon-192.png')}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:42px;height:42px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+                                        <div style="flex:1;min-width:0;overflow:hidden;">
+                                            <div style="font-size:0.95rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.title)}</div>
+                                            <div style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-microphone"></i> ${esc(r.artist)}</div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+                                        <button type="button" class="btn-preview-extra-item" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                                            <i class="fa-solid fa-play"></i> <span>Écouter</span>
+                                        </button>
+                                        <button type="button" class="btn-extra-item-dl" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                                            <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
+                                        </button>
+                                    </div>
+                                `;
+                                const btnPrev = trCard.querySelector('.btn-preview-extra-item');
+                                if (btnPrev) {
+                                    btnPrev.onclick = () => playMobAudioPreview(r.artist, r.title, r.title, btnPrev);
+                                }
+                                const btnDl = trCard.querySelector('.btn-extra-item-dl');
+                                if (btnDl) {
+                                    btnDl.onclick = () => triggerDownload(r.url, r.artist, r.title, r.thumbnail, btnDl);
+                                }
+                                listEl.appendChild(trCard);
+                            });
+                            showToast(`✨ ${extraTracks.length} nouvelles musiques ajoutées au thème !`);
+                        }
+                    } catch (e) {
+                        showToast("Erreur lors de la recherche", true);
+                    } finally {
+                        btnLoadMore.disabled = false;
+                        btnLoadMore.innerHTML = '<i class="fa-solid fa-sparkles"></i> ✨ Charger encore plus de musiques';
                     }
                 };
             }
@@ -625,32 +785,99 @@
         }
     }
 
+    async function downloadBlobFile(url, filename) {
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error("Fichier non disponible");
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = filename || 'musique.mp3';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                a.remove();
+                URL.revokeObjectURL(blobUrl);
+            }, 3000);
+        } catch (e) {
+            console.error("Erreur téléchargement blob:", e);
+        }
+    }
+
+    function showBatchDownloadModal({ title, count, zipUrl, tracks, onMp3Choice }) {
+        const modal = $('mobBatchModal');
+        const modalTitle = $('mobBatchModalTitle');
+        const modalDesc = $('mobBatchModalDesc');
+        const btnZip = $('btnBatchZipChoice');
+        const btnMp3 = $('btnBatchMp3Choice');
+        const btnCancel = $('btnBatchModalCancel');
+        
+        if (!modal) {
+            if (zipUrl) window.location.href = zipUrl;
+            return;
+        }
+
+        if (modalTitle) modalTitle.textContent = title || `Télécharger ${count || ''} musiques`;
+        if (modalDesc) modalDesc.textContent = `Comment souhaites-tu enregistrer les ${count || ''} morceaux sur ton appareil ?`;
+
+        modal.style.display = 'flex';
+
+        const closeModal = () => {
+            modal.style.display = 'none';
+        };
+
+        if (btnCancel) btnCancel.onclick = closeModal;
+
+        if (btnZip) {
+            btnZip.onclick = () => {
+                closeModal();
+                showToast("📦 Téléchargement de l'album en 1 fichier ZIP (zéro onglet)...");
+                const a = document.createElement('a');
+                a.href = zipUrl;
+                a.download = "";
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => a.remove(), 1000);
+            };
+        }
+
+        if (btnMp3) {
+            btnMp3.onclick = () => {
+                closeModal();
+                if (onMp3Choice) {
+                    onMp3Choice();
+                } else if (tracks && tracks.length) {
+                    downloadTracksSequentially(tracks, title);
+                }
+            };
+        }
+    }
+
     async function downloadTracksSequentially(tracks, label) {
         if (!tracks || !tracks.length) {
             showToast("Aucun fichier MP3 trouvé à enregistrer", true);
             return;
         }
 
-        showToast(`📲 Début de l'enregistrement de ${tracks.length} MP3 sur votre téléphone...`);
+        showToast(`📲 Enregistrement silencieux de ${tracks.length} MP3 sans onglets...`);
         let downloaded = 0;
 
         for (let i = 0; i < tracks.length; i++) {
             const track = tracks[i];
             const title = track.title || track.filename || `Morceau_${i+1}`;
-            showToast(`📲 MP3 ${i + 1}/${tracks.length} : ${title}`);
+            showToast(`💾 MP3 ${i + 1}/${tracks.length} : ${title}`);
+            const fname = track.filename || `${title}.mp3`;
+            const fileUrl = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
 
-            const link = document.createElement('a');
-            link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
-            link.setAttribute('download', track.filename || `${title}.mp3`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            await downloadBlobFile(fileUrl, fname);
             downloaded++;
 
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 900));
         }
 
-        showToast(`✅ ${downloaded} fichiers MP3 réels enregistrés directement dans votre téléphone !`);
+        showToast(`✅ ${downloaded} musiques bien enregistrées sur votre appareil sans aucun onglet ouvert !`);
     }
 
     async function downloadThemeTracksDirectly(themeId) {
@@ -673,11 +900,17 @@
             });
 
             if (matchingTracks.length === 0) {
-                showToast("Téléchargez d'abord le thème via le bouton ci-dessus.", true);
+                showToast("Télécharge d'abord le thème via le bouton ci-dessus.", true);
                 return;
             }
 
-            await downloadTracksSequentially(matchingTracks, theme.name);
+            const zipUrl = `/api/theme/${themeId}/download-zip`;
+            showBatchDownloadModal({
+                title: `Thème : ${theme.name}`,
+                count: `${matchingTracks.length}`,
+                zipUrl: zipUrl,
+                tracks: matchingTracks
+            });
         } catch (e) {
             showToast("Erreur lors de la récupération des MP3 du thème", true);
         }
@@ -694,7 +927,15 @@
                 return;
             }
 
-            await downloadTracksSequentially(singerObj.tracks, artistName);
+            const cleanArtist = encodeURIComponent(artistName);
+            const zipUrl = `/api/singer/download-zip/${cleanArtist}`;
+
+            showBatchDownloadModal({
+                title: `Discographie de ${artistName}`,
+                count: `${singerObj.tracks.length}`,
+                zipUrl: zipUrl,
+                tracks: singerObj.tracks
+            });
         } catch (e) {
             showToast("Erreur lors de la récupération des MP3 de l'artiste", true);
         }
@@ -780,9 +1021,9 @@
                 <button type="button" class="btn-mob-card-preview" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                     <i class="fa-solid fa-play"></i> <span>Écouter</span>
                 </button>
-                <a href="/api/direct-download?url=${encodeURIComponent(item.url)}&artist=${encodeURIComponent(item.artist)}&title=${encodeURIComponent(item.title)}" download="${esc(item.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                <button type="button" class="btn-mob-card-dl" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                     <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
-                </a>
+                </button>
             </div>
         `;
 
@@ -791,14 +1032,24 @@
             btnPrev.onclick = () => playMobAudioPreview(item.artist, item.title, item.title, btnPrev);
         }
 
+        const btnDl = card.querySelector('.btn-mob-card-dl');
+        if (btnDl) {
+            btnDl.onclick = () => triggerDownload(item.url, item.artist, item.title, thumb, btnDl);
+        }
+
         return card;
     }
 
     // =========================================================
-    // TÉLÉCHARGEMENT
+    // TÉLÉCHARGEMENT DIRECT ET ASYNCHRONE
     // =========================================================
-    async function triggerDownload(url, artist, title, coverUrl) {
+    async function triggerDownload(url, artist, title, coverUrl, btnEl) {
         showToast(`Démarrage : ${title}`);
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.style.background = '#0284c7';
+            btnEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Préparation…</span>';
+        }
         try {
             const res = await fetch('/api/download', {
                 method: 'POST',
@@ -807,17 +1058,24 @@
             });
             const data = await res.json();
             if (data.task_id) {
-                trackProgress(data.task_id, artist, title);
+                trackProgress(data.task_id, artist, title, btnEl);
+            } else {
+                throw new Error("Erreur démarrage tâche");
             }
         } catch (err) {
             showToast('Erreur de téléchargement', true);
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                btnEl.innerHTML = '<i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>';
+            }
         }
     }
 
-    function trackProgress(taskId, artist, title) {
+    function trackProgress(taskId, artist, title, btnEl) {
         const wrap = $('mobDownloadsWrap');
         const list = $('mobDownloadsList');
-        wrap.style.display = 'block';
+        if (wrap) wrap.style.display = 'block';
 
         const card = document.createElement('div');
         card.className = 'mob-dl-card';
@@ -832,7 +1090,7 @@
             </div>
             <div class="mob-dl-status" id="mobDlMsg_${taskId}">Démarrage…</div>
         `;
-        list.prepend(card);
+        if (list) list.prepend(card);
 
         const interval = setInterval(async () => {
             try {
@@ -843,22 +1101,45 @@
                 const fill = $(`mobDlFill_${taskId}`);
                 const pct = $(`mobDlPct_${taskId}`);
                 const msg = $(`mobDlMsg_${taskId}`);
-                if (fill) fill.style.width = `${info.progress || 0}%`;
-                if (pct) pct.textContent = `${info.progress || 0}%`;
+                const progressNum = info.progress || 0;
+                if (fill) fill.style.width = `${progressNum}%`;
+                if (pct) pct.textContent = `${progressNum}%`;
                 if (msg) msg.textContent = info.message || '';
+
+                if (btnEl && info.status !== 'completed' && info.status !== 'error') {
+                    btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${progressNum}%</span>`;
+                }
 
                 if (info.status === 'completed') {
                     clearInterval(interval);
                     if (fill) fill.style.background = 'var(--success)';
-                    showToast(`✅ "${title}" téléchargé !`);
+                    showToast(`✅ "${title}" prêt et enregistré !`);
                     loadLibrary();
 
-                    // 1. Déclencher le téléchargement navigateur direct sur mobile
-                    try {
-                        window.location.href = `/api/download-ready/${taskId}`;
-                    } catch (e) {}
+                    // 1. Bouton sur la carte transformé en bouton direct
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                        btnEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> <span>Enregistrer MP3</span>';
+                        btnEl.onclick = (e) => {
+                            e.preventDefault();
+                            window.location.href = `/api/download-ready/${taskId}`;
+                        };
+                    }
 
-                    // 2. Afficher la bannière persistante tout en haut
+                    // 2. Déclencher automatiquement le téléchargement du vrai fichier MP3
+                    try {
+                        const dlLink = document.createElement('a');
+                        dlLink.href = `/api/download-ready/${taskId}`;
+                        dlLink.setAttribute('download', info.filename || `${title}.mp3`);
+                        document.body.appendChild(dlLink);
+                        dlLink.click();
+                        setTimeout(() => dlLink.remove(), 1000);
+                    } catch (e) {
+                        window.location.href = `/api/download-ready/${taskId}`;
+                    }
+
+                    // 3. Afficher la bannière persistante tout en haut
                     const sticky = $('mobStickyAlert');
                     const stickyTitle = $('mobStickyAlertTitle');
                     const stickyLink = $('mobStickyAlertLink');
@@ -869,7 +1150,7 @@
                         sticky.style.display = 'block';
                     }
 
-                    // 3. Carte avec gros bouton permanent
+                    // 4. Carte avec gros bouton permanent
                     const dlCard = $(`mobDl_${taskId}`);
                     if (dlCard) {
                         const saveLink = document.createElement('a');
@@ -880,13 +1161,12 @@
                         saveLink.innerHTML = '<i class="fa-solid fa-mobile-screen-button"></i> 📲 Enregistrer sur ce téléphone (MP3 HD)';
                         dlCard.appendChild(saveLink);
 
-                        // Bouton pour fermer manuellement la carte
                         const closeBtn = document.createElement('button');
                         closeBtn.innerHTML = '&times;';
                         closeBtn.style.cssText = 'position:absolute;top:4px;right:8px;background:none;border:none;color:var(--text-muted);font-size:1.3rem;cursor:pointer;';
                         closeBtn.onclick = () => {
                             dlCard.remove();
-                            if (!list.children.length) wrap.style.display = 'none';
+                            if (list && !list.children.length && wrap) wrap.style.display = 'none';
                         };
                         dlCard.style.position = 'relative';
                         dlCard.appendChild(closeBtn);
@@ -895,6 +1175,15 @@
                     clearInterval(interval);
                     showToast(`❌ Erreur : ${info.message}`, true);
                     if ($(`mobDlFill_${taskId}`)) $(`mobDlFill_${taskId}`).style.background = 'var(--danger)';
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.style.background = '#ef4444';
+                        btnEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <span>Réessayer</span>';
+                        setTimeout(() => {
+                            btnEl.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                            btnEl.innerHTML = '<i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>';
+                        }, 3000);
+                    }
                 }
             } catch { clearInterval(interval); }
         }, 1200);
@@ -914,42 +1203,23 @@
             });
 
             if (!allTracks.length) {
-                showToast("Aucune musique dans la bibliothèque ! Téléchargez d'abord un morceau.", true);
+                showToast("Aucune musique dans la bibliothèque ! Télécharge d'abord un morceau.", true);
                 return;
             }
 
-            if (progressEl) progressEl.style.display = 'block';
-
-            let downloaded = 0;
-            for (let i = 0; i < allTracks.length; i++) {
-                const track = allTracks[i];
-                const title = track.title || track.filename;
-                if (progressEl) {
-                    progressEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> MP3 ${i + 1}/${allTracks.length} : <strong>${esc(title)}</strong>...`;
+            showBatchDownloadModal({
+                title: "Toutes mes musiques",
+                count: `${allTracks.length}`,
+                zipUrl: "/api/download-all-to-phone",
+                tracks: allTracks,
+                onMp3Choice: async () => {
+                    await downloadTracksSequentially(allTracks, "Toutes mes musiques");
+                    if (onComplete) onComplete(allTracks.length);
                 }
-
-                // Déclencher le téléchargement du vrai MP3 natif
-                const link = document.createElement('a');
-                link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
-                link.setAttribute('download', track.filename || `${title}.mp3`);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                downloaded++;
-
-                // Pause de 750ms entre chaque morceau pour que le gestionnaire Android les télécharge tous
-                await new Promise(resolve => setTimeout(resolve, 750));
-            }
-
-            if (progressEl) {
-                progressEl.innerHTML = `✅ ${downloaded} vrai(s) MP3 téléchargé(s) directement dans votre téléphone !`;
-                setTimeout(() => { progressEl.style.display = 'none'; }, 6000);
-            }
-
-            if (onComplete) onComplete(downloaded);
+            });
         } catch (err) {
             console.error('Erreur téléchargement direct:', err);
-            if (progressEl) progressEl.innerHTML = `❌ Erreur téléchargement direct`;
+            showToast("Erreur lors de la récupération des musiques", true);
         }
     }
 
@@ -1117,15 +1387,20 @@
                     <button type="button" class="btn-disco-preview" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                         <i class="fa-solid fa-play"></i> <span>Écouter</span>
                     </button>
-                    <a href="/api/direct-download?q=${encodeURIComponent(fullQuery)}&artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(tr.title)}" download="${esc(tr.title)}.mp3" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;text-decoration:none;border-radius:10px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    <button type="button" class="btn-disco-dl" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
                         <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
-                    </a>
+                    </button>
                 </div>
             `;
 
             const btnPrev = row.querySelector('.btn-disco-preview');
             if (btnPrev) {
                 btnPrev.onclick = () => playMobAudioPreview(artist, tr.title, fullQuery, btnPrev);
+            }
+
+            const btnDl = row.querySelector('.btn-disco-dl');
+            if (btnDl) {
+                btnDl.onclick = () => triggerDownload(fullQuery, artist, tr.title, thumb, btnDl);
             }
 
             container.appendChild(row);
