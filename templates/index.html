@@ -20,13 +20,48 @@
         
         <!-- Header -->
         <header class="navbar">
-            <div class="nav-brand">
-                <div class="logo-icon">
+            <div class="nav-brand" id="deskLogoModeTrigger" style="cursor:pointer;position:relative;user-select:none;">
+                <div class="logo-icon" id="deskLogoIcon">
                     <i class="fa-solid fa-music"></i>
                 </div>
                 <div>
-                    <h1 class="logo-title">Téléchargeur MP3</h1>
-                    <span class="logo-subtitle">Pour Téléphone & Ordinateur</span>
+                    <h1 class="logo-title" id="deskLogoTitle">Téléchargeur MP3 & Vidéo</h1>
+                    <span class="logo-subtitle"><span id="deskCurrentModeLabel" style="color:#6ee7b7;font-weight:700;">🎵 Mode Musique</span> <i class="fa-solid fa-caret-down" style="font-size:0.8rem;margin-left:4px;"></i></span>
+                </div>
+
+                <!-- Menu Déroulant Mode Desktop -->
+                <div id="deskModeDropdown" style="display:none;position:absolute;top:54px;left:0;width:320px;z-index:999999;background:var(--bg-card);border:2px solid var(--primary);border-radius:16px;padding:12px;box-shadow:0 15px 40px rgba(0,0,0,0.8);">
+                    <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;">Changer de mode :</div>
+                    
+                    <div class="desk-mode-choice active" data-mode="music" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer;margin-bottom:8px;background:rgba(99,102,241,0.18);border:1px solid var(--primary);">
+                        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;flex-shrink:0;">
+                            <i class="fa-solid fa-music"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-weight:800;font-size:0.9rem;color:#fff;">🎵 Mode Musique MP3</div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);">MP3 320k, thèmes & discographies</div>
+                        </div>
+                    </div>
+
+                    <div class="desk-mode-choice" data-mode="video" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer;margin-bottom:8px;background:var(--bg-elevated);border:1px solid var(--border);">
+                        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;flex-shrink:0;">
+                            <i class="fa-solid fa-video"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-weight:800;font-size:0.9rem;color:#fff;">🎬 Mode Téléchargement Vidéo</div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);">Format MP4 HD sur votre appareil</div>
+                        </div>
+                    </div>
+
+                    <div class="desk-mode-choice" data-mode="streaming" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer;background:var(--bg-elevated);border:1px solid var(--border);">
+                        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1rem;flex-shrink:0;">
+                            <i class="fa-solid fa-film"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <div style="font-weight:800;font-size:0.9rem;color:#fff;">📺 Mode Streaming & Films</div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);">Streaming gratuit + téléchargement MP4</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -181,7 +216,9 @@
                         <button type="button" class="desk-fast-theme-pill" data-theme="marvel" style="padding:6px 14px;border-radius:20px;border:1px solid #ef4444;background:rgba(239,68,68,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🛡️ Marvel & Avengers</button>
                         <button type="button" class="desk-fast-theme-pill" data-theme="ironman" style="padding:6px 14px;border-radius:20px;border:1px solid #dc2626;background:rgba(220,38,38,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🦾 Iron Man (AC/DC)</button>
                         <button type="button" class="desk-fast-theme-pill" data-theme="spiderman" style="padding:6px 14px;border-radius:20px;border:1px solid #e11d48;background:rgba(225,29,72,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🕷️ Spider-Man</button>
+                        <button type="button" class="desk-fast-theme-pill" data-theme="batman" style="padding:6px 14px;border-radius:20px;border:1px solid #64748b;background:rgba(100,116,139,0.25);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🦇 Batman & Gotham</button>
                         <button type="button" class="desk-fast-theme-pill" data-theme="starwars" style="padding:6px 14px;border-radius:20px;border:1px solid #3b82f6;background:rgba(59,130,246,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">⚔️ Star Wars</button>
+                        <button type="button" class="desk-fast-theme-pill" data-theme="dragonball" style="padding:6px 14px;border-radius:20px;border:1px solid #ea580c;background:rgba(234,88,12,0.2);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🔥 Dragon Ball & Shonen</button>
                         <button type="button" class="desk-fast-theme-pill" data-theme="cinema_soundtracks" style="padding:6px 14px;border-radius:20px;border:1px solid #f59e0b;background:rgba(245,158,11,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🎬 Cinéma & OST</button>
                         <button type="button" class="desk-fast-theme-pill" data-theme="manga_anime" style="padding:6px 14px;border-radius:20px;border:1px solid #ec4899;background:rgba(236,72,153,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🎌 Manga & Animés</button>
                     </div>
@@ -310,8 +347,8 @@
                         </div>
                         <div class="batch-btn-group">
                             <button type="button" id="btnVerifySinger" class="btn-secondary" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;" title="Vérifier que chaque musique appartient bien à ce chanteur">
-                                <i class="fa-solid fa-user-check"></i>
-                                <span>Scanner & Vérifier le Chanteur</span>
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>✨ Vérifier les morceaux officiels</span>
                             </button>
                             <button type="button" id="btnDownloadAllSinger" class="btn-primary btn-batch-dl">
                                 <i class="fa-solid fa-download"></i>
@@ -402,6 +439,83 @@
                         <i class="fa-solid fa-magnifying-glass"></i> Rechercher un titre
                     </button>
                 </div>
+            </section>
+            <!-- Tab 5: Téléchargement Vidéo MP4 -->
+            <section id="tab-video" class="tab-pane" style="display:none;">
+                <div class="search-section">
+                    <div class="search-header-text">
+                        <span class="hd-badge" style="background:rgba(239,68,68,0.2);border-color:#ef4444;color:#f87171;"><i class="fa-solid fa-video"></i> MP4 HD 1080p</span>
+                        <h2>Télécharger des Vidéos Complètes</h2>
+                        <p>Téléchargez des vidéos, clips, films ou collez le lien de n'importe quel site vidéo gratuit</p>
+                    </div>
+
+                    <form id="deskVideoSearchForm" class="search-form">
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-video input-icon"></i>
+                            <input type="text" id="deskVideoSearchInput" class="search-input" placeholder="Titre de la vidéo, film, clip ou collez une URL...">
+                        </div>
+                        <button type="submit" class="btn-primary" style="background:linear-gradient(135deg,#ef4444,#dc2626);">
+                            <i class="fa-solid fa-magnifying-glass"></i> Rechercher
+                        </button>
+                    </form>
+
+                    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px;">
+                        <button type="button" class="desk-fast-video-pill" data-q="bande annonce 2024 film francais" style="padding:6px 14px;border-radius:20px;border:1px solid #ef4444;background:rgba(239,68,68,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🎬 Bandes Annonces 2024</button>
+                        <button type="button" class="desk-fast-video-pill" data-q="clip officiel 4k" style="padding:6px 14px;border-radius:20px;border:1px solid #3b82f6;background:rgba(59,130,246,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🎵 Clips Vidéo HD</button>
+                        <button type="button" class="desk-fast-video-pill" data-q="documentaire complet francais" style="padding:6px 14px;border-radius:20px;border:1px solid #10b981;background:rgba(16,185,129,0.15);color:#fff;font-weight:700;font-size:0.85rem;cursor:pointer;">🌍 Documentaires Complets</button>
+                    </div>
+                </div>
+
+                <div id="deskVideoLoader" class="search-loader" style="display:none;">
+                    <div class="spinner" style="border-top-color:#ef4444;"></div>
+                    <span>Recherche des vidéos en cours...</span>
+                </div>
+
+                <div id="deskVideoResults" class="results-grid" style="margin-top:20px;"></div>
+            </section>
+
+            <!-- Tab 6: Streaming & Lecteur Vidéo -->
+            <section id="tab-streaming" class="tab-pane" style="display:none;">
+                <div class="search-section">
+                    <div class="search-header-text">
+                        <span class="hd-badge" style="background:rgba(16,185,129,0.2);border-color:#10b981;color:#6ee7b7;"><i class="fa-solid fa-play"></i> Streaming Gratuit</span>
+                        <h2>Regarder en Streaming & Télécharger</h2>
+                        <p>Regardez des vidéos gratuites et téléchargez-les instantanément en format MP4</p>
+                    </div>
+
+                    <form id="deskStreamSearchForm" class="search-form">
+                        <div class="input-wrapper">
+                            <i class="fa-solid fa-play input-icon"></i>
+                            <input type="text" id="deskStreamSearchInput" class="search-input" placeholder="Cherchez un film, une série ou collez une URL de streaming...">
+                        </div>
+                        <button type="submit" class="btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);">
+                            <i class="fa-solid fa-play"></i> Lancer
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Lecteur Streaming Desktop -->
+                <div id="deskStreamingContainer" style="display:none;background:#000;border:1px solid var(--border);border-radius:18px;overflow:hidden;margin:20px 0;box-shadow:0 15px 40px rgba(0,0,0,0.8);">
+                    <div style="position:relative;padding-top:56.25%;">
+                        <iframe id="deskStreamingIframe" src="" frameborder="0" allowfullscreen allow="autoplay; fullscreen; encrypted-media" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
+                    </div>
+                    <div style="padding:16px;background:var(--bg-card);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                        <div>
+                            <h3 id="deskStreamingTitle" style="color:#fff;font-size:1.15rem;margin-bottom:4px;">Titre de la vidéo</h3>
+                            <span id="deskStreamingUploader" style="color:var(--text-muted);font-size:0.85rem;"><i class="fa-solid fa-tower-broadcast"></i> Streaming Direct</span>
+                        </div>
+                        <button type="button" id="btnDeskDownloadCurrentStreaming" class="btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);padding:12px 20px;font-weight:700;display:flex;align-items:center;gap:8px;">
+                            <i class="fa-solid fa-download"></i> 📥 Télécharger cette vidéo en MP4
+                        </button>
+                    </div>
+                </div>
+
+                <div id="deskStreamLoader" class="search-loader" style="display:none;">
+                    <div class="spinner" style="border-top-color:#10b981;"></div>
+                    <span>Recherche des vidéos streaming en cours...</span>
+                </div>
+
+                <div id="deskStreamResults" class="results-grid" style="margin-top:20px;"></div>
             </section>
         </main>
 
@@ -695,6 +809,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=11.0"></script>
+    <script src="/static/js/app.js?v=13.0"></script>
 </body>
 </html>

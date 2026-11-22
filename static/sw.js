@@ -1,6 +1,6 @@
 // Service Worker — Téléchargeur MP3 HD
-// Version du cache : mp3dl-v11-themes-and-dl
-const CACHE_VERSION = 'mp3dl-v11-themes-and-dl';
+// Version du cache : mp3dl-v13-video-and-streaming-modes
+const CACHE_VERSION = 'mp3dl-v13-video-and-streaming-modes';
 
 // ——— Installation : Activer immédiatement sans attendre ———
 self.addEventListener('install', (event) => {
@@ -21,14 +21,15 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // Ne JAMAIS intercepter ni bloquer les flux MP3, téléchargements ou préécoutes
+    // Ne JAMAIS intercepter ni bloquer les flux MP3, vidéos, téléchargements ou streaming
     if (url.pathname.startsWith('/api/download') ||
         url.pathname.startsWith('/api/direct-download') ||
         url.pathname.startsWith('/api/preview-track') ||
         url.pathname.startsWith('/api/stream') ||
         url.pathname.startsWith('/api/theme') ||
         url.pathname.startsWith('/api/search') ||
-        url.pathname.startsWith('/api/singer')) {
+        url.pathname.startsWith('/api/singer') ||
+        url.pathname.startsWith('/api/video')) {
         return; // Passer directement au réseau natif
     }
 

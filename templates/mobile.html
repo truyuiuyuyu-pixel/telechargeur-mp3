@@ -12,7 +12,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
     <link rel="icon" type="image/png" href="/static/icons/favicon.png">
-    <link rel="stylesheet" href="/static/css/mobile.css?v=11.0">
+    <link rel="stylesheet" href="/static/css/mobile.css?v=13.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts — Polices Musique & Tech -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -100,18 +100,59 @@
 
     <!-- Header -->
     <header class="mob-header">
-        <div class="mob-header-row">
-            <div class="mob-logo">
-                <div class="mob-logo-icon"><i class="fa-solid fa-music"></i></div>
+        <div class="mob-header-row" style="position:relative;">
+            <div class="mob-logo" id="mobLogoModeTrigger" style="cursor:pointer;user-select:none;display:flex;align-items:center;gap:10px;">
+                <div class="mob-logo-icon" id="mobLogoIcon" style="transition:transform 0.2s;"><i class="fa-solid fa-music"></i></div>
                 <div>
-                    <div class="mob-logo-text">MP3 HD</div>
-                    <div class="mob-logo-sub">320 kbps • Anti-Doublons</div>
+                    <div class="mob-logo-text" id="mobLogoText">MP3 & Vidéo HD</div>
+                    <div class="mob-logo-sub" style="display:flex;align-items:center;gap:4px;">
+                        <span id="mobCurrentModeLabel" style="color:#6ee7b7;font-weight:700;">🎵 Mode Musique</span>
+                        <i class="fa-solid fa-caret-down" style="color:var(--text-muted);font-size:0.8rem;"></i>
+                    </div>
                 </div>
             </div>
             <div class="mob-header-actions">
                 <button class="mob-icon-btn" id="btnMobSettings" title="Paramètres">
                     <i class="fa-solid fa-gear"></i>
                 </button>
+            </div>
+
+            <!-- Menu Déroulant sur l'Icône -->
+            <div id="mobModeDropdown" style="display:none;position:absolute;top:54px;left:0;right:0;z-index:999999;background:var(--bg-card);border:2px solid var(--primary);border-radius:18px;padding:12px;box-shadow:0 15px 40px rgba(0,0,0,0.8);animation:slideDown 0.2s ease;">
+                <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Sélectionner le mode :</div>
+                
+                <div class="mob-mode-choice active" data-mode="music" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer;margin-bottom:8px;background:rgba(99,102,241,0.18);border:1px solid var(--primary);">
+                    <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;flex-shrink:0;">
+                        <i class="fa-solid fa-music"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:800;font-size:0.92rem;color:#fff;">🎵 Télécharger de la Musique</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">MP3 HD 320k, thèmes & discographies</div>
+                    </div>
+                    <i class="fa-solid fa-check mob-check-icon" style="color:var(--primary);font-size:0.9rem;"></i>
+                </div>
+
+                <div class="mob-mode-choice" data-mode="video" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer;margin-bottom:8px;background:var(--bg-elevated);border:1px solid var(--border);">
+                    <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#ef4444,#dc2626);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;flex-shrink:0;">
+                        <i class="fa-solid fa-video"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:800;font-size:0.92rem;color:#fff;">🎬 Télécharger des Vidéos</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">Format MP4 HD sur votre appareil</div>
+                    </div>
+                    <i class="fa-solid fa-check mob-check-icon" style="display:none;color:var(--danger);font-size:0.9rem;"></i>
+                </div>
+
+                <div class="mob-mode-choice" data-mode="streaming" style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer;background:var(--bg-elevated);border:1px solid var(--border);">
+                    <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;flex-shrink:0;">
+                        <i class="fa-solid fa-film"></i>
+                    </div>
+                    <div style="flex:1;">
+                        <div style="font-weight:800;font-size:0.92rem;color:#fff;">📺 Regarder en Streaming</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);">Sites gratuits + téléchargement direct MP4</div>
+                    </div>
+                    <i class="fa-solid fa-check mob-check-icon" style="display:none;color:var(--success);font-size:0.9rem;"></i>
+                </div>
             </div>
         </div>
 
@@ -263,16 +304,16 @@
 
                 <div style="display:flex;flex-direction:column;gap:8px">
                     <button class="mob-btn mob-btn-full" id="mobBtnVerifySinger" style="background:linear-gradient(135deg,#0ea5e9,#0284c7);">
-                        <i class="fa-solid fa-user-check"></i>
-                        Scanner & Vérifier le Chanteur (Anti-Intrus)
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        ✨ Vérifier les morceaux officiels (Sans intrus)
                     </button>
                     <button class="mob-btn mob-btn-primary mob-btn-full" id="mobBtnDlAll">
-                        <i class="fa-solid fa-download"></i>
+                        <i class="fa-solid fa-cloud-arrow-down"></i>
                         Télécharger toute la discographie
                     </button>
                     <button type="button" class="mob-btn mob-btn-success mob-btn-full" id="mobBtnSaveSingerMp3s" style="display:none;">
-                        <i class="fa-solid fa-file-audio"></i>
-                        📲 Enregistrer tous les MP3 sur ce téléphone
+                        <i class="fa-solid fa-file-arrow-down"></i>
+                        📲 Enregistrer sur mon téléphone (Zéro onglet)
                     </button>
                 </div>
             </div>
@@ -344,7 +385,9 @@
                     <button type="button" class="mob-fast-theme-pill" data-theme="marvel" style="padding:5px 12px;border-radius:12px;border:1px solid #ef4444;background:rgba(239,68,68,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-shield-halved"></i> 🛡️ Marvel</button>
                     <button type="button" class="mob-fast-theme-pill" data-theme="ironman" style="padding:5px 12px;border-radius:12px;border:1px solid #dc2626;background:rgba(220,38,38,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-robot"></i> 🦾 Iron Man</button>
                     <button type="button" class="mob-fast-theme-pill" data-theme="spiderman" style="padding:5px 12px;border-radius:12px;border:1px solid #e11d48;background:rgba(225,29,72,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-spider"></i> 🕷️ Spider-Man</button>
+                    <button type="button" class="mob-fast-theme-pill" data-theme="batman" style="padding:5px 12px;border-radius:12px;border:1px solid #64748b;background:rgba(100,116,139,0.25);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-mask"></i> 🦇 Batman</button>
                     <button type="button" class="mob-fast-theme-pill" data-theme="starwars" style="padding:5px 12px;border-radius:12px;border:1px solid #3b82f6;background:rgba(59,130,246,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-jedi"></i> ⚔️ Star Wars</button>
+                    <button type="button" class="mob-fast-theme-pill" data-theme="dragonball" style="padding:5px 12px;border-radius:12px;border:1px solid #ea580c;background:rgba(234,88,12,0.2);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-fire"></i> 🔥 Dragon Ball</button>
                     <button type="button" class="mob-fast-theme-pill" data-theme="cinema_soundtracks" style="padding:5px 12px;border-radius:12px;border:1px solid #f59e0b;background:rgba(245,158,11,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🎬 Cinéma OST</button>
                     <button type="button" class="mob-fast-theme-pill" data-theme="manga_anime" style="padding:5px 12px;border-radius:12px;border:1px solid #ec4899;background:rgba(236,72,153,0.18);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-dragon"></i> 🎌 Manga</button>
                 </div>
@@ -379,9 +422,105 @@
                 </button>
             </div>
 
+            <button type="button" id="btnMobLoadMoreTheme" class="mob-btn mob-btn-full" style="margin-bottom:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:12px;padding:12px;font-weight:700;">
+                <i class="fa-solid fa-sparkles"></i> ✨ Charger 30 musiques de plus pour ce thème
+            </button>
+
             <div id="mobThemeOnlineResults" style="display:none;margin-bottom:12px;padding:8px;background:var(--bg-card);border-radius:10px;border:1px solid var(--border);"></div>
 
             <div id="mobThemeTracksList"></div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: TÉLÉCHARGEMENT VIDÉO MP4 ===== -->
+    <div class="mob-tab-pane" id="mobPane-video" style="display:none;">
+        <div class="mob-search-box">
+            <span class="mob-hd-pill" style="background:rgba(239,68,68,0.2);border-color:#ef4444;color:#f87171;"><i class="fa-solid fa-video"></i> Vidéo MP4 HD</span>
+            <div class="mob-section-title">Télécharger des Vidéos</div>
+            <div class="mob-section-desc">Recherche une vidéo ou colle le lien direct de n'importe quel site gratuit</div>
+
+            <form id="mobVideoSearchForm" class="mob-search-row" style="margin-top:12px;">
+                <input type="search" id="mobVideoSearchInput" class="mob-input"
+                    placeholder="Titre de la vidéo, film, clip ou lien web..."
+                    autocomplete="off">
+                <button type="submit" class="mob-btn" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </form>
+
+            <div style="display:flex;gap:6px;overflow-x:auto;padding:10px 0 4px 0;scrollbar-width:none;">
+                <button type="button" class="mob-fast-video-pill" data-q="bande annonce 2024 film francais" style="padding:6px 12px;border-radius:12px;border:1px solid #ef4444;background:rgba(239,68,68,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🎬 Films & Bandes-annonces</button>
+                <button type="button" class="mob-fast-video-pill" data-q="clip officiel 4k" style="padding:6px 12px;border-radius:12px;border:1px solid #3b82f6;background:rgba(59,130,246,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-music"></i> 🎵 Clips HD</button>
+                <button type="button" class="mob-fast-video-pill" data-q="documentaire complet francais" style="padding:6px 12px;border-radius:12px;border:1px solid #10b981;background:rgba(16,185,129,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-globe"></i> 🌍 Documentaires</button>
+                <button type="button" class="mob-fast-video-pill" data-q="court metrage animation 4k" style="padding:6px 12px;border-radius:12px;border:1px solid #f59e0b;background:rgba(245,158,11,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-wand-magic-sparkles"></i> 🎌 Animation</button>
+            </div>
+        </div>
+
+        <div id="mobVideoLoader" class="mob-loader" style="display:none">
+            <div class="mob-spinner" style="border-top-color:#ef4444;"></div>
+            <span>Recherche des vidéos en cours…</span>
+        </div>
+
+        <div id="mobVideoResults" class="mob-results-list"></div>
+
+        <div id="mobVideoEmpty" class="mob-empty">
+            <i class="fa-solid fa-clapperboard" style="font-size:3rem;color:var(--text-muted);margin-bottom:12px;"></i>
+            <h3>Mode Téléchargement Vidéo</h3>
+            <p>Télécharge n'importe quelle vidéo du web en format MP4 HD直接 dans ton téléphone !</p>
+        </div>
+    </div>
+
+    <!-- ===== TAB: STREAMING & LECTEUR VIDÉO ===== -->
+    <div class="mob-tab-pane" id="mobPane-streaming" style="display:none;">
+        <div class="mob-search-box" style="margin-bottom:12px;">
+            <span class="mob-hd-pill" style="background:rgba(16,185,129,0.2);border-color:#10b981;color:#6ee7b7;"><i class="fa-solid fa-play"></i> Streaming Gratuit</span>
+            <div class="mob-section-title">Regarder des Vidéos en Streaming</div>
+            <div class="mob-section-desc">Regarde des vidéos gratuites et télécharge-les en un clic en MP4</div>
+
+            <form id="mobStreamSearchForm" class="mob-search-row" style="margin-top:12px;">
+                <input type="search" id="mobStreamSearchInput" class="mob-input"
+                    placeholder="Cherche un film, une série ou colle un lien de streaming..."
+                    autocomplete="off">
+                <button type="submit" class="mob-btn" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;">
+                    <i class="fa-solid fa-play"></i>
+                </button>
+            </form>
+
+            <div style="display:flex;gap:6px;overflow-x:auto;padding:10px 0 4px 0;scrollbar-width:none;">
+                <button type="button" class="mob-fast-stream-pill" data-q="film complet francais gratuit" style="padding:6px 12px;border-radius:12px;border:1px solid #10b981;background:rgba(16,185,129,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🍿 Films Complets</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="serie episode 1 vf complet" style="padding:6px 12px;border-radius:12px;border:1px solid #3b82f6;background:rgba(59,130,246,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-tv"></i> 📺 Séries</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="anime episode 1 vostfr" style="padding:6px 12px;border-radius:12px;border:1px solid #ec4899;background:rgba(236,72,153,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-dragon"></i> 🎌 Animés</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="concert live complet hd" style="padding:6px 12px;border-radius:12px;border:1px solid #f59e0b;background:rgba(245,158,11,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-guitar"></i> 🎸 Concerts Live</button>
+            </div>
+        </div>
+
+        <!-- Lecteur Vidéo Streaming Intégré -->
+        <div id="mobStreamingPlayerContainer" style="display:none;background:#000;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:14px;box-shadow:0 10px 30px rgba(0,0,0,0.8);">
+            <div style="position:relative;padding-top:56.25%;background:#000;">
+                <iframe id="mobStreamingIframe" src="" frameborder="0" allowfullscreen allow="autoplay; fullscreen; encrypted-media" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
+            </div>
+            <div style="padding:14px;background:var(--bg-card);">
+                <div id="mobStreamingPlayerTitle" style="font-weight:800;font-size:1rem;color:#fff;margin-bottom:4px;">Titre de la vidéo</div>
+                <div id="mobStreamingPlayerUploader" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px;"><i class="fa-solid fa-tower-broadcast"></i> Streaming Direct</div>
+                
+                <button type="button" id="btnDownloadCurrentStreaming" class="mob-btn mob-btn-full" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:800;font-size:0.95rem;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(16,185,129,0.35);">
+                    <i class="fa-solid fa-download"></i>
+                    <span>📥 Télécharger cette vidéo en MP4</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobStreamLoader" class="mob-loader" style="display:none">
+            <div class="mob-spinner" style="border-top-color:#10b981;"></div>
+            <span>Recherche des vidéos streaming…</span>
+        </div>
+
+        <div id="mobStreamResults" class="mob-results-list"></div>
+
+        <div id="mobStreamEmpty" class="mob-empty">
+            <i class="fa-solid fa-tv" style="font-size:3rem;color:var(--text-muted);margin-bottom:12px;"></i>
+            <h3>Mode Streaming & Lecteur Vidéo</h3>
+            <p>Regarde des vidéos, films et séries gratuites, et télécharge-les en un clic en MP4 HD !</p>
         </div>
     </div>
 
@@ -520,9 +659,42 @@
     </div>
 </div>
 
+<!-- Modal Téléchargement Groupé Propre (Sans aucun onglet) -->
+<div id="mobBatchModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:999999;backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:390px;padding:22px;text-align:center;box-shadow:0 20px 45px rgba(0,0,0,0.6);">
+        <div style="width:58px;height:58px;margin:0 auto 12px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.6rem;box-shadow:0 4px 15px rgba(16,185,129,0.4);">
+            <i class="fa-solid fa-cloud-arrow-down"></i>
+        </div>
+        <h3 id="mobBatchModalTitle" style="color:#fff;font-size:1.15rem;margin-bottom:6px;font-weight:800;">Téléchargement complet</h3>
+        <p id="mobBatchModalDesc" style="color:var(--text-muted);font-size:0.85rem;margin-bottom:18px;line-height:1.4;">Comment souhaites-tu enregistrer ces morceaux sur ton appareil ?</p>
+        
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            <button type="button" id="btnBatchZipChoice" style="display:flex;align-items:center;gap:12px;padding:14px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:14px;font-weight:700;font-size:0.92rem;text-align:left;cursor:pointer;box-shadow:0 4px 14px rgba(16,185,129,0.3);">
+                <i class="fa-solid fa-file-zipper" style="font-size:1.5rem;flex-shrink:0;"></i>
+                <div style="flex:1;">
+                    <div style="font-size:0.95rem;">📦 En 1 seul fichier ZIP</div>
+                    <small style="opacity:0.9;font-size:0.75rem;font-weight:400;">Recommandé • 1 seul téléchargement, zéro onglet ouvert !</small>
+                </div>
+            </button>
+
+            <button type="button" id="btnBatchMp3Choice" style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-main);border-radius:14px;font-weight:700;font-size:0.92rem;text-align:left;cursor:pointer;">
+                <i class="fa-solid fa-music" style="font-size:1.5rem;color:var(--primary);flex-shrink:0;"></i>
+                <div style="flex:1;">
+                    <div style="font-size:0.95rem;">🎵 Fichiers MP3 directs</div>
+                    <small style="color:var(--text-muted);font-size:0.75rem;font-weight:400;">Téléchargement silencieux sans ouvrir d'onglets</small>
+                </div>
+            </button>
+
+            <button type="button" id="btnBatchModalCancel" style="padding:10px;background:none;border:none;color:var(--text-muted);font-size:0.88rem;cursor:pointer;margin-top:4px;">
+                Annuler
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Toast -->
 <div class="mob-toast" id="mobToast"></div>
 
-<script src="/static/js/mobile-app.js?v=11.0"></script>
+<script src="/static/js/mobile-app.js?v=13.0"></script>
 </body>
 </html>

@@ -213,6 +213,9 @@
         await loadScannerSummary();
         await loadLibrary();
         setupTabs();
+        setupModeDropdown();
+        setupVideoMode();
+        setupStreamingMode();
         setupSettings();
         setupScanPhone();
         setupMobThemes();
@@ -432,12 +435,34 @@
         }
     }
 
-    function renderMobThemesGrid(themesList) {
+    function renderMobThemesGrid(themesList, searchQ) {
         const grid = $('mobThemesGrid');
         if (!grid) return;
         grid.innerHTML = '';
+
+        if (searchQ && searchQ.trim()) {
+            const qClean = searchQ.trim();
+            const dynCard = document.createElement('div');
+            dynCard.className = 'mob-theme-card';
+            dynCard.style.cssText = 'border:2px dashed var(--primary);background:rgba(99,102,241,0.15);margin-bottom:12px;';
+            dynCard.innerHTML = `
+                <div class="mob-theme-icon" style="color:var(--primary);background:rgba(99,102,241,0.25);">
+                    <i class="fa-solid fa-sparkles"></i>
+                </div>
+                <div class="mob-theme-info">
+                    <div class="mob-theme-name" style="color:#a5b4fc">✨ Trouver 30+ musiques pour "${esc(qClean)}"</div>
+                    <div class="mob-theme-desc">Recherche ultra-puissante en direct sur le web</div>
+                </div>
+                <div class="mob-theme-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+            `;
+            dynCard.onclick = () => doDynamicThemeSearch();
+            grid.appendChild(dynCard);
+        }
+
         if (!themesList || !themesList.length) {
-            grid.innerHTML = '<div class="mob-empty"><i class="fa-solid fa-search"></i><h3>Aucun thème trouvé</h3><p>Tapez un univers comme Iron Man, Spider-Man ou Star Wars ci-dessus.</p></div>';
+            if (!searchQ) {
+                grid.innerHTML = '<div class="mob-empty"><i class="fa-solid fa-search"></i><h3>Aucun thème trouvé</h3><p>Tapez un univers comme Iron Man, Spider-Man ou Star Wars ci-dessus.</p></div>';
+            }
             return;
         }
 
@@ -488,7 +513,7 @@
                     const kws = (t.keywords || []).map(k => k.toLowerCase());
                     return name.includes(q) || desc.includes(q) || kws.some(k => k.includes(q));
                 });
-                renderMobThemesGrid(filtered);
+                renderMobThemesGrid(filtered, q);
             };
 
             const doDynamicThemeSearch = async () => {
@@ -688,6 +713,60 @@
                 };
             }
 
+            const btnLoadMore = $('btnMobLoadMoreTheme');
+            if (btnLoadMore) {
+                btnLoadMore.onclick = async () => {
+                    btnLoadMore.disabled = true;
+                    btnLoadMore.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Recherche de 30 musiques...</span>';
+                    try {
+                        const sRes = await fetch(`/api/theme/${themeId}/search?limit=30`);
+                        const sData = await sRes.json();
+                        const extraTracks = sData.results || [];
+                        if (extraTracks.length === 0) {
+                            showToast("Aucun titre supplémentaire trouvé", true);
+                        } else {
+                            extraTracks.forEach(r => {
+                                const trCard = document.createElement('div');
+                                trCard.className = 'mob-result-card';
+                                trCard.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:10px;';
+                                trCard.innerHTML = `
+                                    <div style="display:flex;align-items:center;gap:10px;width:100%;">
+                                        <img src="${esc(r.thumbnail || '/static/icons/icon-192.png')}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:42px;height:42px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+                                        <div style="flex:1;min-width:0;overflow:hidden;">
+                                            <div style="font-size:0.95rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.title)}</div>
+                                            <div style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-microphone"></i> ${esc(r.artist)}</div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+                                        <button type="button" class="btn-preview-extra-item" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                                            <i class="fa-solid fa-play"></i> <span>Écouter</span>
+                                        </button>
+                                        <button type="button" class="btn-extra-item-dl" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                                            <i class="fa-solid fa-download"></i> <span>Télécharger MP3</span>
+                                        </button>
+                                    </div>
+                                `;
+                                const btnPrev = trCard.querySelector('.btn-preview-extra-item');
+                                if (btnPrev) {
+                                    btnPrev.onclick = () => playMobAudioPreview(r.artist, r.title, r.title, btnPrev);
+                                }
+                                const btnDl = trCard.querySelector('.btn-extra-item-dl');
+                                if (btnDl) {
+                                    btnDl.onclick = () => triggerDownload(r.url, r.artist, r.title, r.thumbnail, btnDl);
+                                }
+                                listEl.appendChild(trCard);
+                            });
+                            showToast(`✨ ${extraTracks.length} nouvelles musiques ajoutées au thème !`);
+                        }
+                    } catch (e) {
+                        showToast("Erreur lors de la recherche", true);
+                    } finally {
+                        btnLoadMore.disabled = false;
+                        btnLoadMore.innerHTML = '<i class="fa-solid fa-sparkles"></i> ✨ Charger encore plus de musiques';
+                    }
+                };
+            }
+
             if (btnAll) {
                 btnAll.onclick = async () => {
                     if (!confirm(`Télécharger toutes les ${tracks.length} musiques du thème "${theme.name}" sur ce téléphone ?`)) return;
@@ -709,32 +788,99 @@
         }
     }
 
+    async function downloadBlobFile(url, filename) {
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error("Fichier non disponible");
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = filename || 'musique.mp3';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                a.remove();
+                URL.revokeObjectURL(blobUrl);
+            }, 3000);
+        } catch (e) {
+            console.error("Erreur téléchargement blob:", e);
+        }
+    }
+
+    function showBatchDownloadModal({ title, count, zipUrl, tracks, onMp3Choice }) {
+        const modal = $('mobBatchModal');
+        const modalTitle = $('mobBatchModalTitle');
+        const modalDesc = $('mobBatchModalDesc');
+        const btnZip = $('btnBatchZipChoice');
+        const btnMp3 = $('btnBatchMp3Choice');
+        const btnCancel = $('btnBatchModalCancel');
+        
+        if (!modal) {
+            if (zipUrl) window.location.href = zipUrl;
+            return;
+        }
+
+        if (modalTitle) modalTitle.textContent = title || `Télécharger ${count || ''} musiques`;
+        if (modalDesc) modalDesc.textContent = `Comment souhaites-tu enregistrer les ${count || ''} morceaux sur ton appareil ?`;
+
+        modal.style.display = 'flex';
+
+        const closeModal = () => {
+            modal.style.display = 'none';
+        };
+
+        if (btnCancel) btnCancel.onclick = closeModal;
+
+        if (btnZip) {
+            btnZip.onclick = () => {
+                closeModal();
+                showToast("📦 Téléchargement de l'album en 1 fichier ZIP (zéro onglet)...");
+                const a = document.createElement('a');
+                a.href = zipUrl;
+                a.download = "";
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => a.remove(), 1000);
+            };
+        }
+
+        if (btnMp3) {
+            btnMp3.onclick = () => {
+                closeModal();
+                if (onMp3Choice) {
+                    onMp3Choice();
+                } else if (tracks && tracks.length) {
+                    downloadTracksSequentially(tracks, title);
+                }
+            };
+        }
+    }
+
     async function downloadTracksSequentially(tracks, label) {
         if (!tracks || !tracks.length) {
             showToast("Aucun fichier MP3 trouvé à enregistrer", true);
             return;
         }
 
-        showToast(`📲 Début de l'enregistrement de ${tracks.length} MP3 sur votre téléphone...`);
+        showToast(`📲 Enregistrement silencieux de ${tracks.length} MP3 sans onglets...`);
         let downloaded = 0;
 
         for (let i = 0; i < tracks.length; i++) {
             const track = tracks[i];
             const title = track.title || track.filename || `Morceau_${i+1}`;
-            showToast(`📲 MP3 ${i + 1}/${tracks.length} : ${title}`);
+            showToast(`💾 MP3 ${i + 1}/${tracks.length} : ${title}`);
+            const fname = track.filename || `${title}.mp3`;
+            const fileUrl = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
 
-            const link = document.createElement('a');
-            link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
-            link.setAttribute('download', track.filename || `${title}.mp3`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            await downloadBlobFile(fileUrl, fname);
             downloaded++;
 
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 900));
         }
 
-        showToast(`✅ ${downloaded} fichiers MP3 réels enregistrés directement dans votre téléphone !`);
+        showToast(`✅ ${downloaded} musiques bien enregistrées sur votre appareil sans aucun onglet ouvert !`);
     }
 
     async function downloadThemeTracksDirectly(themeId) {
@@ -757,11 +903,17 @@
             });
 
             if (matchingTracks.length === 0) {
-                showToast("Téléchargez d'abord le thème via le bouton ci-dessus.", true);
+                showToast("Télécharge d'abord le thème via le bouton ci-dessus.", true);
                 return;
             }
 
-            await downloadTracksSequentially(matchingTracks, theme.name);
+            const zipUrl = `/api/theme/${themeId}/download-zip`;
+            showBatchDownloadModal({
+                title: `Thème : ${theme.name}`,
+                count: `${matchingTracks.length}`,
+                zipUrl: zipUrl,
+                tracks: matchingTracks
+            });
         } catch (e) {
             showToast("Erreur lors de la récupération des MP3 du thème", true);
         }
@@ -778,7 +930,15 @@
                 return;
             }
 
-            await downloadTracksSequentially(singerObj.tracks, artistName);
+            const cleanArtist = encodeURIComponent(artistName);
+            const zipUrl = `/api/singer/download-zip/${cleanArtist}`;
+
+            showBatchDownloadModal({
+                title: `Discographie de ${artistName}`,
+                count: `${singerObj.tracks.length}`,
+                zipUrl: zipUrl,
+                tracks: singerObj.tracks
+            });
         } catch (e) {
             showToast("Erreur lors de la récupération des MP3 de l'artiste", true);
         }
@@ -1046,42 +1206,23 @@
             });
 
             if (!allTracks.length) {
-                showToast("Aucune musique dans la bibliothèque ! Téléchargez d'abord un morceau.", true);
+                showToast("Aucune musique dans la bibliothèque ! Télécharge d'abord un morceau.", true);
                 return;
             }
 
-            if (progressEl) progressEl.style.display = 'block';
-
-            let downloaded = 0;
-            for (let i = 0; i < allTracks.length; i++) {
-                const track = allTracks[i];
-                const title = track.title || track.filename;
-                if (progressEl) {
-                    progressEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> MP3 ${i + 1}/${allTracks.length} : <strong>${esc(title)}</strong>...`;
+            showBatchDownloadModal({
+                title: "Toutes mes musiques",
+                count: `${allTracks.length}`,
+                zipUrl: "/api/download-all-to-phone",
+                tracks: allTracks,
+                onMp3Choice: async () => {
+                    await downloadTracksSequentially(allTracks, "Toutes mes musiques");
+                    if (onComplete) onComplete(allTracks.length);
                 }
-
-                // Déclencher le téléchargement du vrai MP3 natif
-                const link = document.createElement('a');
-                link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
-                link.setAttribute('download', track.filename || `${title}.mp3`);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                downloaded++;
-
-                // Pause de 750ms entre chaque morceau pour que le gestionnaire Android les télécharge tous
-                await new Promise(resolve => setTimeout(resolve, 750));
-            }
-
-            if (progressEl) {
-                progressEl.innerHTML = `✅ ${downloaded} vrai(s) MP3 téléchargé(s) directement dans votre téléphone !`;
-                setTimeout(() => { progressEl.style.display = 'none'; }, 6000);
-            }
-
-            if (onComplete) onComplete(downloaded);
+            });
         } catch (err) {
             console.error('Erreur téléchargement direct:', err);
-            if (progressEl) progressEl.innerHTML = `❌ Erreur téléchargement direct`;
+            showToast("Erreur lors de la récupération des musiques", true);
         }
     }
 
@@ -1454,6 +1595,384 @@
         } catch {
             showToast('Erreur d\'indexation', true);
         }
+    }
+
+    // =========================================================
+    // GESTION DU MENU DÉROULANT ET MODES (MUSIQUE / VIDÉO / STREAMING)
+    // =========================================================
+    let currentAppMode = localStorage.getItem('mp3_app_mode') || 'music';
+
+    function setupModeDropdown() {
+        const trigger = $('mobLogoModeTrigger');
+        const dropdown = $('mobModeDropdown');
+        if (!trigger || !dropdown) return;
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.style.display = (dropdown.style.display === 'none' || !dropdown.style.display) ? 'block' : 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target) && !trigger.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        document.querySelectorAll('.mob-mode-choice').forEach(choice => {
+            choice.addEventListener('click', () => {
+                const mode = choice.dataset.mode;
+                if (mode) {
+                    setAppMode(mode);
+                    dropdown.style.display = 'none';
+                }
+            });
+        });
+
+        setAppMode(currentAppMode);
+    }
+
+    function setAppMode(mode) {
+        currentAppMode = mode;
+        localStorage.setItem('mp3_app_mode', mode);
+
+        document.querySelectorAll('.mob-mode-choice').forEach(c => {
+            const isMatch = c.dataset.mode === mode;
+            c.classList.toggle('active', isMatch);
+            const check = c.querySelector('.mob-check-icon');
+            if (check) check.style.display = isMatch ? 'inline-block' : 'none';
+            c.style.background = isMatch ? 'rgba(99,102,241,0.18)' : 'var(--bg-elevated)';
+            c.style.borderColor = isMatch ? 'var(--primary)' : 'var(--border)';
+        });
+
+        document.querySelectorAll('.mob-tab-pane').forEach(p => p.style.display = 'none');
+        const tabbar = document.querySelector('.mob-tabbar');
+
+        const modeBadge = $('mobCurrentModeLabel');
+        const logoIcon = $('mobLogoIcon');
+
+        if (mode === 'music') {
+            if (modeBadge) modeBadge.textContent = '🎵 Mode Musique';
+            if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-music"></i>';
+            if (tabbar) tabbar.style.display = 'flex';
+            const activeTab = document.querySelector('.mob-tab.active')?.dataset.pane || 'search';
+            const pane = $(`mobPane-${activeTab}`);
+            if (pane) pane.style.display = 'block';
+        } else if (mode === 'video') {
+            if (modeBadge) modeBadge.textContent = '🎬 Mode Vidéo MP4';
+            if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-video"></i>';
+            if (tabbar) tabbar.style.display = 'none';
+            const vPane = $('mobPane-video');
+            if (vPane) vPane.style.display = 'block';
+        } else if (mode === 'streaming') {
+            if (modeBadge) modeBadge.textContent = '📺 Mode Streaming';
+            if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-film"></i>';
+            if (tabbar) tabbar.style.display = 'none';
+            const sPane = $('mobPane-streaming');
+            if (sPane) sPane.style.display = 'block';
+        }
+    }
+
+    // =========================================================
+    // MODE VIDÉO (RECHERCHE & TÉLÉCHARGEMENT MP4)
+    // =========================================================
+    function setupVideoMode() {
+        const vForm = $('mobVideoSearchForm');
+        const vInput = $('mobVideoSearchInput');
+
+        if (vForm && vInput) {
+            vForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const q = vInput.value.trim();
+                if (!q) return;
+                await doSearchVideos(q);
+            });
+        }
+
+        document.querySelectorAll('.mob-fast-video-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                const q = pill.dataset.q;
+                if (q) {
+                    if (vInput) vInput.value = q;
+                    doSearchVideos(q);
+                }
+            });
+        });
+    }
+
+    async function doSearchVideos(query) {
+        const loader = $('mobVideoLoader');
+        const results = $('mobVideoResults');
+        const empty = $('mobVideoEmpty');
+
+        if (loader) loader.style.display = 'flex';
+        if (results) results.innerHTML = '';
+        if (empty) empty.style.display = 'none';
+
+        try {
+            const res = await fetch(`/api/video/search?q=${encodeURIComponent(query)}&limit=15`);
+            const data = await res.json();
+            if (loader) loader.style.display = 'none';
+
+            if (!data || !data.length) {
+                if (empty) empty.style.display = 'block';
+                return;
+            }
+
+            renderVideoResults(data);
+        } catch (e) {
+            if (loader) loader.style.display = 'none';
+            showToast("Erreur lors de la recherche vidéo", true);
+        }
+    }
+
+    function renderVideoResults(videos) {
+        const results = $('mobVideoResults');
+        if (!results) return;
+        results.innerHTML = '';
+
+        videos.forEach(v => {
+            const card = document.createElement('div');
+            card.className = 'mob-result-card';
+            card.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:12px;';
+            card.innerHTML = `
+                <div style="display:flex;gap:12px;width:100%;">
+                    <div style="position:relative;width:95px;height:62px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#000;">
+                        <img src="${esc(v.thumbnail)}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:100%;height:100%;object-fit:cover;">
+                        <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.8);color:#fff;font-size:0.68rem;padding:2px 5px;border-radius:4px;font-weight:700;">${esc(v.duration || '00:00')}</span>
+                    </div>
+                    <div style="flex:1;min-width:0;overflow:hidden;">
+                        <div style="font-size:0.92rem;font-weight:700;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;">${esc(v.title)}</div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-circle-user"></i> ${esc(v.uploader || 'Web')}</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+                    <button type="button" class="btn-watch-stream" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-play"></i> <span>Regarder</span>
+                    </button>
+                    <button type="button" class="btn-dl-video-mp4" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-download"></i> <span>Télécharger MP4</span>
+                    </button>
+                </div>
+            `;
+
+            const btnWatch = card.querySelector('.btn-watch-stream');
+            if (btnWatch) {
+                btnWatch.onclick = () => {
+                    setAppMode('streaming');
+                    playVideoStream(v);
+                };
+            }
+
+            const btnDl = card.querySelector('.btn-dl-video-mp4');
+            if (btnDl) {
+                btnDl.onclick = () => triggerVideoDownload(v.url, v.title, btnDl);
+            }
+
+            results.appendChild(card);
+        });
+    }
+
+    // =========================================================
+    // MODE STREAMING & LECTEUR VIDÉO DIRECT
+    // =========================================================
+    let currentStreamingVideo = null;
+
+    function setupStreamingMode() {
+        const sForm = $('mobStreamSearchForm');
+        const sInput = $('mobStreamSearchInput');
+
+        if (sForm && sInput) {
+            sForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const q = sInput.value.trim();
+                if (!q) return;
+                await doSearchStreaming(q);
+            });
+        }
+
+        document.querySelectorAll('.mob-fast-stream-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                const q = pill.dataset.q;
+                if (q) {
+                    if (sInput) sInput.value = q;
+                    doSearchStreaming(q);
+                }
+            });
+        });
+
+        const btnDlCurrent = $('btnDownloadCurrentStreaming');
+        if (btnDlCurrent) {
+            btnDlCurrent.addEventListener('click', () => {
+                if (currentStreamingVideo) {
+                    triggerVideoDownload(currentStreamingVideo.url, currentStreamingVideo.title, btnDlCurrent);
+                }
+            });
+        }
+    }
+
+    async function doSearchStreaming(query) {
+        const loader = $('mobStreamLoader');
+        const results = $('mobStreamResults');
+        const empty = $('mobStreamEmpty');
+
+        if (loader) loader.style.display = 'flex';
+        if (results) results.innerHTML = '';
+        if (empty) empty.style.display = 'none';
+
+        if (query.startsWith('http://') || query.startsWith('https://')) {
+            try {
+                const res = await fetch(`/api/video/info?url=${encodeURIComponent(query)}`);
+                const info = await res.json();
+                if (loader) loader.style.display = 'none';
+                if (info && !info.error) {
+                    playVideoStream(info);
+                    return;
+                }
+            } catch {}
+        }
+
+        try {
+            const res = await fetch(`/api/video/search?q=${encodeURIComponent(query)}&limit=15`);
+            const data = await res.json();
+            if (loader) loader.style.display = 'none';
+
+            if (!data || !data.length) {
+                if (empty) empty.style.display = 'block';
+                return;
+            }
+
+            renderStreamingResults(data);
+        } catch (e) {
+            if (loader) loader.style.display = 'none';
+            showToast("Erreur recherche streaming", true);
+        }
+    }
+
+    function renderStreamingResults(videos) {
+        const results = $('mobStreamResults');
+        if (!results) return;
+        results.innerHTML = '';
+
+        videos.forEach(v => {
+            const card = document.createElement('div');
+            card.className = 'mob-result-card';
+            card.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:12px;';
+            card.innerHTML = `
+                <div style="display:flex;gap:12px;width:100%;">
+                    <div style="position:relative;width:95px;height:62px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#000;">
+                        <img src="${esc(v.thumbnail)}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:100%;height:100%;object-fit:cover;">
+                        <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.8);color:#fff;font-size:0.68rem;padding:2px 5px;border-radius:4px;font-weight:700;">${esc(v.duration || '00:00')}</span>
+                    </div>
+                    <div style="flex:1;min-width:0;overflow:hidden;">
+                        <div style="font-size:0.92rem;font-weight:700;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;">${esc(v.title)}</div>
+                        <div style="font-size:0.75rem;color:#10b981;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-play"></i> Gratuit • ${esc(v.uploader || 'Web')}</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
+                    <button type="button" class="btn-play-stream" style="flex:1.2;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-play"></i> <span>Lancer Streaming</span>
+                    </button>
+                    <button type="button" class="btn-stream-dl-mp4" style="flex:1.2;padding:10px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-download"></i> <span>Télécharger MP4</span>
+                    </button>
+                </div>
+            `;
+
+            const btnPlay = card.querySelector('.btn-play-stream');
+            if (btnPlay) {
+                btnPlay.onclick = () => playVideoStream(v);
+            }
+
+            const btnDl = card.querySelector('.btn-stream-dl-mp4');
+            if (btnDl) {
+                btnDl.onclick = () => triggerVideoDownload(v.url, v.title, btnDl);
+            }
+
+            results.appendChild(card);
+        });
+    }
+
+    function playVideoStream(video) {
+        currentStreamingVideo = video;
+        const container = $('mobStreamingPlayerContainer');
+        const iframe = $('mobStreamingIframe');
+        const titleEl = $('mobStreamingPlayerTitle');
+        const upEl = $('mobStreamingPlayerUploader');
+
+        if (titleEl) titleEl.textContent = video.title || 'Vidéo en streaming';
+        if (upEl) upEl.innerHTML = `<i class="fa-solid fa-tower-broadcast"></i> ${esc(video.uploader || 'Streaming')} • ${esc(video.duration || '')}`;
+        if (iframe) iframe.src = video.embed_url || video.url;
+        if (container) {
+            container.style.display = 'block';
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        showToast(`▶️ Lancement streaming : ${video.title}`);
+    }
+
+    // =========================================================
+    // DÉCLENCHEUR DE TÉLÉCHARGEMENT VIDÉO MP4
+    // =========================================================
+    async function triggerVideoDownload(url, title, btnEl) {
+        showToast(`🎬 Préparation de la vidéo MP4 : ${title}...`);
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Patientez...</span>`;
+        }
+
+        try {
+            const res = await fetch('/api/video/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url, title: title })
+            });
+            const data = await res.json();
+            if (data.task_id) {
+                trackVideoProgress(data.task_id, title, btnEl);
+            } else {
+                showToast("Erreur lancement vidéo", true);
+                if (btnEl) btnEl.disabled = false;
+            }
+        } catch (e) {
+            showToast("Erreur connexion", true);
+            if (btnEl) btnEl.disabled = false;
+        }
+    }
+
+    function trackVideoProgress(taskId, title, btnEl) {
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/download-status/${taskId}`);
+                const info = await res.json();
+                const progressNum = info.progress || 0;
+
+                if (btnEl && info.status !== 'completed' && info.status !== 'error') {
+                    btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${progressNum}% MP4</span>`;
+                }
+
+                if (info.status === 'completed') {
+                    clearInterval(interval);
+                    showToast(`✅ Vidéo MP4 prête ! Téléchargement direct...`);
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>Enregistrer MP4</span>`;
+                        btnEl.onclick = () => {
+                            window.location.href = `/api/download-ready/${taskId}`;
+                        };
+                    }
+
+                    await downloadBlobFile(`/api/download-ready/${taskId}`, info.filename || `${title}.mp4`);
+                } else if (info.status === 'error') {
+                    clearInterval(interval);
+                    showToast(`Erreur téléchargement vidéo : ${info.message || ''}`, true);
+                    if (btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <span>Réessayer</span>`;
+                    }
+                }
+            } catch {
+                clearInterval(interval);
+            }
+        }, 1200);
     }
 
     // =========================================================

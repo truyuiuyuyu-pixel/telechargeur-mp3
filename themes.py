@@ -538,6 +538,7 @@ THEMES_CATALOG = {
         "description": "Les thèmes épiques des Avengers, Iron Man, Spider-Man, Black Panther et Gardiens de la Galaxie",
         "tracks": [
             {"title": "The Avengers Main Theme", "artist": "Alan Silvestri", "query": "Alan Silvestri The Avengers Main Theme OST"},
+            {"title": "Portals (Endgame)", "artist": "Alan Silvestri", "query": "Alan Silvestri Portals Avengers Endgame OST"},
             {"title": "Back in Black", "artist": "AC/DC", "query": "AC DC Back in Black Iron Man lyrics"},
             {"title": "Sunflower", "artist": "Post Malone & Swae Lee", "query": "Post Malone Swae Lee Sunflower Spider-Man Into the Spider-Verse lyrics"},
             {"title": "Spider-Man Main Theme", "artist": "Danny Elfman", "query": "Danny Elfman Spider-Man Main Theme 2002 OST"},
@@ -549,7 +550,9 @@ THEMES_CATALOG = {
             {"title": "Immigrant Song", "artist": "Led Zeppelin", "query": "Led Zeppelin Immigrant Song Thor Ragnarok lyrics"},
             {"title": "Hero", "artist": "Chad Kroeger & Josey Scott", "query": "Chad Kroeger Hero Spider-Man lyrics"},
             {"title": "Spider-Man No Way Home Main Theme", "artist": "Michael Giacchino", "query": "Michael Giacchino Spider-Man No Way Home Theme"},
-            {"title": "Iron Man", "artist": "Black Sabbath", "query": "Black Sabbath Iron Man audio lyrics"}
+            {"title": "Iron Man", "artist": "Black Sabbath", "query": "Black Sabbath Iron Man audio lyrics"},
+            {"title": "Captain America Theme", "artist": "Alan Silvestri", "query": "Alan Silvestri Captain America Main Theme"},
+            {"title": "Doctor Strange Main Theme", "artist": "Michael Giacchino", "query": "Michael Giacchino Doctor Strange Main Theme"}
         ]
     },
     "ironman": {
@@ -558,7 +561,7 @@ THEMES_CATALOG = {
         "icon": "fa-robot",
         "color": "#dc2626",
         "badge": "🦾 Iron Man & Tony Stark",
-        "keywords": ["iron man", "ironman", "tony stark", "stark", "jarvis", "mark", "ac dc iron man"],
+        "keywords": ["iron man", "ironman", "tony stark", "stark", "jarvis", "mark", "ac dc iron man", "avengers iron man"],
         "description": "L'univers explosif de Tony Stark : AC/DC, hard rock légendaire et thèmes métalliques",
         "tracks": [
             {"title": "Back in Black", "artist": "AC/DC", "query": "AC DC Back in Black Iron Man lyrics"},
@@ -569,7 +572,9 @@ THEMES_CATALOG = {
             {"title": "Driving with the Top Down", "artist": "Ramin Djawadi", "query": "Ramin Djawadi Driving with the Top Down Iron Man OST"},
             {"title": "T.N.T.", "artist": "AC/DC", "query": "AC DC TNT lyrics"},
             {"title": "War Machine Theme", "artist": "Ramin Djawadi", "query": "Ramin Djawadi Iron Man War Machine theme"},
-            {"title": "Robot Rock", "artist": "Daft Punk", "query": "Daft Punk Robot Rock audio"}
+            {"title": "Robot Rock", "artist": "Daft Punk", "query": "Daft Punk Robot Rock audio"},
+            {"title": "Can You Dig It (Iron Man 3)", "artist": "Brian Tyler", "query": "Brian Tyler Can You Dig It Iron Man 3 Main Theme"},
+            {"title": "Merchant of Death", "artist": "Ramin Djawadi", "query": "Ramin Djawadi Merchant of Death Iron Man"}
         ]
     },
     "spiderman": {
@@ -589,7 +594,9 @@ THEMES_CATALOG = {
             {"title": "Am I Dreaming", "artist": "Metro Boomin, A$AP Rocky & Roisee", "query": "Metro Boomin Am I Dreaming Across the Spider-Verse lyrics"},
             {"title": "Calling", "artist": "Metro Boomin & Swae Lee", "query": "Metro Boomin Calling Across the Spider-Verse lyrics"},
             {"title": "Spider-Man No Way Home Suite", "artist": "Michael Giacchino", "query": "Michael Giacchino Spider-Man No Way Home Theme"},
-            {"title": "Signal Fire", "artist": "Snow Patrol", "query": "Snow Patrol Signal Fire Spider-Man 3 lyrics"}
+            {"title": "Signal Fire", "artist": "Snow Patrol", "query": "Snow Patrol Signal Fire Spider-Man 3 lyrics"},
+            {"title": "Annihilate", "artist": "Metro Boomin, Swae Lee & Lil Wayne", "query": "Metro Boomin Annihilate Across the Spider-Verse lyrics"},
+            {"title": "Mona Lisa", "artist": "Dominic Fike", "query": "Dominic Fike Mona Lisa Spider-Man Across the Spider-Verse lyrics"}
         ]
     },
     "starwars": {
@@ -608,7 +615,50 @@ THEMES_CATALOG = {
             {"title": "The Force Theme (Binary Sunset)", "artist": "John Williams", "query": "John Williams The Force Theme Binary Sunset"},
             {"title": "Cantina Band", "artist": "John Williams", "query": "John Williams Cantina Band Star Wars"},
             {"title": "Across the Stars (Love Theme)", "artist": "John Williams", "query": "John Williams Across the Stars Star Wars"},
-            {"title": "Battle of the Heroes", "artist": "John Williams", "query": "John Williams Battle of the Heroes Revenge of the Sith"}
+            {"title": "Battle of the Heroes", "artist": "John Williams", "query": "John Williams Battle of the Heroes Revenge of the Sith"},
+            {"title": "Rey's Theme", "artist": "John Williams", "query": "John Williams Reys Theme Star Wars The Force Awakens"},
+            {"title": "Throne Room and End Title", "artist": "John Williams", "query": "John Williams Star Wars Throne Room End Title"}
+        ]
+    },
+    "batman": {
+        "id": "batman",
+        "name": "Batman & Gotham City",
+        "icon": "fa-mask",
+        "color": "#475569",
+        "badge": "🦇 Batman & Gotham",
+        "keywords": ["batman", "chevalier noir", "dark knight", "gotham", "joker", "bruce wayne", "batmobile", "dc comics"],
+        "description": "L'ambiance sombre et épique de Gotham : Hans Zimmer, Danny Elfman, The Batman et Nirvana",
+        "tracks": [
+            {"title": "The Dark Knight Main Theme", "artist": "Hans Zimmer", "query": "Hans Zimmer The Dark Knight Main Theme OST"},
+            {"title": "Something in the Way", "artist": "Nirvana", "query": "Nirvana Something in the Way The Batman lyrics"},
+            {"title": "The Batman Main Theme", "artist": "Michael Giacchino", "query": "Michael Giacchino The Batman 2022 Main Theme OST"},
+            {"title": "Batman 1989 Theme", "artist": "Danny Elfman", "query": "Danny Elfman Batman 1989 Theme original"},
+            {"title": "Why Do We Fall?", "artist": "Hans Zimmer", "query": "Hans Zimmer Why Do We Fall The Dark Knight Rises"},
+            {"title": "Kiss from a Rose", "artist": "Seal", "query": "Seal Kiss from a Rose Batman Forever lyrics"},
+            {"title": "Face to Face", "artist": "Siouxsie and the Banshees", "query": "Siouxsie and the Banshees Face to Face Batman Returns"},
+            {"title": "A Dark Knight", "artist": "Hans Zimmer", "query": "Hans Zimmer A Dark Knight The Dark Knight OST"},
+            {"title": "Beautiful Lie", "artist": "Hans Zimmer & Junkie XL", "query": "Hans Zimmer Beautiful Lie Batman v Superman"}
+        ]
+    },
+    "dragonball": {
+        "id": "dragonball",
+        "name": "Dragon Ball & Shonen Épique",
+        "icon": "fa-fire",
+        "color": "#ea580c",
+        "badge": "🔥 Dragon Ball & Saiyans",
+        "keywords": ["dragon ball", "dragonball", "dbz", "dbs", "goku", "vegeta", "saiyan", "kamehameha", "broly", "sangoku"],
+        "description": "L'énergie pure des Saiyans : Cha-La Head-Cha-La, Dan Dan, Ultimate Battle et les génériques cultes",
+        "tracks": [
+            {"title": "Cha-La Head-Cha-La", "artist": "Hironobu Kageyama", "query": "Hironobu Kageyama Cha-La Head-Cha-La Dragon Ball Z lyrics"},
+            {"title": "Dan Dan Kokoro Hikareteku", "artist": "Field of View", "query": "Field of View Dan Dan Kokoro Hikareteku Dragon Ball GT lyrics"},
+            {"title": "Ultimate Battle (Ka Ka Kachi Daze)", "artist": "Akira Kushida", "query": "Akira Kushida Ultimate Battle Dragon Ball Super lyrics"},
+            {"title": "Makafushigi Adventure!", "artist": "Hiroki Takahashi", "query": "Hiroki Takahashi Makafushigi Adventure Dragon Ball Opening"},
+            {"title": "We Gotta Power", "artist": "Hironobu Kageyama", "query": "Hironobu Kageyama We Gotta Power Dragon Ball Z Opening 2"},
+            {"title": "Blizzard", "artist": "Daichi Miura", "query": "Daichi Miura Blizzard Dragon Ball Super Broly lyrics"},
+            {"title": "Unmei no Hi ~Tamashii vs Tamashii~", "artist": "Hironobu Kageyama", "query": "Hironobu Kageyama Unmei no Hi Tamashii vs Tamashii Gohan SSJ2"},
+            {"title": "Genkai Toppa x Survivor", "artist": "Kiyoshi Hikawa", "query": "Kiyoshi Hikawa Genkai Toppa x Survivor Dragon Ball Super lyrics"},
+            {"title": "Solid State Scouter", "artist": "Dragon Ball Z", "query": "Dragon Ball Z Solid State Scouter Bardock Theme"},
+            {"title": "Dragon Soul", "artist": "Takayoshi Tanimoto", "query": "Takayoshi Tanimoto Dragon Soul Dragon Ball Kai"}
         ]
     },
     "cinema_soundtracks": {
@@ -629,7 +679,8 @@ THEMES_CATALOG = {
             {"title": "Mission: Impossible Theme", "artist": "Lalo Schifrin", "query": "Lalo Schifrin Mission Impossible Main Title Theme"},
             {"title": "James Bond 007 Theme", "artist": "Monty Norman", "query": "James Bond 007 Theme Monty Norman"},
             {"title": "Eye of the Tiger", "artist": "Survivor", "query": "Survivor Eye of the Tiger Rocky lyrics"},
-            {"title": "Jurassic Park Main Theme", "artist": "John Williams", "query": "John Williams Jurassic Park Theme original"}
+            {"title": "Jurassic Park Main Theme", "artist": "John Williams", "query": "John Williams Jurassic Park Theme original"},
+            {"title": "Concerning Hobbits", "artist": "Howard Shore", "query": "Howard Shore Concerning Hobbits The Lord of the Rings"}
         ]
     },
     "manga_anime": {
@@ -638,7 +689,7 @@ THEMES_CATALOG = {
         "icon": "fa-dragon",
         "color": "#ec4899",
         "badge": "🎌 Manga & Animés",
-        "keywords": ["manga", "anime", "animes", "japan", "japon", "naruto", "dragon ball", "one piece", "demon slayer", "attack on titan", "shingeki", "otaku"],
+        "keywords": ["manga", "anime", "animes", "japan", "japon", "naruto", "dragon ball", "one piece", "demon slayer", "attack on titan", "shingeki", "otaku", "jujutsu kaisen"],
         "description": "Les plus grands openings et musiques d'animés : Naruto, Demon Slayer, Attack on Titan, One Piece...",
         "tracks": [
             {"title": "Gurenge", "artist": "LiSA", "query": "LiSA Gurenge Demon Slayer Opening lyrics"},
@@ -648,7 +699,11 @@ THEMES_CATALOG = {
             {"title": "Cha-La Head-Cha-La", "artist": "Hironobu Kageyama", "query": "Hironobu Kageyama Cha-La Head-Cha-La Dragon Ball Z lyrics"},
             {"title": "Unravel", "artist": "TK from Ling Tosite Sigure", "query": "TK from Ling Tosite Sigure Unravel Tokyo Ghoul lyrics"},
             {"title": "The Rumbling", "artist": "SiM", "query": "SiM The Rumbling Attack on Titan lyrics"},
-            {"title": "Silhouette", "artist": "KANA-BOON", "query": "KANA-BOON Silhouette Naruto Shippuden lyrics"}
+            {"title": "Silhouette", "artist": "KANA-BOON", "query": "KANA-BOON Silhouette Naruto Shippuden lyrics"},
+            {"title": "Kaikai Kitan", "artist": "Eve", "query": "Eve Kaikai Kitan Jujutsu Kaisen Opening lyrics"},
+            {"title": "Overtaken", "artist": "Kohei Tanaka", "query": "Kohei Tanaka Overtaken One Piece OST original"},
+            {"title": "Departure!", "artist": "Masatoshi Ono", "query": "Masatoshi Ono Departure Hunter x Hunter Opening lyrics"},
+            {"title": "Kick Back", "artist": "Kenshi Yonezu", "query": "Kenshi Yonezu Kick Back Chainsaw Man lyrics"}
         ]
     }
 }
@@ -684,8 +739,12 @@ def match_theme_by_query(query: str):
                 return info
     return None
 
+DYNAMIC_THEMES = {}
+
 def get_theme_by_id(theme_id: str):
-    """Renvoie le thème par son identifiant."""
+    """Renvoie le thème par son identifiant (statique ou dynamique)."""
+    if theme_id in DYNAMIC_THEMES:
+        return DYNAMIC_THEMES[theme_id]
     return THEMES_CATALOG.get(theme_id)
 
 def search_themes_catalog(query: str):

@@ -928,3 +928,189 @@ def update_track_tags_and_move(rel_path: str, new_artist: str, new_title: str, n
                 pass
 
     return f"{clean_artist}/{new_filename}"
+
+
+# =====================================================================
+# FONCTIONS VIDÉO & STREAMING (MP4 HD & LECTURE EN LIGNE)
+# =====================================================================
+
+def search_videos(query: str, limit: int = 15):
+    """
+    Recherche des vidéos complètes (films, documentaires, clips, streaming)
+    sur les plateformes vidéo gratuites (YouTube, Dailymotion, Vimeo, etc.).
+    """
+    results = []
+    clean_q = query.strip()
+    if not clean_q:
+        return results
+
+    # Si c'est un lien direct (YouTube, Dailymotion, Vimeo, etc.)
+    if clean_q.startswith("http://") or clean_q.startswith("https://"):
+        try:
+            ydl_opts = get_yt_dlp_common_opts()
+            ydl_opts['extract_flat'] = True
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(clean_q, download=False)
+                if info:
+                    vid_id = info.get('id', '')
+                    title = info.get('title', 'Vidéo')
+                    uploader = info.get('uploader') or info.get('channel', 'Web')
+                    duration = info.get('duration', 0)
+                    thumb = info.get('thumbnail')
+                    if not thumb and info.get('thumbnails'):
+                        thumb = info.get('thumbnails')[-1].get('url')
+                    
+                    embed_url = f"https://www.youtube-nocookie.com/embed/{vid_id}?autoplay=1&playsinline=1" if ("youtube" in clean_q or "youtu.be" in clean_q) else clean_q
+
+                    return [{
+                        "id": vid_id,
+                        "title": title,
+                        "url": clean_q,
+                        "embed_url": embed_url,
+                        "uploader": uploader,
+                        "duration": format_duration(duration),
+                        "duration_sec": duration,
+                        "thumbnail": thumb or "/static/icons/icon-192.png",
+                        "source": "Lien direct"
+                    }]
+        except Exception as e:
+            print(f"Erreur extraction vidéo directe: {e}")
+
+    # Recherche multi-vidéo
+    try:
+        ydl_opts = get_yt_dlp_common_opts()
+        ydl_opts['extract_flat'] = True
+        ydl_opts['noplaylist'] = True
+
+        yt_query = f"ytsearch{limit}:{clean_q}"
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            res = ydl.extract_info(yt_query, download=False)
+            entries = res.get('entries', []) if res else []
+            for entry in entries:
+                if not entry:
+                    continue
+                vid_id = entry.get('id')
+                title = entry.get('title', 'Vidéo')
+                uploader = entry.get('uploader') or entry.get('channel', 'Chaîne')
+                dur = entry.get('duration', 0)
+                thumb = entry.get('thumbnail')
+                if not thumb and entry.get('thumbnails'):
+                    thumb = entry.get('thumbnails')[-1].get('url')
+                if not thumb and vid_id:
+                    thumb = f"https://i.ytimg.com/vi/{vid_id}/hqdefault.jpg"
+                
+                web_url = entry.get('url') or entry.get('webpage_url') or f"https://www.youtube.com/watch?v={vid_id}"
+                embed_url = f"https://www.youtube-nocookie.com/embed/{vid_id}?autoplay=1&playsinline=1"
+
+                results.append({
+                    "id": vid_id,
+                    "title": title,
+                    "url": web_url,
+                    "embed_url": embed_url,
+                    "uploader": uploader,
+                    "duration": format_duration(dur),
+                    "duration_sec": dur,
+                    "thumbnail": thumb or "/static/icons/icon-192.png",
+                    "source": "Gratuit / Streaming"
+                })
+    except Exception as e:
+        print(f"Erreur recherche vidéo: {e}")
+
+    return results
+
+def download_video_async(url: str, title: str = "", task_id: str = None):
+    """
+    Télécharge une vidéo complète en fichier MP4 HD (1080p/720p).
+    Garantit la compatibilité mobile et PC.
+    """
+    if not task_id:
+        task_id = str(uuid.uuid4())
+
+    ACTIVE_DOWNLOADS[task_id] = {
+        "id": task_id,
+        "type": "video",
+        "status": "starting",
+        "progress": 0,
+        "title": title or "Vidéo",
+        "message": "Démarrage du téléchargement vidéo MP4...",
+        "filepath": None,
+        "filename": None,
+        "error": None
+    }
+
+    def _video_worker():
+        try:
+            ACTIVE_DOWNLOADS[task_id]["status"] = "downloading"
+            cfg = load_config()
+            music_base = cfg.get("music_folder", "Musique")
+            video_dir = os.path.join(music_base, "Videos")
+            os.makedirs(video_dir, exist_ok=True)
+            ffmpeg_path = get_ffmpeg_path()
+
+            def hook_cb(d):
+                if d.get('status') == 'downloading':
+                    total = d.get('total_bytes') or d.get('total_bytes_estimate') or 0
+                    downloaded = d.get('downloaded_bytes') or 0
+                    if total > 0:
+                        pct = int((downloaded / total) * 90)
+                        ACTIVE_DOWNLOADS[task_id]["progress"] = max(5, min(pct, 90))
+                        ACTIVE_DOWNLOADS[task_id]["message"] = f"Téléchargement vidéo : {pct}%"
+                elif d.get('status') == 'finished':
+                    ACTIVE_DOWNLOADS[task_id]["progress"] = 95
+                    ACTIVE_DOWNLOADS[task_id]["message"] = "Finalisation du fichier vidéo MP4..."
+
+            out_template = os.path.join(video_dir, "%(title)s.%(ext)s")
+            ydl_opts = get_yt_dlp_common_opts()
+            ydl_opts.update({
+                'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+                'outtmpl': out_template,
+                'progress_hooks': [hook_cb],
+                'noplaylist': True,
+                'merge_output_format': 'mp4'
+            })
+            if ffmpeg_path:
+                ydl_opts['ffmpeg_location'] = ffmpeg_path
+
+            effective_url = url
+            if not (url.startswith("http://") or url.startswith("https://")):
+                effective_url = f"ytsearch1:{url}"
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(effective_url, download=True)
+                if 'entries' in info and info['entries']:
+                    info = info['entries'][0]
+
+            target_file = None
+            if info:
+                expected_filename = ydl.prepare_filename(info)
+                base, _ = os.path.splitext(expected_filename)
+                mp4_filename = base + ".mp4"
+                if os.path.exists(mp4_filename):
+                    target_file = mp4_filename
+                elif os.path.exists(expected_filename):
+                    target_file = expected_filename
+
+            if not target_file:
+                files = [os.path.join(video_dir, f) for f in os.listdir(video_dir) if f.lower().endswith(('.mp4', '.mkv', '.webm'))]
+                if files:
+                    target_file = max(files, key=os.path.getmtime)
+
+            if not target_file or not os.path.exists(target_file):
+                raise Exception("Le fichier vidéo n'a pas pu être enregistré.")
+
+            final_name = os.path.basename(target_file)
+            ACTIVE_DOWNLOADS[task_id]["status"] = "completed"
+            ACTIVE_DOWNLOADS[task_id]["progress"] = 100
+            ACTIVE_DOWNLOADS[task_id]["message"] = "✅ Vidéo MP4 prête à être téléchargée !"
+            ACTIVE_DOWNLOADS[task_id]["filepath"] = target_file
+            ACTIVE_DOWNLOADS[task_id]["filename"] = final_name
+            ACTIVE_DOWNLOADS[task_id]["title"] = os.path.splitext(final_name)[0]
+        except Exception as e:
+            print(f"Erreur téléchargement vidéo: {e}")
+            ACTIVE_DOWNLOADS[task_id]["status"] = "error"
+            ACTIVE_DOWNLOADS[task_id]["error"] = str(e)
+            ACTIVE_DOWNLOADS[task_id]["message"] = f"Erreur : {str(e)[:120]}"
+
+    thread = threading.Thread(target=_video_worker, daemon=True)
+    thread.start()
+    return task_id

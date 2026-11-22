@@ -8,6 +8,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Elements
     const audio = document.getElementById('audioElement');
+
+    async function downloadBlobFile(url, filename) {
+        try {
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error("Fichier non disponible");
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = filename || 'musique.mp3';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                a.remove();
+                URL.revokeObjectURL(blobUrl);
+            }, 3000);
+        } catch (e) {
+            console.error("Erreur téléchargement blob:", e);
+        }
+    }
     const toast = document.getElementById('toast');
     const searchForm = document.getElementById('searchForm');
     const searchInput = document.getElementById('searchInput');
@@ -122,6 +143,9 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadLibrary();
         await loadScannerSummary();
         setupTabs();
+        setupDeskModeDropdown();
+        setupDeskVideoMode();
+        setupDeskStreamingMode();
         setupPresets();
         setupSingerMode();
         setupThemes();
@@ -629,13 +653,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         showToast(`📲 Enregistrement de ${toDownload.length} fichiers MP3 réels...`);
                         for (let i = 0; i < toDownload.length; i++) {
                             const tr = toDownload[i];
-                            const link = document.createElement('a');
-                            link.href = `/api/download-file/${encodeURIComponent(tr.rel_path)}`;
-                            link.setAttribute('download', tr.filename || `${tr.title}.mp3`);
-                            document.body.appendChild(link);
-                            link.click();
-                            link.remove();
-                            await new Promise(r => setTimeout(r, 750));
+                            await downloadBlobFile(`/api/download-file/${encodeURIComponent(tr.rel_path)}`, tr.filename || `${tr.title}.mp3`);
+                            await new Promise(r => setTimeout(r, 800));
                         }
                         showToast(`✅ ${toDownload.length} MP3 enregistrés directement sans ZIP !`);
                     } catch (e) {
@@ -1081,16 +1100,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const track = allTracks[i];
                     const title = track.title || track.filename;
                     showToast(`MP3 ${i + 1}/${allTracks.length} : ${title}`);
-
-                    const link = document.createElement('a');
-                    link.href = `/api/download-file/${encodeURIComponent(track.rel_path)}`;
-                    link.setAttribute('download', track.filename || `${title}.mp3`);
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
+                    await downloadBlobFile(`/api/download-file/${encodeURIComponent(track.rel_path)}`, track.filename || `${title}.mp3`);
                     downloaded++;
-
-                    await new Promise(r => setTimeout(r, 750));
+                    await new Promise(r => setTimeout(r, 800));
                 }
 
                 showToast(`✅ ${downloaded} fichiers MP3 téléchargés directement sans ZIP !`);
@@ -1527,13 +1539,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         showToast(`📲 Enregistrement de ${sObj.tracks.length} fichiers MP3 réels...`);
                         for (let i = 0; i < sObj.tracks.length; i++) {
                             const tr = sObj.tracks[i];
-                            const link = document.createElement('a');
-                            link.href = `/api/download-file/${encodeURIComponent(tr.rel_path)}`;
-                            link.setAttribute('download', tr.filename || `${tr.title}.mp3`);
-                            document.body.appendChild(link);
-                            link.click();
-                            link.remove();
-                            await new Promise(r => setTimeout(r, 750));
+                            await downloadBlobFile(`/api/download-file/${encodeURIComponent(tr.rel_path)}`, tr.filename || `${tr.title}.mp3`);
+                            await new Promise(r => setTimeout(r, 800));
                         }
                         showToast(`✅ ${sObj.tracks.length} MP3 enregistrés directement sans ZIP !`);
                     } catch (e) {
@@ -1684,6 +1691,347 @@ document.addEventListener('DOMContentLoaded', () => {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // =========================================================
+    // MODES & MENU DÉROULANT DESKTOP (MUSIQUE / VIDÉO / STREAMING)
+    // =========================================================
+    let currentDeskMode = localStorage.getItem('mp3_app_mode') || 'music';
+
+    function setupDeskModeDropdown() {
+        const trigger = document.getElementById('deskLogoModeTrigger');
+        const dropdown = document.getElementById('deskModeDropdown');
+        if (!trigger || !dropdown) return;
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.style.display = (dropdown.style.display === 'none' || !dropdown.style.display) ? 'block' : 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target) && !trigger.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        document.querySelectorAll('.desk-mode-choice').forEach(choice => {
+            choice.addEventListener('click', () => {
+                const mode = choice.dataset.mode;
+                if (mode) {
+                    setDeskAppMode(mode);
+                    dropdown.style.display = 'none';
+                }
+            });
+        });
+
+        setDeskAppMode(currentDeskMode);
+    }
+
+    function setDeskAppMode(mode) {
+        currentDeskMode = mode;
+        localStorage.setItem('mp3_app_mode', mode);
+
+        document.querySelectorAll('.desk-mode-choice').forEach(c => {
+            const isMatch = c.dataset.mode === mode;
+            c.classList.toggle('active', isMatch);
+            c.style.background = isMatch ? 'rgba(99,102,241,0.18)' : 'var(--bg-elevated)';
+            c.style.borderColor = isMatch ? 'var(--primary)' : 'var(--border)';
+        });
+
+        const modeBadge = document.getElementById('deskCurrentModeLabel');
+        const logoIcon = document.getElementById('deskLogoIcon');
+        const navTabs = document.querySelector('.nav-tabs');
+
+        // Masquer tous les tab-panes
+        document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+
+        if (mode === 'music') {
+            if (modeBadge) modeBadge.textContent = '🎵 Mode Musique';
+            if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-music"></i>';
+            if (navTabs) navTabs.style.display = 'flex';
+            const activeTabBtn = document.querySelector('.nav-tabs .tab-btn.active') || document.querySelector('[data-tab="tab-search"]');
+            if (activeTabBtn) {
+                const targetId = activeTabBtn.dataset.tab;
+                const targetPane = document.getElementById(targetId);
+                if (targetPane) targetPane.style.display = 'block';
+            }
+        } else if (mode === 'video') {
+            if (modeBadge) modeBadge.textContent = '🎬 Mode Vidéo MP4';
+            if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-video"></i>';
+            if (navTabs) navTabs.style.display = 'none';
+            const vPane = document.getElementById('tab-video');
+            if (vPane) vPane.style.display = 'block';
+        } else if (mode === 'streaming') {
+            if (modeBadge) modeBadge.textContent = '📺 Mode Streaming';
+            if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-film"></i>';
+            if (navTabs) navTabs.style.display = 'none';
+            const sPane = document.getElementById('tab-streaming');
+            if (sPane) sPane.style.display = 'block';
+        }
+    }
+
+    // --- Mode Vidéo Desktop ---
+    function setupDeskVideoMode() {
+        const vForm = document.getElementById('deskVideoSearchForm');
+        const vInput = document.getElementById('deskVideoSearchInput');
+
+        if (vForm && vInput) {
+            vForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const q = vInput.value.trim();
+                if (!q) return;
+                await doSearchDeskVideos(q);
+            });
+        }
+
+        document.querySelectorAll('.desk-fast-video-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                const q = pill.dataset.q;
+                if (q) {
+                    if (vInput) vInput.value = q;
+                    doSearchDeskVideos(q);
+                }
+            });
+        });
+    }
+
+    async function doSearchDeskVideos(query) {
+        const loader = document.getElementById('deskVideoLoader');
+        const results = document.getElementById('deskVideoResults');
+
+        if (loader) loader.style.display = 'flex';
+        if (results) results.innerHTML = '';
+
+        try {
+            const res = await fetch(`/api/video/search?q=${encodeURIComponent(query)}&limit=16`);
+            const data = await res.json();
+            if (loader) loader.style.display = 'none';
+            renderDeskVideoResults(data);
+        } catch {
+            if (loader) loader.style.display = 'none';
+            showToast("Erreur recherche vidéo", true);
+        }
+    }
+
+    function renderDeskVideoResults(videos) {
+        const results = document.getElementById('deskVideoResults');
+        if (!results) return;
+        results.innerHTML = '';
+
+        if (!videos || !videos.length) {
+            results.innerHTML = '<div class="empty-state"><h3>Aucune vidéo trouvée</h3><p>Essayez avec d\'autres mots-clés ou collez un lien direct.</p></div>';
+            return;
+        }
+
+        videos.forEach(v => {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);';
+            card.innerHTML = `
+                <div style="position:relative;width:100%;padding-top:56.25%;border-radius:10px;overflow:hidden;background:#000;">
+                    <img src="${escapeHtml(v.thumbnail)}" alt="" onerror="this.src='/static/icons/icon-512.png'" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;">
+                    <span style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.75rem;padding:3px 7px;border-radius:4px;font-weight:700;">${escapeHtml(v.duration || '00:00')}</span>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <h4 style="color:#fff;font-size:0.95rem;font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px;">${escapeHtml(v.title)}</h4>
+                    <span style="color:var(--text-muted);font-size:0.8rem;"><i class="fa-solid fa-circle-user"></i> ${escapeHtml(v.uploader || 'Web')}</span>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:auto;">
+                    <button type="button" class="btn-desk-watch-stream" style="flex:1;padding:10px;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-play"></i> Regarder
+                    </button>
+                    <button type="button" class="btn-desk-dl-video" style="flex:1.4;padding:10px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-download"></i> Télécharger MP4
+                    </button>
+                </div>
+            `;
+
+            const btnWatch = card.querySelector('.btn-desk-watch-stream');
+            if (btnWatch) {
+                btnWatch.onclick = () => {
+                    setDeskAppMode('streaming');
+                    playDeskVideoStream(v);
+                };
+            }
+
+            const btnDl = card.querySelector('.btn-desk-dl-video');
+            if (btnDl) {
+                btnDl.onclick = () => triggerDeskVideoDownload(v.url, v.title, btnDl);
+            }
+
+            results.appendChild(card);
+        });
+    }
+
+    // --- Mode Streaming Desktop ---
+    let currentDeskStreamingVideo = null;
+
+    function setupDeskStreamingMode() {
+        const sForm = document.getElementById('deskStreamSearchForm');
+        const sInput = document.getElementById('deskStreamSearchInput');
+
+        if (sForm && sInput) {
+            sForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const q = sInput.value.trim();
+                if (!q) return;
+                await doSearchDeskStreaming(q);
+            });
+        }
+
+        const btnDlCur = document.getElementById('btnDeskDownloadCurrentStreaming');
+        if (btnDlCur) {
+            btnDlCur.onclick = () => {
+                if (currentDeskStreamingVideo) {
+                    triggerDeskVideoDownload(currentDeskStreamingVideo.url, currentDeskStreamingVideo.title, btnDlCur);
+                }
+            };
+        }
+    }
+
+    async function doSearchDeskStreaming(query) {
+        const loader = document.getElementById('deskStreamLoader');
+        const results = document.getElementById('deskStreamResults');
+
+        if (loader) loader.style.display = 'flex';
+        if (results) results.innerHTML = '';
+
+        if (query.startsWith('http://') || query.startsWith('https://')) {
+            try {
+                const res = await fetch(`/api/video/info?url=${encodeURIComponent(query)}`);
+                const info = await res.json();
+                if (loader) loader.style.display = 'none';
+                if (info && !info.error) {
+                    playDeskVideoStream(info);
+                    return;
+                }
+            } catch {}
+        }
+
+        try {
+            const res = await fetch(`/api/video/search?q=${encodeURIComponent(query)}&limit=16`);
+            const data = await res.json();
+            if (loader) loader.style.display = 'none';
+            renderDeskStreamingResults(data);
+        } catch {
+            if (loader) loader.style.display = 'none';
+            showToast("Erreur streaming", true);
+        }
+    }
+
+    function renderDeskStreamingResults(videos) {
+        const results = document.getElementById('deskStreamResults');
+        if (!results) return;
+        results.innerHTML = '';
+
+        if (!videos || !videos.length) {
+            results.innerHTML = '<div class="empty-state"><h3>Aucune vidéo de streaming trouvée</h3></div>';
+            return;
+        }
+
+        videos.forEach(v => {
+            const card = document.createElement('div');
+            card.className = 'result-card';
+            card.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);';
+            card.innerHTML = `
+                <div style="position:relative;width:100%;padding-top:56.25%;border-radius:10px;overflow:hidden;background:#000;">
+                    <img src="${escapeHtml(v.thumbnail)}" alt="" onerror="this.src='/static/icons/icon-512.png'" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;">
+                    <span style="position:absolute;bottom:6px;right:6px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.75rem;padding:3px 7px;border-radius:4px;font-weight:700;">${escapeHtml(v.duration || '00:00')}</span>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <h4 style="color:#fff;font-size:0.95rem;font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px;">${escapeHtml(v.title)}</h4>
+                    <span style="color:#10b981;font-size:0.8rem;"><i class="fa-solid fa-play"></i> Gratuit • ${escapeHtml(v.uploader || 'Streaming')}</span>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:auto;">
+                    <button type="button" class="btn-desk-play-stream" style="flex:1.2;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-play"></i> Lancer Streaming
+                    </button>
+                    <button type="button" class="btn-desk-stream-dl" style="flex:1.2;padding:10px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                        <i class="fa-solid fa-download"></i> Télécharger MP4
+                    </button>
+                </div>
+            `;
+
+            const btnPlay = card.querySelector('.btn-desk-play-stream');
+            if (btnPlay) {
+                btnPlay.onclick = () => playDeskVideoStream(v);
+            }
+
+            const btnDl = card.querySelector('.btn-desk-stream-dl');
+            if (btnDl) {
+                btnDl.onclick = () => triggerDeskVideoDownload(v.url, v.title, btnDl);
+            }
+
+            results.appendChild(card);
+        });
+    }
+
+    function playDeskVideoStream(video) {
+        currentDeskStreamingVideo = video;
+        const container = document.getElementById('deskStreamingContainer');
+        const iframe = document.getElementById('deskStreamingIframe');
+        const titleEl = document.getElementById('deskStreamingTitle');
+        const upEl = document.getElementById('deskStreamingUploader');
+
+        if (titleEl) titleEl.textContent = video.title || 'Vidéo en streaming';
+        if (upEl) upEl.innerHTML = `<i class="fa-solid fa-tower-broadcast"></i> ${escapeHtml(video.uploader || 'Streaming')} • ${escapeHtml(video.duration || '')}`;
+        if (iframe) iframe.src = video.embed_url || video.url;
+        if (container) {
+            container.style.display = 'block';
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        showToast(`▶️ Lancement streaming : ${video.title}`);
+    }
+
+    async function triggerDeskVideoDownload(url, title, btnEl) {
+        showToast(`🎬 Préparation de la vidéo MP4 : ${title}...`);
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Patientez...</span>`;
+        }
+
+        try {
+            const res = await fetch('/api/video/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url, title: title })
+            });
+            const data = await res.json();
+            if (data.task_id) {
+                const interval = setInterval(async () => {
+                    try {
+                        const stRes = await fetch(`/api/download-status/${data.task_id}`);
+                        const info = await stRes.json();
+                        const p = info.progress || 0;
+                        if (btnEl && info.status !== 'completed' && info.status !== 'error') {
+                            btnEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>${p}% MP4</span>`;
+                        }
+                        if (info.status === 'completed') {
+                            clearInterval(interval);
+                            showToast(`✅ Vidéo MP4 prête !`);
+                            if (btnEl) {
+                                btnEl.disabled = false;
+                                btnEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>Enregistrer MP4</span>`;
+                                btnEl.onclick = () => { window.location.href = `/api/download-ready/${data.task_id}`; };
+                            }
+                            await downloadBlobFile(`/api/download-ready/${data.task_id}`, info.filename || `${title}.mp4`);
+                        } else if (info.status === 'error') {
+                            clearInterval(interval);
+                            showToast(`Erreur : ${info.message}`, true);
+                            if (btnEl) {
+                                btnEl.disabled = false;
+                                btnEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Réessayer`;
+                            }
+                        }
+                    } catch {
+                        clearInterval(interval);
+                    }
+                }, 1200);
+            }
+        } catch {
+            showToast("Erreur lancement", true);
+            if (btnEl) btnEl.disabled = false;
+        }
     }
 
     // Run
