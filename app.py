@@ -37,6 +37,7 @@ from downloader import (
 )
 import scanner
 import themes
+import streaming
 import qrcode
 from temp_cleaner import reset_temp_storage, auto_clean_old_temp_files
 from downloader import download_single_track_sync
@@ -232,6 +233,28 @@ def api_video_info():
     if res:
         return jsonify(res[0])
     return jsonify({"error": "Vidéo introuvable"}), 404
+
+@app.route('/api/streaming/search')
+def api_streaming_search():
+    """Recherche des VRAIS films et séries en streaming gratuit multi-serveurs (VF/VOSTFR)."""
+    q = request.args.get('q', '').strip()
+    limit = int(request.args.get('limit', 15))
+    if not q:
+        return jsonify([])
+    results = streaming.search_streaming(q, limit=limit)
+    return jsonify(results)
+
+@app.route('/api/streaming/episode')
+def api_streaming_episode():
+    """Génère l'URL d'un épisode spécifique d'une série pour un serveur donné."""
+    imdb_id = request.args.get('id', '').strip()
+    season = int(request.args.get('season', 1))
+    episode = int(request.args.get('episode', 1))
+    server = int(request.args.get('server', 1))
+    if not imdb_id:
+        return jsonify({"error": "Identifiant manquant"}), 400
+    embed_url = streaming.get_series_stream_url(imdb_id, season=season, episode=episode, server_idx=server)
+    return jsonify({"embed_url": embed_url})
 
 # =====================================================================
 # API THÈMES & AMBIANCES

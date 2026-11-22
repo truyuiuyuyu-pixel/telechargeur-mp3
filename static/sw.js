@@ -1,6 +1,6 @@
 // Service Worker — Téléchargeur MP3 HD
-// Version du cache : mp3dl-v13-video-and-streaming-modes
-const CACHE_VERSION = 'mp3dl-v13-video-and-streaming-modes';
+// Version du cache : mp3dl-v14-real-streaming-cinema-vf
+const CACHE_VERSION = 'mp3dl-v14-real-streaming-cinema-vf';
 
 // ——— Installation : Activer immédiatement sans attendre ———
 self.addEventListener('install', (event) => {

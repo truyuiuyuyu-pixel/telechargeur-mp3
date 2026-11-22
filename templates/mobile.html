@@ -473,13 +473,13 @@
     <!-- ===== TAB: STREAMING & LECTEUR VIDÉO ===== -->
     <div class="mob-tab-pane" id="mobPane-streaming" style="display:none;">
         <div class="mob-search-box" style="margin-bottom:12px;">
-            <span class="mob-hd-pill" style="background:rgba(16,185,129,0.2);border-color:#10b981;color:#6ee7b7;"><i class="fa-solid fa-play"></i> Streaming Gratuit</span>
-            <div class="mob-section-title">Regarder des Vidéos en Streaming</div>
-            <div class="mob-section-desc">Regarde des vidéos gratuites et télécharge-les en un clic en MP4</div>
+            <span class="mob-hd-pill" style="background:rgba(16,185,129,0.2);border-color:#10b981;color:#6ee7b7;"><i class="fa-solid fa-film"></i> Streaming Cinéma & Séries</span>
+            <div class="mob-section-title">Films Complets & Séries en Streaming</div>
+            <div class="mob-section-desc">Regarde des vrais films du box-office et séries en VF / VOSTFR gratuitement et télécharge-les en MP4</div>
 
             <form id="mobStreamSearchForm" class="mob-search-row" style="margin-top:12px;">
                 <input type="search" id="mobStreamSearchInput" class="mob-input"
-                    placeholder="Cherche un film, une série ou colle un lien de streaming..."
+                    placeholder="Tape un film (Avatar, Iron Man, Spider-Man) ou colle un lien..."
                     autocomplete="off">
                 <button type="submit" class="mob-btn" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;">
                     <i class="fa-solid fa-play"></i>
@@ -487,10 +487,12 @@
             </form>
 
             <div style="display:flex;gap:6px;overflow-x:auto;padding:10px 0 4px 0;scrollbar-width:none;">
-                <button type="button" class="mob-fast-stream-pill" data-q="film complet francais gratuit" style="padding:6px 12px;border-radius:12px;border:1px solid #10b981;background:rgba(16,185,129,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🍿 Films Complets</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="serie episode 1 vf complet" style="padding:6px 12px;border-radius:12px;border:1px solid #3b82f6;background:rgba(59,130,246,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-tv"></i> 📺 Séries</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="anime episode 1 vostfr" style="padding:6px 12px;border-radius:12px;border:1px solid #ec4899;background:rgba(236,72,153,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-dragon"></i> 🎌 Animés</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="concert live complet hd" style="padding:6px 12px;border-radius:12px;border:1px solid #f59e0b;background:rgba(245,158,11,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-guitar"></i> 🎸 Concerts Live</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Avatar" style="padding:6px 12px;border-radius:12px;border:1px solid #10b981;background:rgba(16,185,129,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🍿 Avatar</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Spider-Man" style="padding:6px 12px;border-radius:12px;border:1px solid #3b82f6;background:rgba(59,130,246,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🕷️ Spider-Man</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Iron Man" style="padding:6px 12px;border-radius:12px;border:1px solid #ef4444;background:rgba(239,68,68,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🦾 Iron Man</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Inception" style="padding:6px 12px;border-radius:12px;border:1px solid #8b5cf6;background:rgba(139,92,246,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🌀 Inception</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Asterix" style="padding:6px 12px;border-radius:12px;border:1px solid #ec4899;background:rgba(236,72,153,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-shield"></i> 🛡️ Astérix</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Stranger Things" style="padding:6px 12px;border-radius:12px;border:1px solid #f59e0b;background:rgba(245,158,11,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-tv"></i> 📺 Stranger Things</button>
             </div>
         </div>
 
@@ -501,26 +503,39 @@
             </div>
             <div style="padding:14px;background:var(--bg-card);">
                 <div id="mobStreamingPlayerTitle" style="font-weight:800;font-size:1rem;color:#fff;margin-bottom:4px;">Titre de la vidéo</div>
-                <div id="mobStreamingPlayerUploader" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px;"><i class="fa-solid fa-tower-broadcast"></i> Streaming Direct</div>
+                <div id="mobStreamingPlayerUploader" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;"><i class="fa-solid fa-tower-broadcast"></i> Streaming Direct</div>
                 
+                <!-- Sélecteur de Serveurs Streaming -->
+                <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;"><i class="fa-solid fa-server"></i> Choisir un serveur de streaming :</div>
+                <div id="mobStreamingServerList" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:10px;scrollbar-width:none;"></div>
+
+                <!-- Sélecteur Saison / Épisode pour les séries -->
+                <div id="mobStreamingSeriesControls" style="display:none;gap:8px;align-items:center;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,0.06);border-radius:10px;">
+                    <span style="font-size:0.8rem;color:#fff;font-weight:700;"><i class="fa-solid fa-tv"></i> Saison :</span>
+                    <input type="number" id="mobStreamSeason" value="1" min="1" max="99" style="width:55px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:#1a202c;color:#fff;font-weight:700;text-align:center;">
+                    <span style="font-size:0.8rem;color:#fff;font-weight:700;margin-left:4px;">Épisode :</span>
+                    <input type="number" id="mobStreamEpisode" value="1" min="1" max="99" style="width:55px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:#1a202c;color:#fff;font-weight:700;text-align:center;">
+                    <button type="button" id="btnMobStreamApplyEp" class="mob-btn" style="padding:5px 12px;font-size:0.8rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border-radius:6px;font-weight:700;">OK</button>
+                </div>
+
                 <button type="button" id="btnDownloadCurrentStreaming" class="mob-btn mob-btn-full" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:800;font-size:0.95rem;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(16,185,129,0.35);">
                     <i class="fa-solid fa-download"></i>
-                    <span>📥 Télécharger cette vidéo en MP4</span>
+                    <span>📥 Télécharger ce Film en MP4</span>
                 </button>
             </div>
         </div>
 
         <div id="mobStreamLoader" class="mob-loader" style="display:none">
             <div class="mob-spinner" style="border-top-color:#10b981;"></div>
-            <span>Recherche des vidéos streaming…</span>
+            <span>Recherche des films et séries en streaming…</span>
         </div>
 
         <div id="mobStreamResults" class="mob-results-list"></div>
 
         <div id="mobStreamEmpty" class="mob-empty">
-            <i class="fa-solid fa-tv" style="font-size:3rem;color:var(--text-muted);margin-bottom:12px;"></i>
-            <h3>Mode Streaming & Lecteur Vidéo</h3>
-            <p>Regarde des vidéos, films et séries gratuites, et télécharge-les en un clic en MP4 HD !</p>
+            <i class="fa-solid fa-film" style="font-size:3rem;color:var(--text-muted);margin-bottom:12px;"></i>
+            <h3>Mode Streaming Cinéma & Séries</h3>
+            <p>Tape le nom d'un film (ex: Avatar, Spider-Man, Astérix) ou d'une série pour regarder le film complet en français (VF/VOSTFR) et le télécharger en MP4 !</p>
         </div>
     </div>
 

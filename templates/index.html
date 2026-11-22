@@ -478,18 +478,18 @@
             <section id="tab-streaming" class="tab-pane" style="display:none;">
                 <div class="search-section">
                     <div class="search-header-text">
-                        <span class="hd-badge" style="background:rgba(16,185,129,0.2);border-color:#10b981;color:#6ee7b7;"><i class="fa-solid fa-play"></i> Streaming Gratuit</span>
-                        <h2>Regarder en Streaming & Télécharger</h2>
-                        <p>Regardez des vidéos gratuites et téléchargez-les instantanément en format MP4</p>
+                        <span class="hd-badge" style="background:rgba(16,185,129,0.2);border-color:#10b981;color:#6ee7b7;"><i class="fa-solid fa-film"></i> Streaming Cinéma & Séries</span>
+                        <h2>Films Complets & Séries en Streaming Gratuit</h2>
+                        <p>Regardez des films et séries officiels du cinéma en VF / VOSTFR sans inscription, avec serveurs multiples et téléchargement MP4</p>
                     </div>
 
                     <form id="deskStreamSearchForm" class="search-form">
                         <div class="input-wrapper">
-                            <i class="fa-solid fa-play input-icon"></i>
-                            <input type="text" id="deskStreamSearchInput" class="search-input" placeholder="Cherchez un film, une série ou collez une URL de streaming...">
+                            <i class="fa-solid fa-film input-icon"></i>
+                            <input type="text" id="deskStreamSearchInput" class="search-input" placeholder="Cherchez un film (Avatar, Inception, Spider-Man, Astérix) ou une série...">
                         </div>
                         <button type="submit" class="btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);">
-                            <i class="fa-solid fa-play"></i> Lancer
+                            <i class="fa-solid fa-play"></i> Lancer le Film
                         </button>
                     </form>
                 </div>
@@ -499,20 +499,37 @@
                     <div style="position:relative;padding-top:56.25%;">
                         <iframe id="deskStreamingIframe" src="" frameborder="0" allowfullscreen allow="autoplay; fullscreen; encrypted-media" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
                     </div>
-                    <div style="padding:16px;background:var(--bg-card);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-                        <div>
-                            <h3 id="deskStreamingTitle" style="color:#fff;font-size:1.15rem;margin-bottom:4px;">Titre de la vidéo</h3>
-                            <span id="deskStreamingUploader" style="color:var(--text-muted);font-size:0.85rem;"><i class="fa-solid fa-tower-broadcast"></i> Streaming Direct</span>
+                    <div style="padding:16px;background:var(--bg-card);display:flex;flex-direction:column;gap:12px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                            <div>
+                                <h3 id="deskStreamingTitle" style="color:#fff;font-size:1.15rem;margin-bottom:4px;">Titre du film</h3>
+                                <span id="deskStreamingUploader" style="color:var(--text-muted);font-size:0.85rem;"><i class="fa-solid fa-tower-broadcast"></i> Streaming Cinéma Direct</span>
+                            </div>
+                            <button type="button" id="btnDeskDownloadCurrentStreaming" class="btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);padding:12px 20px;font-weight:700;display:flex;align-items:center;gap:8px;">
+                                <i class="fa-solid fa-download"></i> 📥 Télécharger ce Film en MP4
+                            </button>
                         </div>
-                        <button type="button" id="btnDeskDownloadCurrentStreaming" class="btn-primary" style="background:linear-gradient(135deg,#10b981,#059669);padding:12px 20px;font-weight:700;display:flex;align-items:center;gap:8px;">
-                            <i class="fa-solid fa-download"></i> 📥 Télécharger cette vidéo en MP4
-                        </button>
+
+                        <!-- Serveurs de streaming -->
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <span style="font-size:0.85rem;color:var(--text-muted);font-weight:700;"><i class="fa-solid fa-server"></i> Serveurs :</span>
+                            <div id="deskStreamingServerList" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+                        </div>
+
+                        <!-- Sélecteur Séries Saison / Épisode -->
+                        <div id="deskStreamingSeriesControls" style="display:none;align-items:center;gap:12px;padding:10px 14px;background:rgba(255,255,255,0.05);border-radius:10px;">
+                            <span style="font-size:0.9rem;color:#fff;font-weight:700;"><i class="fa-solid fa-tv"></i> Saison :</span>
+                            <input type="number" id="deskStreamSeason" value="1" min="1" max="99" style="width:60px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#1a202c;color:#fff;font-weight:700;text-align:center;">
+                            <span style="font-size:0.9rem;color:#fff;font-weight:700;margin-left:8px;">Épisode :</span>
+                            <input type="number" id="deskStreamEpisode" value="1" min="1" max="99" style="width:60px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:#1a202c;color:#fff;font-weight:700;text-align:center;">
+                            <button type="button" id="btnDeskStreamApplyEp" class="btn-primary" style="padding:6px 16px;font-size:0.85rem;background:#3b82f6;">Changer d'épisode</button>
+                        </div>
                     </div>
                 </div>
 
                 <div id="deskStreamLoader" class="search-loader" style="display:none;">
                     <div class="spinner" style="border-top-color:#10b981;"></div>
-                    <span>Recherche des vidéos streaming en cours...</span>
+                    <span>Recherche des films et séries en streaming en cours...</span>
                 </div>
 
                 <div id="deskStreamResults" class="results-grid" style="margin-top:20px;"></div>

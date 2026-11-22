@@ -1074,6 +1074,9 @@ def download_video_async(url: str, title: str = "", task_id: str = None):
             effective_url = url
             if not (url.startswith("http://") or url.startswith("https://")):
                 effective_url = f"ytsearch1:{url}"
+            elif any(domain in url for domain in ["imdb.com", "multiembed", "vidsrc", "2embed", "autoembed", "superembed"]):
+                clean_title = re.sub(r'https?://[^\s]+', '', title or '').strip()
+                effective_url = f"ytsearch1:{clean_title} film complet francais"
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(effective_url, download=True)

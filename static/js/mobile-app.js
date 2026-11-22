@@ -1773,9 +1773,10 @@
     }
 
     // =========================================================
-    // MODE STREAMING & LECTEUR VIDÉO DIRECT
+    // MODE STREAMING & LECTEUR VIDÉO DIRECT (VRAIS FILMS & SÉRIES)
     // =========================================================
     let currentStreamingVideo = null;
+    let currentStreamingServerIdx = 1;
 
     function setupStreamingMode() {
         const sForm = $('mobStreamSearchForm');
@@ -1804,9 +1805,36 @@
         if (btnDlCurrent) {
             btnDlCurrent.addEventListener('click', () => {
                 if (currentStreamingVideo) {
-                    triggerVideoDownload(currentStreamingVideo.url, currentStreamingVideo.title, btnDlCurrent);
+                    const dlTarget = currentStreamingVideo.download_url || currentStreamingVideo.url || currentStreamingVideo.title;
+                    triggerVideoDownload(dlTarget, currentStreamingVideo.title, btnDlCurrent);
                 }
             });
+        }
+
+        const btnApplyEp = $('btnMobStreamApplyEp');
+        if (btnApplyEp) {
+            btnApplyEp.addEventListener('click', () => {
+                if (!currentStreamingVideo || !currentStreamingVideo.is_series) return;
+                const s = $('mobStreamSeason') ? parseInt($('mobStreamSeason').value, 10) || 1 : 1;
+                const e = $('mobStreamEpisode') ? parseInt($('mobStreamEpisode').value, 10) || 1 : 1;
+                changeSeriesEpisode(s, e);
+            });
+        }
+    }
+
+    async function changeSeriesEpisode(season, episode) {
+        if (!currentStreamingVideo) return;
+        const iframe = $('mobStreamingIframe');
+        const imdbId = currentStreamingVideo.id;
+        try {
+            const res = await fetch(`/api/streaming/episode?id=${encodeURIComponent(imdbId)}&season=${season}&episode=${episode}&server=${currentStreamingServerIdx}`);
+            const data = await res.json();
+            if (data && data.embed_url && iframe) {
+                iframe.src = data.embed_url;
+                showToast(`📺 Épisode S${season}E${episode} chargé !`);
+            }
+        } catch {
+            showToast("Erreur lors du chargement de l'épisode", true);
         }
     }
 
@@ -1832,7 +1860,7 @@
         }
 
         try {
-            const res = await fetch(`/api/video/search?q=${encodeURIComponent(query)}&limit=15`);
+            const res = await fetch(`/api/streaming/search?q=${encodeURIComponent(query)}&limit=15`);
             const data = await res.json();
             if (loader) loader.style.display = 'none';
 
@@ -1856,23 +1884,33 @@
         videos.forEach(v => {
             const card = document.createElement('div');
             card.className = 'mob-result-card';
-            card.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:12px;';
+            card.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
+
+            const badgeBg = v.is_series ? 'rgba(59,130,246,0.2)' : 'rgba(16,185,129,0.2)';
+            const badgeColor = v.is_series ? '#60a5fa' : '#34d399';
+            const badgeBorder = v.is_series ? '#3b82f6' : '#10b981';
+
             card.innerHTML = `
-                <div style="display:flex;gap:12px;width:100%;">
-                    <div style="position:relative;width:95px;height:62px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#000;">
+                <div style="display:flex;gap:14px;width:100%;">
+                    <div style="position:relative;width:90px;height:125px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#1a202c;box-shadow:0 4px 10px rgba(0,0,0,0.5);">
                         <img src="${esc(v.thumbnail)}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:100%;height:100%;object-fit:cover;">
-                        <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.8);color:#fff;font-size:0.68rem;padding:2px 5px;border-radius:4px;font-weight:700;">${esc(v.duration || '00:00')}</span>
+                        ${v.year ? `<span style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:800;">${esc(v.year)}</span>` : ''}
                     </div>
-                    <div style="flex:1;min-width:0;overflow:hidden;">
-                        <div style="font-size:0.92rem;font-weight:700;color:#fff;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;">${esc(v.title)}</div>
-                        <div style="font-size:0.75rem;color:#10b981;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid fa-play"></i> Gratuit • ${esc(v.uploader || 'Web')}</div>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;">
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+                            <span style="background:${badgeBg};color:${badgeColor};border:1px solid ${badgeBorder};font-size:0.7rem;padding:2px 7px;border-radius:6px;font-weight:700;">${esc(v.type_label || '🎬 Film Complet')}</span>
+                            <span style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid #ef4444;font-size:0.7rem;padding:2px 7px;border-radius:6px;font-weight:700;">🇫🇷 VF / VOSTFR</span>
+                        </div>
+                        <div style="font-size:1rem;font-weight:800;color:#fff;line-height:1.25;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(v.title)}</div>
+                        ${v.actors ? `<div style="font-size:0.75rem;color:var(--text-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;margin-bottom:4px;"><i class="fa-solid fa-users"></i> ${esc(v.actors)}</div>` : ''}
+                        <div style="font-size:0.75rem;color:#10b981;font-weight:600;"><i class="fa-solid fa-circle-check"></i> Streaming Gratuit Illimité</div>
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
-                    <button type="button" class="btn-play-stream" style="flex:1.2;padding:10px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
-                        <i class="fa-solid fa-play"></i> <span>Lancer Streaming</span>
+                    <button type="button" class="btn-play-stream" style="flex:1.3;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(16,185,129,0.3);">
+                        <i class="fa-solid fa-play"></i> <span>${v.is_series ? 'Regarder la Série' : 'Regarder le Film'}</span>
                     </button>
-                    <button type="button" class="btn-stream-dl-mp4" style="flex:1.2;padding:10px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
+                    <button type="button" class="btn-stream-dl-mp4" style="flex:1.1;padding:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(239,68,68,0.3);">
                         <i class="fa-solid fa-download"></i> <span>Télécharger MP4</span>
                     </button>
                 </div>
@@ -1885,7 +1923,10 @@
 
             const btnDl = card.querySelector('.btn-stream-dl-mp4');
             if (btnDl) {
-                btnDl.onclick = () => triggerVideoDownload(v.url, v.title, btnDl);
+                btnDl.onclick = () => {
+                    const dlTarget = v.download_url || v.url || v.title;
+                    triggerVideoDownload(dlTarget, v.title, btnDl);
+                };
             }
 
             results.appendChild(card);
@@ -1894,19 +1935,62 @@
 
     function playVideoStream(video) {
         currentStreamingVideo = video;
+        currentStreamingServerIdx = 1;
         const container = $('mobStreamingPlayerContainer');
         const iframe = $('mobStreamingIframe');
         const titleEl = $('mobStreamingPlayerTitle');
         const upEl = $('mobStreamingPlayerUploader');
+        const srvList = $('mobStreamingServerList');
+        const seriesControls = $('mobStreamingSeriesControls');
 
-        if (titleEl) titleEl.textContent = video.title || 'Vidéo en streaming';
-        if (upEl) upEl.innerHTML = `<i class="fa-solid fa-tower-broadcast"></i> ${esc(video.uploader || 'Streaming')} • ${esc(video.duration || '')}`;
+        if (titleEl) titleEl.textContent = video.title || 'Film en streaming';
+        if (upEl) upEl.innerHTML = `<i class="fa-solid fa-film"></i> ${esc(video.type_label || 'Film Complet')} • ${esc(video.year || '')} • 🇫🇷 VF / VOSTFR`;
+        
+        // Charger la première source
         if (iframe) iframe.src = video.embed_url || video.url;
+
+        // Générer les boutons de serveurs
+        if (srvList) {
+            srvList.innerHTML = '';
+            const servers = video.servers || { "Serveur 1": video.embed_url || video.url };
+            let idx = 1;
+            Object.keys(servers).forEach(sName => {
+                const sUrl = servers[sName];
+                const srvBtn = document.createElement('button');
+                srvBtn.type = 'button';
+                srvBtn.textContent = sName;
+                const thisIdx = idx;
+                srvBtn.style.cssText = `padding:6px 12px;border-radius:8px;font-size:0.75rem;font-weight:700;white-space:nowrap;cursor:pointer;border:1px solid ${thisIdx === 1 ? '#10b981' : 'var(--border)'};background:${thisIdx === 1 ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)'};color:#fff;`;
+                srvBtn.onclick = () => {
+                    currentStreamingServerIdx = thisIdx;
+                    if (iframe) iframe.src = sUrl;
+                    srvList.querySelectorAll('button').forEach(b => {
+                        b.style.border = '1px solid var(--border)';
+                        b.style.background = 'rgba(255,255,255,0.08)';
+                    });
+                    srvBtn.style.border = '1px solid #10b981';
+                    srvBtn.style.background = 'rgba(16,185,129,0.3)';
+                    showToast(`Basculement sur ${sName}`);
+                };
+                srvList.appendChild(srvBtn);
+                idx++;
+            });
+        }
+
+        // Afficher ou cacher les contrôles de série
+        if (seriesControls) {
+            if (video.is_series || video.type === 'serie') {
+                seriesControls.style.display = 'flex';
+            } else {
+                seriesControls.style.display = 'none';
+            }
+        }
+
         if (container) {
             container.style.display = 'block';
             container.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        showToast(`▶️ Lancement streaming : ${video.title}`);
+        showToast(`▶️ Lancement du film : ${video.title}`);
     }
 
     // =========================================================
