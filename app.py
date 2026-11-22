@@ -238,9 +238,7 @@ def api_video_info():
 def api_streaming_search():
     """Recherche des VRAIS films et séries en streaming gratuit multi-serveurs (VF/VOSTFR)."""
     q = request.args.get('q', '').strip()
-    limit = int(request.args.get('limit', 15))
-    if not q:
-        return jsonify([])
+    limit = int(request.args.get('limit', 35))
     results = streaming.search_streaming(q, limit=limit)
     return jsonify(results)
 

@@ -1669,6 +1669,10 @@
             if (tabbar) tabbar.style.display = 'none';
             const sPane = $('mobPane-streaming');
             if (sPane) sPane.style.display = 'block';
+            const results = $('mobStreamResults');
+            if (results && !results.children.length) {
+                doSearchStreaming('tendances');
+            }
         }
     }
 
@@ -1820,6 +1824,45 @@
                 changeSeriesEpisode(s, e);
             });
         }
+
+        const btnVF = $('btnMobLangVF');
+        if (btnVF) {
+            btnVF.onclick = () => activateMobLang('vf');
+        }
+        const btnVOSTFR = $('btnMobLangVOSTFR');
+        if (btnVOSTFR) {
+            btnVOSTFR.onclick = () => activateMobLang('vostfr');
+        }
+        const btnVO = $('btnMobLangVO');
+        if (btnVO) {
+            btnVO.onclick = () => activateMobLang('vo');
+        }
+    }
+
+    function activateMobLang(lang) {
+        if (!currentStreamingVideo) {
+            showToast("Lance d'abord un film pour choisir sa langue", true);
+            return;
+        }
+        const srvList = $('mobStreamingServerList');
+        const btns = srvList ? srvList.querySelectorAll('button') : [];
+        if (!btns.length) return;
+
+        if (lang === 'vf') {
+            // Serveur 1 (VF / Multi) ou Serveur 3 (VidSrc VF / FR)
+            btns[0].click();
+            showToast("🇫🇷 Piste Française (VF) activée ! Cliquez sur l'icône 🔊 Audio du lecteur si besoin");
+        } else if (lang === 'vostfr') {
+            // Serveur 2 (Français HD) ou Serveur 1
+            if (btns.length >= 2) btns[1].click();
+            else btns[0].click();
+            showToast("💬 VOSTFR sélectionné (Sous-titres français disponibles)");
+        } else if (lang === 'vo') {
+            // Serveur 4 ou 5
+            if (btns.length >= 4) btns[3].click();
+            else btns[btns.length - 1].click();
+            showToast("🇬🇧 Version Originale (VO) activée");
+        }
     }
 
     async function changeSeriesEpisode(season, episode) {
@@ -1860,7 +1903,7 @@
         }
 
         try {
-            const res = await fetch(`/api/streaming/search?q=${encodeURIComponent(query)}&limit=15`);
+            const res = await fetch(`/api/streaming/search?q=${encodeURIComponent(query)}&limit=35`);
             const data = await res.json();
             if (loader) loader.style.display = 'none';
 

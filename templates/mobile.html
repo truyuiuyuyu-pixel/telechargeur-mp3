@@ -487,12 +487,15 @@
             </form>
 
             <div style="display:flex;gap:6px;overflow-x:auto;padding:10px 0 4px 0;scrollbar-width:none;">
-                <button type="button" class="mob-fast-stream-pill" data-q="Avatar" style="padding:6px 12px;border-radius:12px;border:1px solid #10b981;background:rgba(16,185,129,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🍿 Avatar</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="tendances" style="padding:6px 12px;border-radius:12px;border:1px solid #10b981;background:rgba(16,185,129,0.2);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:800;cursor:pointer;"><i class="fa-solid fa-fire"></i> 🔥 Tendances</button>
                 <button type="button" class="mob-fast-stream-pill" data-q="Spider-Man" style="padding:6px 12px;border-radius:12px;border:1px solid #3b82f6;background:rgba(59,130,246,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🕷️ Spider-Man</button>
                 <button type="button" class="mob-fast-stream-pill" data-q="Iron Man" style="padding:6px 12px;border-radius:12px;border:1px solid #ef4444;background:rgba(239,68,68,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🦾 Iron Man</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="Inception" style="padding:6px 12px;border-radius:12px;border:1px solid #8b5cf6;background:rgba(139,92,246,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🌀 Inception</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Star Wars" style="padding:6px 12px;border-radius:12px;border:1px solid #eab308;background:rgba(234,179,8,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-jedi"></i> ⚔️ Star Wars</button>
                 <button type="button" class="mob-fast-stream-pill" data-q="Asterix" style="padding:6px 12px;border-radius:12px;border:1px solid #ec4899;background:rgba(236,72,153,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-shield"></i> 🛡️ Astérix</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="Stranger Things" style="padding:6px 12px;border-radius:12px;border:1px solid #f59e0b;background:rgba(245,158,11,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-tv"></i> 📺 Stranger Things</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Inception" style="padding:6px 12px;border-radius:12px;border:1px solid #8b5cf6;background:rgba(139,92,246,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🌀 Inception</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Avatar" style="padding:6px 12px;border-radius:12px;border:1px solid #06b6d4;background:rgba(6,182,212,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🍿 Avatar</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Harry Potter" style="padding:6px 12px;border-radius:12px;border:1px solid #f59e0b;background:rgba(245,158,11,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-wand-magic-sparkles"></i> ⚡ Harry Potter</button>
+                <button type="button" class="mob-fast-stream-pill" data-q="Stranger Things" style="padding:6px 12px;border-radius:12px;border:1px solid #ef4444;background:rgba(239,68,68,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-tv"></i> 📺 Stranger Things</button>
             </div>
         </div>
 
@@ -505,8 +508,26 @@
                 <div id="mobStreamingPlayerTitle" style="font-weight:800;font-size:1rem;color:#fff;margin-bottom:4px;">Titre de la vidéo</div>
                 <div id="mobStreamingPlayerUploader" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;"><i class="fa-solid fa-tower-broadcast"></i> Streaming Direct</div>
                 
+                <!-- Sélection Rapide de la Langue -->
+                <div style="display:flex;gap:6px;margin-bottom:10px;">
+                    <button type="button" id="btnMobLangVF" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid #10b981;background:rgba(16,185,129,0.25);color:#fff;font-size:0.78rem;font-weight:800;cursor:pointer;">
+                        🇫🇷 Français (VF)
+                    </button>
+                    <button type="button" id="btnMobLangVOSTFR" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid #3b82f6;background:rgba(59,130,246,0.2);color:#fff;font-size:0.78rem;font-weight:800;cursor:pointer;">
+                        💬 VOSTFR (Sous-titré)
+                    </button>
+                    <button type="button" id="btnMobLangVO" style="flex:0.8;padding:8px 4px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.06);color:#ccc;font-size:0.78rem;font-weight:700;cursor:pointer;">
+                        🇬🇧 VO
+                    </button>
+                </div>
+
+                <!-- Guide d'activation de la langue dans le lecteur -->
+                <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:8px 10px;margin-bottom:12px;font-size:0.75rem;color:#bfdbfe;line-height:1.4;">
+                    <i class="fa-solid fa-circle-info"></i> <b>Pour mettre le film en Français :</b> Cliquez sur l'icône <b>⚙️ Paramètres</b> ou <b>🔊/💬 Audio</b> dans le lecteur vidéo et choisissez <b>Français (VF)</b>. Vous pouvez aussi changer de serveur ci-dessous si besoin.
+                </div>
+
                 <!-- Sélecteur de Serveurs Streaming -->
-                <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;"><i class="fa-solid fa-server"></i> Choisir un serveur de streaming :</div>
+                <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;"><i class="fa-solid fa-server"></i> 8 Serveurs de streaming gratuits disponibles :</div>
                 <div id="mobStreamingServerList" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:10px;scrollbar-width:none;"></div>
 
                 <!-- Sélecteur Saison / Épisode pour les séries -->

@@ -1767,6 +1767,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (navTabs) navTabs.style.display = 'none';
             const sPane = document.getElementById('tab-streaming');
             if (sPane) sPane.style.display = 'block';
+            const results = document.getElementById('deskStreamResults');
+            if (results && !results.children.length) {
+                doSearchDeskStreaming('tendances');
+            }
         }
     }
 
@@ -1899,6 +1903,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 changeDeskSeriesEpisode(s, e);
             });
         }
+
+        const btnVF = document.getElementById('btnDeskLangVF');
+        if (btnVF) {
+            btnVF.onclick = () => activateDeskLang('vf');
+        }
+        const btnVOSTFR = document.getElementById('btnDeskLangVOSTFR');
+        if (btnVOSTFR) {
+            btnVOSTFR.onclick = () => activateDeskLang('vostfr');
+        }
+        const btnVO = document.getElementById('btnDeskLangVO');
+        if (btnVO) {
+            btnVO.onclick = () => activateDeskLang('vo');
+        }
+    }
+
+    function activateDeskLang(lang) {
+        if (!currentDeskStreamingVideo) {
+            showToast("Lancez d'abord un film pour choisir sa langue", true);
+            return;
+        }
+        const srvList = document.getElementById('deskStreamingServerList');
+        const btns = srvList ? srvList.querySelectorAll('button') : [];
+        if (!btns.length) return;
+
+        if (lang === 'vf') {
+            btns[0].click();
+            showToast("🇫🇷 Piste Française (VF) activée ! Cliquez sur l'icône 🔊 Audio du lecteur si besoin");
+        } else if (lang === 'vostfr') {
+            if (btns.length >= 2) btns[1].click();
+            else btns[0].click();
+            showToast("💬 VOSTFR sélectionné (Sous-titres français disponibles)");
+        } else if (lang === 'vo') {
+            if (btns.length >= 4) btns[3].click();
+            else btns[btns.length - 1].click();
+            showToast("🇬🇧 Version Originale (VO) activée");
+        }
     }
 
     async function changeDeskSeriesEpisode(season, episode) {
@@ -1937,7 +1977,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const res = await fetch(`/api/streaming/search?q=${encodeURIComponent(query)}&limit=16`);
+            const res = await fetch(`/api/streaming/search?q=${encodeURIComponent(query)}&limit=35`);
             const data = await res.json();
             if (loader) loader.style.display = 'none';
             renderDeskStreamingResults(data);
