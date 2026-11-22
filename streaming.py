@@ -1,13 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-streaming.py — Moteur Haute Puissance de Films Complets & Séries en Streaming Gratuit
-Fonctionnalités :
-- Plus de 35+ choix de films/séries par recherche (Cinemeta + IMDb Base Mondiale)
-- 8 Serveurs de streaming gratuits et sans abonnement
-- Prise en charge des versions françaises (VF) et VOSTFR (multi-langues)
-- Filtrage strict anti-intrus (aucun extrait, aucun clip non lié, aucun podcast)
-- Catalogue de tendances (50 films & séries dès l'ouverture du mode streaming)
-- Prise en charge complète des séries (Saisons & Épisodes)
+streaming.py — Moteur Haute Puissance de Films Complets, Séries & Bandes-Annonces
+Style Disney+ & Box-Office Mondial
 """
 
 import urllib.request
@@ -16,7 +10,6 @@ import json
 import ssl
 import re
 
-# Contexte SSL tolérant
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
@@ -34,34 +27,58 @@ def clean_query(q: str) -> str:
 
 def build_servers(imdb_id: str, is_series: bool = False, season: int = 1, episode: int = 1):
     """
-    Génère 8 serveurs de streaming gratuits fiables pour un film ou un épisode de série.
-    Priorité aux serveurs disposant de la Version Française (VF) et du multi-langues / VOSTFR.
+    Génère 8 serveurs de streaming fiables.
+    IMPORTANT : Les serveurs SANS écran de vérification (MultiEmbed, AutoEmbed, 2Embed, Smashy)
+    sont placés en premier pour éviter tout blocage ou écran de bot check.
     """
     s = max(1, int(season))
     e = max(1, int(episode))
 
     if is_series:
         return {
-            "🇫🇷 Serveur 1 (VF / Multi)": f"https://multiembed.mov/?video_id={imdb_id}&s={s}&e={e}",
-            "🇫🇷 Serveur 2 (Français HD - Smashy)": f"https://embed.smashystream.com/playere.php?imdb={imdb_id}&season={s}&episode={e}",
-            "🇫🇷 Serveur 3 (VidSrc VF / FR)": f"https://vidsrc.me/embed/tv?imdb={imdb_id}&season={s}&episode={e}&ds_lang=fr",
-            "⚡ Serveur 4 (VidSrc TO Rapide)": f"https://vidsrc.to/embed/tv/{imdb_id}/{s}/{e}",
-            "🎬 Serveur 5 (AutoEmbed)": f"https://autoembed.to/tv/imdb/{imdb_id}-{s}-{e}",
-            "🍿 Serveur 6 (2Embed)": f"https://www.2embed.cc/embedtv/{imdb_id}&s={s}&e={e}",
-            "🌐 Serveur 7 (StreamM4u)": f"https://streamm4u.com/embed/tv/{imdb_id}/{s}/{e}",
-            "🛡️ Serveur 8 (VidSrc NET Miroir)": f"https://vidsrc.net/embed/tv/{imdb_id}/{s}/{e}"
+            "1. 🇫🇷 Serveur 1 (VF / Multi)": f"https://multiembed.mov/?video_id={imdb_id}&s={s}&e={e}",
+            "2. 🎬 Serveur 2 (AutoEmbed Rapide)": f"https://autoembed.to/tv/imdb/{imdb_id}-{s}-{e}",
+            "3. 🍿 Serveur 3 (2Embed Cinéma)": f"https://www.2embed.cc/embedtv/{imdb_id}&s={s}&e={e}",
+            "4. 🇫🇷 Serveur 4 (Français HD - Smashy)": f"https://embed.smashystream.com/playere.php?imdb={imdb_id}&season={s}&episode={e}",
+            "5. 🌐 Serveur 5 (StreamM4u)": f"https://streamm4u.com/embed/tv/{imdb_id}/{s}/{e}",
+            "6. ⚡ Serveur 6 (VidSrc TO)": f"https://vidsrc.to/embed/tv/{imdb_id}/{s}/{e}",
+            "7. ⚡ Serveur 7 (VidSrc ME - Vérif)": f"https://vidsrc.me/embed/tv?imdb={imdb_id}&season={s}&episode={e}&ds_lang=fr",
+            "8. 🛡️ Serveur 8 (VidSrc NET Miroir)": f"https://vidsrc.net/embed/tv/{imdb_id}/{s}/{e}"
         }
     else:
         return {
-            "🇫🇷 Serveur 1 (VF / Multi)": f"https://multiembed.mov/?video_id={imdb_id}",
-            "🇫🇷 Serveur 2 (Français HD - Smashy)": f"https://embed.smashystream.com/playere.php?imdb={imdb_id}",
-            "🇫🇷 Serveur 3 (VidSrc VF / FR)": f"https://vidsrc.me/embed/movie?imdb={imdb_id}&ds_lang=fr",
-            "⚡ Serveur 4 (VidSrc TO Rapide)": f"https://vidsrc.to/embed/movie/{imdb_id}",
-            "🎬 Serveur 5 (AutoEmbed)": f"https://autoembed.to/movie/imdb/{imdb_id}",
-            "🍿 Serveur 6 (2Embed)": f"https://www.2embed.cc/embed/{imdb_id}",
-            "🌐 Serveur 7 (StreamM4u)": f"https://streamm4u.com/embed/movie/{imdb_id}",
-            "🛡️ Serveur 8 (VidSrc NET Miroir)": f"https://vidsrc.net/embed/movie/{imdb_id}"
+            "1. 🇫🇷 Serveur 1 (VF / Multi)": f"https://multiembed.mov/?video_id={imdb_id}",
+            "2. 🎬 Serveur 2 (AutoEmbed Rapide)": f"https://autoembed.to/movie/imdb/{imdb_id}",
+            "3. 🍿 Serveur 3 (2Embed Cinéma)": f"https://www.2embed.cc/embed/{imdb_id}",
+            "4. 🇫🇷 Serveur 4 (Français HD - Smashy)": f"https://embed.smashystream.com/playere.php?imdb={imdb_id}",
+            "5. 🌐 Serveur 5 (StreamM4u)": f"https://streamm4u.com/embed/movie/{imdb_id}",
+            "6. ⚡ Serveur 6 (VidSrc TO)": f"https://vidsrc.to/embed/movie/{imdb_id}",
+            "7. ⚡ Serveur 7 (VidSrc ME - Vérif)": f"https://vidsrc.me/embed/movie?imdb={imdb_id}&ds_lang=fr",
+            "8. 🛡️ Serveur 8 (VidSrc NET Miroir)": f"https://vidsrc.net/embed/movie/{imdb_id}"
         }
+
+def get_trailer_url(imdb_id: str = "", title: str = "", year: str = "") -> str:
+    """
+    Récupère la bande-annonce officielle en HD / VF pour un film ou une série.
+    Utilise les métadonnées officielles Cinemeta, ou une recherche de bande-annonce officielle.
+    """
+    if imdb_id and imdb_id.startswith('tt'):
+        try:
+            url = f"https://v3-cinemeta.strem.io/meta/movie/{imdb_id}.json"
+            req = urllib.request.Request(url, headers=HEADERS)
+            with urllib.request.urlopen(req, context=SSL_CTX, timeout=3) as r:
+                data = json.loads(r.read().decode('utf-8'))
+                meta = data.get('meta', {})
+                trailers = meta.get('trailerStreams', [])
+                if trailers and trailers[0].get('ytId'):
+                    yt = trailers[0].get('ytId')
+                    return f"https://www.youtube-nocookie.com/embed/{yt}?autoplay=1&playsinline=1"
+        except Exception:
+            pass
+
+    # Recherche de la bande-annonce française officielle
+    clean_t = urllib.parse.quote(f"{title} {year} bande annonce francaise vf officiel trailer")
+    return f"https://www.youtube-nocookie.com/embed?listType=search&list={clean_t}&autoplay=1&playsinline=1"
 
 def get_series_stream_url(imdb_id: str, season: int = 1, episode: int = 1, server_idx: int = 1):
     """Renvoie l'URL exacte d'un épisode pour le serveur sélectionné."""
@@ -71,10 +88,7 @@ def get_series_stream_url(imdb_id: str, season: int = 1, episode: int = 1, serve
     return srv_dict[keys[idx]]
 
 def search_cinemeta(query: str, limit: int = 35):
-    """
-    Recherche étendue dans le catalogue Cinemeta mondial (films + séries).
-    Renvoie les vrais films de cinéma avec affiches, synopsis et identifiants.
-    """
+    """Recherche étendue Cinemeta (films + séries)."""
     clean_q = clean_query(query)
     if not clean_q:
         return []
@@ -86,7 +100,7 @@ def search_cinemeta(query: str, limit: int = 35):
     try:
         url_m = f"https://v3-cinemeta.strem.io/catalog/movie/top/search={encoded}.json"
         req = urllib.request.Request(url_m, headers=HEADERS)
-        with urllib.request.urlopen(req, context=SSL_CTX, timeout=5) as r:
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=4) as r:
             data = json.loads(r.read().decode('utf-8'))
             for m in data.get('metas', []):
                 iid = m.get('imdb_id')
@@ -94,14 +108,15 @@ def search_cinemeta(query: str, limit: int = 35):
                     continue
                 year = str(m.get('releaseInfo') or m.get('year') or '')
                 poster = m.get('poster') or ""
+                title = m.get('name', 'Film')
                 results[iid] = {
                     "id": iid,
-                    "title": m.get('name', 'Film'),
+                    "title": title,
                     "year": year,
                     "type": "movie",
                     "type_label": "🎬 Film Complet",
                     "is_series": False,
-                    "actors": m.get('description', '')[:110] if m.get('description') else '',
+                    "actors": m.get('description', '')[:120] if m.get('description') else '',
                     "thumbnail": poster or "/static/icons/icon-192.png",
                     "servers": build_servers(iid, is_series=False),
                     "embed_url": f"https://multiembed.mov/?video_id={iid}",
@@ -116,7 +131,7 @@ def search_cinemeta(query: str, limit: int = 35):
     try:
         url_s = f"https://v3-cinemeta.strem.io/catalog/series/top/search={encoded}.json"
         req = urllib.request.Request(url_s, headers=HEADERS)
-        with urllib.request.urlopen(req, context=SSL_CTX, timeout=5) as r:
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=4) as r:
             data = json.loads(r.read().decode('utf-8'))
             for s in data.get('metas', []):
                 iid = s.get('imdb_id')
@@ -124,14 +139,15 @@ def search_cinemeta(query: str, limit: int = 35):
                     continue
                 year = str(s.get('releaseInfo') or s.get('year') or '')
                 poster = s.get('poster') or ""
+                title = s.get('name', 'Série')
                 results[iid] = {
                     "id": iid,
-                    "title": s.get('name', 'Série'),
+                    "title": title,
                     "year": year,
                     "type": "serie",
                     "type_label": "📺 Série TV",
                     "is_series": True,
-                    "actors": s.get('description', '')[:110] if s.get('description') else '',
+                    "actors": s.get('description', '')[:120] if s.get('description') else '',
                     "thumbnail": poster or "/static/icons/icon-192.png",
                     "servers": build_servers(iid, is_series=True),
                     "embed_url": f"https://multiembed.mov/?video_id={iid}&s=1&e=1",
@@ -145,10 +161,7 @@ def search_cinemeta(query: str, limit: int = 35):
     return list(results.values())
 
 def search_imdb(query: str, limit: int = 15):
-    """
-    Recherche officielle IMDb avec filtrage strict pour écarter les contenus non pertinents
-    (jeux vidéo, podcasts, courts métrages inconnus).
-    """
+    """Recherche officielle IMDb avec filtrage strict anti-bruit."""
     clean_q = clean_query(query)
     if not clean_q:
         return []
@@ -159,7 +172,7 @@ def search_imdb(query: str, limit: int = 15):
 
     results = []
     try:
-        with urllib.request.urlopen(req, context=SSL_CTX, timeout=5) as resp:
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=4) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             items = data.get('d', [])
             for item in items:
@@ -168,7 +181,6 @@ def search_imdb(query: str, limit: int = 15):
                     continue
 
                 qtype = (item.get('q') or '').lower()
-                # Éliminer formellement les bruits (jeux vidéo, podcasts, clips)
                 if qtype in ['podcast series', 'video game', 'music video']:
                     continue
 
@@ -202,33 +214,33 @@ def search_imdb(query: str, limit: int = 15):
 
 def get_trending_catalog(limit: int = 40):
     """
-    Récupère le catalogue des films et séries les plus populaires du moment.
-    Permet à l'utilisateur de choisir directement parmi les meilleurs films sans chercher.
+    Catalogue des films et séries les plus regardés du moment (Box-Office & Tendances).
     """
     results = {}
     try:
         url_m = "https://v3-cinemeta.strem.io/catalog/movie/top.json"
         req = urllib.request.Request(url_m, headers=HEADERS)
-        with urllib.request.urlopen(req, context=SSL_CTX, timeout=5) as r:
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=4) as r:
             data = json.loads(r.read().decode('utf-8'))
             for m in data.get('metas', [])[:25]:
                 iid = m.get('imdb_id')
                 if not iid or not iid.startswith('tt'):
                     continue
                 year = str(m.get('releaseInfo') or m.get('year') or '')
+                title = m.get('name', 'Film')
                 results[iid] = {
                     "id": iid,
-                    "title": m.get('name', 'Film'),
+                    "title": title,
                     "year": year,
                     "type": "movie",
-                    "type_label": "🔥 Tendance Cinéma",
+                    "type_label": "🔥 Film le Plus Regardé",
                     "is_series": False,
                     "actors": m.get('description', '')[:100] if m.get('description') else '',
                     "thumbnail": m.get('poster') or "/static/icons/icon-192.png",
                     "servers": build_servers(iid, is_series=False),
                     "embed_url": f"https://multiembed.mov/?video_id={iid}",
                     "url": f"https://www.imdb.com/title/{iid}/",
-                    "source": "Tendance Streaming",
+                    "source": "Top Box-Office",
                     "duration": f"Sortie : {year}" if year else "Film Complet"
                 }
     except Exception as e:
@@ -237,26 +249,27 @@ def get_trending_catalog(limit: int = 40):
     try:
         url_s = "https://v3-cinemeta.strem.io/catalog/series/top.json"
         req = urllib.request.Request(url_s, headers=HEADERS)
-        with urllib.request.urlopen(req, context=SSL_CTX, timeout=5) as r:
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=4) as r:
             data = json.loads(r.read().decode('utf-8'))
             for s in data.get('metas', [])[:20]:
                 iid = s.get('imdb_id')
                 if not iid or not iid.startswith('tt') or iid in results:
                     continue
                 year = str(s.get('releaseInfo') or s.get('year') or '')
+                title = s.get('name', 'Série')
                 results[iid] = {
                     "id": iid,
-                    "title": s.get('name', 'Série'),
+                    "title": title,
                     "year": year,
                     "type": "serie",
-                    "type_label": "📺 Série Populaire",
+                    "type_label": "📺 Série Tendance",
                     "is_series": True,
                     "actors": s.get('description', '')[:100] if s.get('description') else '',
                     "thumbnail": s.get('poster') or "/static/icons/icon-192.png",
                     "servers": build_servers(iid, is_series=True),
                     "embed_url": f"https://multiembed.mov/?video_id={iid}&s=1&e=1",
                     "url": f"https://www.imdb.com/title/{iid}/",
-                    "source": "Série Tendance",
+                    "source": "Série Populaire",
                     "duration": f"Série • {year}" if year else "Série Complète"
                 }
     except Exception as e:
@@ -264,20 +277,46 @@ def get_trending_catalog(limit: int = 40):
 
     return list(results.values())[:limit]
 
+# Mappages des catégories Disney+ & sous-boutons Marvel
+CATEGORY_QUERIES = {
+    # Sous-boutons Marvel demandés par l'utilisateur
+    "marvel": "Marvel",
+    "marvel_avengers": "Avengers",
+    "marvel_deadpool": "Deadpool",
+    "marvel_xmen": "X-Men",
+    "marvel_spiderman": "Spider-Man",
+    "marvel_ironman": "Iron Man",
+    "marvel_thor": "Thor",
+    "marvel_wolverine": "Wolverine",
+    "marvel_guardians": "Guardians of the Galaxy",
+    "marvel_captain": "Captain America",
+    
+    # Styles de films Disney+ demandés par l'utilisateur
+    "disney": "Disney",
+    "pixar": "Pixar",
+    "starwars": "Star Wars",
+    "action": "Action",
+    "anime": "One Piece",
+    "comedie_fr": "Asterix",
+    "series": "Stranger Things"
+}
+
 def search_streaming(query: str, limit: int = 35):
     """
-    Recherche universelle ultra-complète :
-    - Retourne plus de 35+ films & séries pertinents
-    - Supprime tout contenu non lié
-    - Fournit 8 serveurs avec VF/VOSTFR
+    Recherche universelle ultra-complète avec prise en charge des styles Disney+ et Marvel.
     """
     query = (query or "").strip()
 
-    # Si la recherche est vide ou demande les tendances
+    # Si la recherche est vide ou demande les films les plus regardés
     if not query or query.lower() in ["top", "tendance", "tendances", "populaire", "films", "all"]:
         return get_trending_catalog(limit=limit)
 
-    # Si c'est un lien direct collé par l'utilisateur
+    # Si c'est un tag de catégorie Disney+ ou sous-bouton Marvel
+    clean_key = query.lower()
+    if clean_key in CATEGORY_QUERIES:
+        query = CATEGORY_QUERIES[clean_key]
+
+    # Si lien direct
     if query.startswith(('http://', 'https://')):
         embed_url = query
         if "dailymotion.com/video/" in query:
@@ -298,39 +337,32 @@ def search_streaming(query: str, limit: int = 35):
             "actors": "Lien streaming utilisateur",
             "thumbnail": "/static/icons/icon-192.png",
             "embed_url": embed_url,
-            "servers": {
-                "Lecteur Direct": embed_url
-            },
+            "servers": { "Lecteur Direct": embed_url },
             "url": query,
-            "source": "Lien Streaming Direct",
+            "source": "Lien Direct",
             "duration": "Direct"
         }]
 
-    # 1. Recherche mondiale Cinemeta (films + séries)
+    # 1. Recherche mondiale Cinemeta
     cm_results = search_cinemeta(query, limit=limit)
 
     # 2. Recherche complémentaire IMDb
     imdb_results = search_imdb(query, limit=15)
 
-    # Fusion et déduplication
     merged = {}
     q_words = [w.lower() for w in clean_query(query).split() if len(w) > 1]
 
-    # Prioriser les films correspondants
     for item in cm_results + imdb_results:
         iid = item.get('id')
         if not iid or iid in merged:
             continue
-        
-        # Filtre anti-hors sujet : vérifie que le titre a au moins un mot clé
         title_lower = item.get('title', '').lower()
+        # Élimination des hors-sujets
         if q_words and not any(w in title_lower for w in q_words):
-            # Ne pas inclure de vidéos qui n'ont rien à voir
             continue
-
         merged[iid] = item
 
-    # Tri par pertinence : le film dont le titre correspond le plus exactement arrive en 1er
+    # Tri par pertinence exacte
     def sort_score(item):
         t = item.get('title', '').lower()
         clean_user_q = clean_query(query).lower()
@@ -340,13 +372,10 @@ def search_streaming(query: str, limit: int = 35):
             return 80
         if clean_user_q in t:
             return 60
-        # Compter le nombre de mots en commun
         common = sum(1 for w in q_words if w in t)
         return common * 10
 
     sorted_list = sorted(list(merged.values()), key=sort_score, reverse=True)
-
-    # Si aucun résultat strict n'a été trouvé, renvoyer les correspondances globales
     if not sorted_list:
         sorted_list = list(merged.values()) or cm_results or imdb_results
 

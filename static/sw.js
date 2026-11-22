@@ -1,6 +1,6 @@
 // Service Worker — Téléchargeur MP3 HD
-// Version du cache : mp3dl-v15-real-streaming-8servers-lang-selector
-const CACHE_VERSION = 'mp3dl-v15-real-streaming-8servers-lang-selector';
+// Version du cache : mp3dl-v16-disney-plus-marvel-trailer
+const CACHE_VERSION = 'mp3dl-v16-disney-plus-marvel-trailer';
 
 // ——— Installation : Activer immédiatement sans attendre ———
 self.addEventListener('install', (event) => {

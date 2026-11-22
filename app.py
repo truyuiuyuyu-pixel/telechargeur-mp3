@@ -44,6 +44,10 @@ from downloader import download_single_track_sync
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+try:
+    app.json.sort_keys = False
+except Exception:
+    app.config['JSON_SORT_KEYS'] = False
 
 @app.after_request
 def add_no_cache_headers(response):
@@ -253,6 +257,15 @@ def api_streaming_episode():
         return jsonify({"error": "Identifiant manquant"}), 400
     embed_url = streaming.get_series_stream_url(imdb_id, season=season, episode=episode, server_idx=server)
     return jsonify({"embed_url": embed_url})
+
+@app.route('/api/streaming/trailer')
+def api_streaming_trailer():
+    """Renvoie l'URL de la bande-annonce officielle en VF/HD pour un film ou une série."""
+    imdb_id = request.args.get('id', '').strip()
+    title = request.args.get('title', '').strip()
+    year = request.args.get('year', '').strip()
+    trailer_url = streaming.get_trailer_url(imdb_id, title=title, year=year)
+    return jsonify({"trailer_url": trailer_url, "title": title, "year": year})
 
 # =====================================================================
 # API THÈMES & AMBIANCES

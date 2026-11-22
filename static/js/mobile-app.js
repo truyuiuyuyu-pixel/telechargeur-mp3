@@ -1795,15 +1795,46 @@
             });
         }
 
+        const btnToggleMarvel = $('btnMobToggleMarvel');
+        const marvelSub = $('mobMarvelSubBar');
+        if (btnToggleMarvel && marvelSub) {
+            btnToggleMarvel.addEventListener('click', () => {
+                if (marvelSub.style.display === 'none') {
+                    marvelSub.style.display = 'flex';
+                    doSearchStreaming('marvel');
+                } else {
+                    marvelSub.style.display = 'none';
+                }
+            });
+        }
+
         document.querySelectorAll('.mob-fast-stream-pill').forEach(pill => {
             pill.addEventListener('click', () => {
                 const q = pill.dataset.q;
                 if (q) {
-                    if (sInput) sInput.value = q;
+                    if (sInput && !q.startsWith('marvel_')) sInput.value = q;
                     doSearchStreaming(q);
                 }
             });
         });
+
+        const btnWatchTrailer = $('btnMobWatchTrailerInPlayer');
+        if (btnWatchTrailer) {
+            btnWatchTrailer.addEventListener('click', () => {
+                if (currentStreamingVideo) {
+                    playVideoTrailer(currentStreamingVideo);
+                }
+            });
+        }
+
+        const btnSwitchBack = $('btnMobSwitchBackFullMovie');
+        if (btnSwitchBack) {
+            btnSwitchBack.addEventListener('click', () => {
+                if (currentStreamingVideo) {
+                    playVideoStream(currentStreamingVideo);
+                }
+            });
+        }
 
         const btnDlCurrent = $('btnDownloadCurrentStreaming');
         if (btnDlCurrent) {
@@ -1881,14 +1912,48 @@
         }
     }
 
+    const CATEGORY_TITLES = {
+        'tendances': '🔥 Les Films les Plus Regardés (Top Box-Office)',
+        'marvel': '🦸 Univers Marvel : Tous les Films & Héros',
+        'marvel_avengers': '🛡️ Collection Marvel : Avengers',
+        'marvel_deadpool': '⚔️ Collection Marvel : Deadpool',
+        'marvel_xmen': '🧬 Collection Marvel : X-Men',
+        'marvel_spiderman': '🕷️ Collection Marvel : Spider-Man',
+        'marvel_ironman': '🦾 Collection Marvel : Iron Man',
+        'marvel_thor': '⚡ Collection Marvel : Thor',
+        'marvel_wolverine': '🐺 Collection Marvel : Wolverine',
+        'marvel_captain': '🇺🇸 Collection Marvel : Captain America',
+        'marvel_guardians': '🌌 Collection Marvel : Les Gardiens de la Galaxie',
+        'disney': '🏰 Univers Disney : Les Grands Classiques',
+        'pixar': '🎈 Univers Pixar : Chefs-d\'œuvre d\'Animation',
+        'starwars': '⚔️ Univers Star Wars : La Saga Complète',
+        'action': '💥 Films d\'Action & Blockbusters',
+        'anime': '🎌 Animés & Mangas Populaires',
+        'comedie_fr': '🎭 Comédies Françaises du Box-Office',
+        'series': '📺 Séries Cultes & Populaires'
+    };
+
     async function doSearchStreaming(query) {
         const loader = $('mobStreamLoader');
         const results = $('mobStreamResults');
         const empty = $('mobStreamEmpty');
+        const titleEl = $('mobStreamSectionTitle');
+        const descEl = $('mobStreamSectionDesc');
 
         if (loader) loader.style.display = 'flex';
         if (results) results.innerHTML = '';
         if (empty) empty.style.display = 'none';
+
+        // Mettre à jour le titre de section
+        const cleanKey = (query || '').toLowerCase();
+        if (titleEl) {
+            titleEl.innerHTML = CATEGORY_TITLES[cleanKey] || `<i class="fa-solid fa-magnifying-glass"></i> Résultats : "${esc(query)}"`;
+        }
+        if (descEl) {
+            descEl.textContent = cleanKey in CATEGORY_TITLES 
+                ? 'Sélectionnez un film pour regarder la bande-annonce ou lancer le film complet en streaming gratuit' 
+                : `${videosCountDesc(query)}`;
+        }
 
         if (query.startsWith('http://') || query.startsWith('https://')) {
             try {
@@ -1919,15 +1984,19 @@
         }
     }
 
+    function videosCountDesc(q) {
+        return `Films et séries trouvés pour "${q}". Regardez en VF / VOSTFR gratuitement.`;
+    }
+
     function renderStreamingResults(videos) {
         const results = $('mobStreamResults');
         if (!results) return;
         results.innerHTML = '';
 
-        videos.forEach(v => {
+        videos.forEach((v, index) => {
             const card = document.createElement('div');
             card.className = 'mob-result-card';
-            card.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,0.3);';
+            card.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:14px;box-shadow:0 6px 20px rgba(0,0,0,0.35);';
 
             const badgeBg = v.is_series ? 'rgba(59,130,246,0.2)' : 'rgba(16,185,129,0.2)';
             const badgeColor = v.is_series ? '#60a5fa' : '#34d399';
@@ -1935,26 +2004,31 @@
 
             card.innerHTML = `
                 <div style="display:flex;gap:14px;width:100%;">
-                    <div style="position:relative;width:90px;height:125px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#1a202c;box-shadow:0 4px 10px rgba(0,0,0,0.5);">
+                    <div style="position:relative;width:95px;height:135px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#1a202c;box-shadow:0 4px 12px rgba(0,0,0,0.6);">
                         <img src="${esc(v.thumbnail)}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:100%;height:100%;object-fit:cover;">
-                        ${v.year ? `<span style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:800;">${esc(v.year)}</span>` : ''}
+                        <span style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:900;">#${index + 1}</span>
+                        ${v.year ? `<span style="position:absolute;bottom:5px;right:5px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.65rem;padding:2px 5px;border-radius:4px;font-weight:800;">${esc(v.year)}</span>` : ''}
                     </div>
                     <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;">
                         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
                             <span style="background:${badgeBg};color:${badgeColor};border:1px solid ${badgeBorder};font-size:0.7rem;padding:2px 7px;border-radius:6px;font-weight:700;">${esc(v.type_label || '🎬 Film Complet')}</span>
                             <span style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid #ef4444;font-size:0.7rem;padding:2px 7px;border-radius:6px;font-weight:700;">🇫🇷 VF / VOSTFR</span>
                         </div>
-                        <div style="font-size:1rem;font-weight:800;color:#fff;line-height:1.25;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(v.title)}</div>
-                        ${v.actors ? `<div style="font-size:0.75rem;color:var(--text-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;margin-bottom:4px;"><i class="fa-solid fa-users"></i> ${esc(v.actors)}</div>` : ''}
-                        <div style="font-size:0.75rem;color:#10b981;font-weight:600;"><i class="fa-solid fa-circle-check"></i> Streaming Gratuit Illimité</div>
+                        <div style="font-size:1.02rem;font-weight:800;color:#fff;line-height:1.25;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(v.title)}</div>
+                        ${v.actors ? `<div style="font-size:0.75rem;color:var(--text-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;margin-bottom:6px;"><i class="fa-solid fa-circle-info"></i> ${esc(v.actors)}</div>` : ''}
+                        <div style="font-size:0.75rem;color:#10b981;font-weight:700;"><i class="fa-solid fa-circle-check"></i> Streaming Gratuit • 8 Serveurs</div>
                     </div>
                 </div>
-                <div style="display:flex;gap:8px;width:100%;margin-top:2px;">
-                    <button type="button" class="btn-play-stream" style="flex:1.3;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(16,185,129,0.3);">
-                        <i class="fa-solid fa-play"></i> <span>${v.is_series ? 'Regarder la Série' : 'Regarder le Film'}</span>
+                <!-- 3 BOUTONS PAR FILM : REGARDER FILM, BANDE-ANNONCE, TÉLÉCHARGER MP4 -->
+                <div style="display:flex;gap:6px;width:100%;margin-top:2px;">
+                    <button type="button" class="btn-play-stream" style="flex:1.2;padding:11px 6px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(16,185,129,0.3);">
+                        <i class="fa-solid fa-play"></i> <span>${v.is_series ? 'Regarder Série' : 'Regarder Film'}</span>
                     </button>
-                    <button type="button" class="btn-stream-dl-mp4" style="flex:1.1;padding:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 10px rgba(239,68,68,0.3);">
-                        <i class="fa-solid fa-download"></i> <span>Télécharger MP4</span>
+                    <button type="button" class="btn-play-trailer" style="flex:1.1;padding:11px 6px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(139,92,246,0.3);">
+                        <i class="fa-solid fa-clapperboard"></i> <span>Bande-Annonce</span>
+                    </button>
+                    <button type="button" class="btn-stream-dl-mp4" style="flex:1;padding:11px 6px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(239,68,68,0.3);">
+                        <i class="fa-solid fa-download"></i> <span>MP4</span>
                     </button>
                 </div>
             `;
@@ -1962,6 +2036,11 @@
             const btnPlay = card.querySelector('.btn-play-stream');
             if (btnPlay) {
                 btnPlay.onclick = () => playVideoStream(v);
+            }
+
+            const btnTrailer = card.querySelector('.btn-play-trailer');
+            if (btnTrailer) {
+                btnTrailer.onclick = () => playVideoTrailer(v);
             }
 
             const btnDl = card.querySelector('.btn-stream-dl-mp4');
@@ -1976,6 +2055,37 @@
         });
     }
 
+    async function playVideoTrailer(video) {
+        currentStreamingVideo = video;
+        const container = $('mobStreamingPlayerContainer');
+        const iframe = $('mobStreamingIframe');
+        const titleEl = $('mobStreamingPlayerTitle');
+        const upEl = $('mobStreamingPlayerUploader');
+        const btnTrailer = $('btnMobWatchTrailerInPlayer');
+        const btnSwitchBack = $('btnMobSwitchBackFullMovie');
+
+        showToast(`🎬 Chargement de la bande-annonce : ${video.title}...`);
+
+        try {
+            const res = await fetch(`/api/streaming/trailer?id=${encodeURIComponent(video.id)}&title=${encodeURIComponent(video.title)}&year=${video.year || ''}`);
+            const data = await res.json();
+            if (data && data.trailer_url && iframe) {
+                iframe.src = data.trailer_url;
+                if (titleEl) titleEl.textContent = `🎬 Bande-Annonce Officielle : ${video.title}`;
+                if (upEl) upEl.innerHTML = `<i class="fa-solid fa-clapperboard"></i> Bande-Annonce Officielle HD • ${esc(video.year || '')} • 🇫🇷 VF / VOSTFR`;
+                if (btnTrailer) btnTrailer.style.display = 'none';
+                if (btnSwitchBack) btnSwitchBack.style.display = 'flex';
+                if (container) {
+                    container.style.display = 'block';
+                    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                showToast(`🍿 Bande-annonce lancée !`);
+            }
+        } catch {
+            showToast("Bande-annonce indisponible", true);
+        }
+    }
+
     function playVideoStream(video) {
         currentStreamingVideo = video;
         currentStreamingServerIdx = 1;
@@ -1985,11 +2095,16 @@
         const upEl = $('mobStreamingPlayerUploader');
         const srvList = $('mobStreamingServerList');
         const seriesControls = $('mobStreamingSeriesControls');
+        const btnTrailer = $('btnMobWatchTrailerInPlayer');
+        const btnSwitchBack = $('btnMobSwitchBackFullMovie');
+
+        if (btnTrailer) btnTrailer.style.display = 'flex';
+        if (btnSwitchBack) btnSwitchBack.style.display = 'none';
 
         if (titleEl) titleEl.textContent = video.title || 'Film en streaming';
         if (upEl) upEl.innerHTML = `<i class="fa-solid fa-film"></i> ${esc(video.type_label || 'Film Complet')} • ${esc(video.year || '')} • 🇫🇷 VF / VOSTFR`;
         
-        // Charger la première source
+        // Charger la première source (MultiEmbed ou AutoEmbed qui n'ont aucun bot check)
         if (iframe) iframe.src = video.embed_url || video.url;
 
         // Générer les boutons de serveurs

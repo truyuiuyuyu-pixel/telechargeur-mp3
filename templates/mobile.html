@@ -470,43 +470,114 @@
         </div>
     </div>
 
-    <!-- ===== TAB: STREAMING & LECTEUR VIDÉO ===== -->
+    <!-- ===== TAB: STREAMING & LECTEUR VIDÉO (STYLE DISNEY+) ===== -->
     <div class="mob-tab-pane" id="mobPane-streaming" style="display:none;">
-        <div class="mob-search-box" style="margin-bottom:12px;">
-            <span class="mob-hd-pill" style="background:rgba(16,185,129,0.2);border-color:#10b981;color:#6ee7b7;"><i class="fa-solid fa-film"></i> Streaming Cinéma & Séries</span>
-            <div class="mob-section-title">Films Complets & Séries en Streaming</div>
-            <div class="mob-section-desc">Regarde des vrais films du box-office et séries en VF / VOSTFR gratuitement et télécharge-les en MP4</div>
+        
+        <!-- En-Tête Haute Style Disney+ (Bouton Rechercher + Marques Disney+) -->
+        <div class="mob-search-box" style="margin-bottom:14px;padding:12px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1px solid #334155;border-radius:18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span class="mob-hd-pill" style="background:linear-gradient(135deg,#0284c7,#0369a1);border:none;color:#fff;font-weight:800;letter-spacing:0.5px;">
+                    <i class="fa-solid fa-play"></i> STREAMING DISNEY+ STYLE
+                </span>
+                <span style="font-size:0.75rem;color:#38bdf8;font-weight:700;"><i class="fa-solid fa-bolt"></i> 8 Serveurs VF / VOSTFR</span>
+            </div>
 
-            <form id="mobStreamSearchForm" class="mob-search-row" style="margin-top:12px;">
+            <!-- Barre de Recherche en HAUT -->
+            <form id="mobStreamSearchForm" class="mob-search-row" style="margin-top:6px;margin-bottom:12px;">
                 <input type="search" id="mobStreamSearchInput" class="mob-input"
-                    placeholder="Tape un film (Avatar, Iron Man, Spider-Man) ou colle un lien..."
-                    autocomplete="off">
-                <button type="submit" class="mob-btn" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;">
-                    <i class="fa-solid fa-play"></i>
+                    placeholder="🔍 Rechercher un film, héros, série..."
+                    autocomplete="off" style="font-size:0.9rem;">
+                <button type="submit" class="mob-btn" style="background:linear-gradient(135deg,#38bdf8,#0284c7);color:#fff;padding:0 18px;font-weight:800;">
+                    <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
             </form>
 
-            <div style="display:flex;gap:6px;overflow-x:auto;padding:10px 0 4px 0;scrollbar-width:none;">
-                <button type="button" class="mob-fast-stream-pill" data-q="tendances" style="padding:6px 12px;border-radius:12px;border:1px solid #10b981;background:rgba(16,185,129,0.2);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:800;cursor:pointer;"><i class="fa-solid fa-fire"></i> 🔥 Tendances</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="Spider-Man" style="padding:6px 12px;border-radius:12px;border:1px solid #3b82f6;background:rgba(59,130,246,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🕷️ Spider-Man</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="Iron Man" style="padding:6px 12px;border-radius:12px;border:1px solid #ef4444;background:rgba(239,68,68,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🦾 Iron Man</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="Star Wars" style="padding:6px 12px;border-radius:12px;border:1px solid #eab308;background:rgba(234,179,8,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-jedi"></i> ⚔️ Star Wars</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="Asterix" style="padding:6px 12px;border-radius:12px;border:1px solid #ec4899;background:rgba(236,72,153,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-shield"></i> 🛡️ Astérix</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="Inception" style="padding:6px 12px;border-radius:12px;border:1px solid #8b5cf6;background:rgba(139,92,246,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🌀 Inception</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="Avatar" style="padding:6px 12px;border-radius:12px;border:1px solid #06b6d4;background:rgba(6,182,212,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-film"></i> 🍿 Avatar</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="Harry Potter" style="padding:6px 12px;border-radius:12px;border:1px solid #f59e0b;background:rgba(245,158,11,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-wand-magic-sparkles"></i> ⚡ Harry Potter</button>
-                <button type="button" class="mob-fast-stream-pill" data-q="Stranger Things" style="padding:6px 12px;border-radius:12px;border:1px solid #ef4444;background:rgba(239,68,68,0.15);color:#fff;font-size:0.75rem;white-space:nowrap;font-weight:700;cursor:pointer;"><i class="fa-solid fa-tv"></i> 📺 Stranger Things</button>
+            <!-- Tuiles des Marques / Styles de Films en HAUT (Style Disney+) -->
+            <div style="font-size:0.75rem;font-weight:800;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">
+                <i class="fa-solid fa-layer-group"></i> Univers & Styles de Films :
+            </div>
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;">
+                <button type="button" id="btnMobToggleMarvel" class="mob-brand-tile" style="flex-shrink:0;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#b91c1c,#7f1d1d);color:#fff;font-weight:900;border:1px solid #ef4444;box-shadow:0 4px 12px rgba(185,28,28,0.4);font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-mask"></i> MARVEL ▾
+                </button>
+                <button type="button" class="mob-brand-tile mob-fast-stream-pill" data-q="disney" style="flex-shrink:0;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#1d4ed8,#1e3a8a);color:#fff;font-weight:900;border:1px solid #3b82f6;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-castle"></i> DISNEY
+                </button>
+                <button type="button" class="mob-brand-tile mob-fast-stream-pill" data-q="pixar" style="flex-shrink:0;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;font-weight:900;border:1px solid #38bdf8;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-lightbulb"></i> PIXAR
+                </button>
+                <button type="button" class="mob-brand-tile mob-fast-stream-pill" data-q="starwars" style="flex-shrink:0;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#d97706,#78350f);color:#fff;font-weight:900;border:1px solid #f59e0b;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-jedi"></i> STAR WARS
+                </button>
+                <button type="button" class="mob-brand-tile mob-fast-stream-pill" data-q="action" style="flex-shrink:0;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#4f46e5,#312e81);color:#fff;font-weight:900;border:1px solid #6366f1;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-explosion"></i> ACTION
+                </button>
+                <button type="button" class="mob-brand-tile mob-fast-stream-pill" data-q="anime" style="flex-shrink:0;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#ec4899,#831843);color:#fff;font-weight:900;border:1px solid #f43f5e;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-dragon"></i> ANIMÉS
+                </button>
+                <button type="button" class="mob-brand-tile mob-fast-stream-pill" data-q="comedie_fr" style="flex-shrink:0;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#10b981,#065f46);color:#fff;font-weight:900;border:1px solid #34d399;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-masks-theater"></i> COMÉDIES VF
+                </button>
+                <button type="button" class="mob-brand-tile mob-fast-stream-pill" data-q="series" style="flex-shrink:0;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#4c1d95);color:#fff;font-weight:900;border:1px solid #a855f7;font-size:0.8rem;cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-tv"></i> SÉRIES
+                </button>
+            </div>
+
+            <!-- Sous-barre MARVEL avec plusieurs boutons dédiés (Demandé par l'utilisateur) -->
+            <div id="mobMarvelSubBar" style="display:flex;flex-direction:column;gap:6px;background:rgba(185,28,28,0.18);border:1px solid rgba(239,68,68,0.35);border-radius:12px;padding:10px;margin-top:10px;">
+                <div style="font-size:0.75rem;font-weight:900;color:#fca5a5;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;">
+                    <span><i class="fa-solid fa-shield-halved"></i> Collection Marvel : Choisissez votre Héros</span>
+                    <span style="font-size:0.7rem;color:#f87171;">Cliquez sur un héros</span>
+                </div>
+                <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;">
+                    <button type="button" class="mob-fast-stream-pill" data-q="marvel_avengers" style="padding:6px 12px;border-radius:10px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-weight:800;font-size:0.75rem;border:none;white-space:nowrap;cursor:pointer;">
+                        🛡️ Avengers
+                    </button>
+                    <button type="button" class="mob-fast-stream-pill" data-q="marvel_deadpool" style="padding:6px 12px;border-radius:10px;background:linear-gradient(135deg,#991b1b,#7f1d1d);color:#fff;font-weight:800;font-size:0.75rem;border:none;white-space:nowrap;cursor:pointer;">
+                        ⚔️ Deadpool
+                    </button>
+                    <button type="button" class="mob-fast-stream-pill" data-q="marvel_xmen" style="padding:6px 12px;border-radius:10px;background:linear-gradient(135deg,#eab308,#a16207);color:#fff;font-weight:800;font-size:0.75rem;border:none;white-space:nowrap;cursor:pointer;">
+                        🧬 X-Men
+                    </button>
+                    <button type="button" class="mob-fast-stream-pill" data-q="marvel_spiderman" style="padding:6px 12px;border-radius:10px;background:linear-gradient(135deg,#0284c7,#1e3a8a);color:#fff;font-weight:800;font-size:0.75rem;border:none;white-space:nowrap;cursor:pointer;">
+                        🕷️ Spider-Man
+                    </button>
+                    <button type="button" class="mob-fast-stream-pill" data-q="marvel_ironman" style="padding:6px 12px;border-radius:10px;background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;font-weight:800;font-size:0.75rem;border:none;white-space:nowrap;cursor:pointer;">
+                        🦾 Iron Man
+                    </button>
+                    <button type="button" class="mob-fast-stream-pill" data-q="marvel_thor" style="padding:6px 12px;border-radius:10px;background:linear-gradient(135deg,#38bdf8,#0369a1);color:#fff;font-weight:800;font-size:0.75rem;border:none;white-space:nowrap;cursor:pointer;">
+                        ⚡ Thor
+                    </button>
+                    <button type="button" class="mob-fast-stream-pill" data-q="marvel_wolverine" style="padding:6px 12px;border-radius:10px;background:linear-gradient(135deg,#f59e0b,#b45309);color:#fff;font-weight:800;font-size:0.75rem;border:none;white-space:nowrap;cursor:pointer;">
+                        🐺 Wolverine
+                    </button>
+                    <button type="button" class="mob-fast-stream-pill" data-q="marvel_captain" style="padding:6px 12px;border-radius:10px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-weight:800;font-size:0.75rem;border:none;white-space:nowrap;cursor:pointer;">
+                        🇺🇸 Captain America
+                    </button>
+                    <button type="button" class="mob-fast-stream-pill" data-q="marvel_guardians" style="padding:6px 12px;border-radius:10px;background:linear-gradient(135deg,#9333ea,#6b21a8);color:#fff;font-weight:800;font-size:0.75rem;border:none;white-space:nowrap;cursor:pointer;">
+                        🌌 Gardiens
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Lecteur Vidéo Streaming Intégré -->
-        <div id="mobStreamingPlayerContainer" style="display:none;background:#000;border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:14px;box-shadow:0 10px 30px rgba(0,0,0,0.8);">
+        <!-- Lecteur Vidéo & Bande-Annonce Intégré -->
+        <div id="mobStreamingPlayerContainer" style="display:none;background:#000;border:1px solid #334155;border-radius:18px;overflow:hidden;margin-bottom:16px;box-shadow:0 12px 36px rgba(0,0,0,0.85);">
             <div style="position:relative;padding-top:56.25%;background:#000;">
                 <iframe id="mobStreamingIframe" src="" frameborder="0" allowfullscreen allow="autoplay; fullscreen; encrypted-media" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
             </div>
             <div style="padding:14px;background:var(--bg-card);">
-                <div id="mobStreamingPlayerTitle" style="font-weight:800;font-size:1rem;color:#fff;margin-bottom:4px;">Titre de la vidéo</div>
+                <div id="mobStreamingPlayerTitle" style="font-weight:800;font-size:1.05rem;color:#fff;margin-bottom:4px;">Titre de la vidéo</div>
                 <div id="mobStreamingPlayerUploader" style="font-size:0.8rem;color:var(--text-muted);margin-bottom:10px;"><i class="fa-solid fa-tower-broadcast"></i> Streaming Direct</div>
+
+                <!-- Alerte d'aide anti-blocage (Correction VidSrc "Just a quick check" & Version Française) -->
+                <div style="background:rgba(30,41,59,0.8);border:1px solid #475569;border-radius:10px;padding:9px 11px;margin-bottom:10px;font-size:0.75rem;color:#cbd5e1;line-height:1.4;">
+                    <div style="display:flex;align-items:center;gap:6px;font-weight:800;color:#38bdf8;margin-bottom:2px;">
+                        <i class="fa-solid fa-circle-question"></i> Astuce Lecteur & Version Française (VF) :
+                    </div>
+                    • <b>Pour la langue :</b> Cliquez sur <b>⚙️ Paramètres</b> ou <b>🔊/💬 Audio</b> dans la vidéo et sélectionnez <b>French (VF)</b>.<br>
+                    • <b>Si un serveur affiche « Just a quick check » :</b> Cliquez sur le bouton bleu <i>« Continue to Vidsrc »</i> ou basculez en 1 clic sur les <b>Serveurs 1, 2, 3</b> ci-dessous qui démarrent sans aucune vérification !
+                </div>
                 
                 <!-- Sélection Rapide de la Langue -->
                 <div style="display:flex;gap:6px;margin-bottom:10px;">
@@ -514,20 +585,15 @@
                         🇫🇷 Français (VF)
                     </button>
                     <button type="button" id="btnMobLangVOSTFR" style="flex:1;padding:8px 4px;border-radius:8px;border:1px solid #3b82f6;background:rgba(59,130,246,0.2);color:#fff;font-size:0.78rem;font-weight:800;cursor:pointer;">
-                        💬 VOSTFR (Sous-titré)
+                        💬 VOSTFR (Sous-titres)
                     </button>
                     <button type="button" id="btnMobLangVO" style="flex:0.8;padding:8px 4px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,0.06);color:#ccc;font-size:0.78rem;font-weight:700;cursor:pointer;">
                         🇬🇧 VO
                     </button>
                 </div>
 
-                <!-- Guide d'activation de la langue dans le lecteur -->
-                <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:8px 10px;margin-bottom:12px;font-size:0.75rem;color:#bfdbfe;line-height:1.4;">
-                    <i class="fa-solid fa-circle-info"></i> <b>Pour mettre le film en Français :</b> Cliquez sur l'icône <b>⚙️ Paramètres</b> ou <b>🔊/💬 Audio</b> dans le lecteur vidéo et choisissez <b>Français (VF)</b>. Vous pouvez aussi changer de serveur ci-dessous si besoin.
-                </div>
-
                 <!-- Sélecteur de Serveurs Streaming -->
-                <div style="font-size:0.75rem;font-weight:700;color:var(--text-muted);margin-bottom:6px;"><i class="fa-solid fa-server"></i> 8 Serveurs de streaming gratuits disponibles :</div>
+                <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;"><i class="fa-solid fa-server"></i> 8 Serveurs de streaming gratuits :</div>
                 <div id="mobStreamingServerList" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:10px;scrollbar-width:none;"></div>
 
                 <!-- Sélecteur Saison / Épisode pour les séries -->
@@ -539,24 +605,47 @@
                     <button type="button" id="btnMobStreamApplyEp" class="mob-btn" style="padding:5px 12px;font-size:0.8rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border-radius:6px;font-weight:700;">OK</button>
                 </div>
 
-                <button type="button" id="btnDownloadCurrentStreaming" class="mob-btn mob-btn-full" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:800;font-size:0.95rem;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(16,185,129,0.35);">
-                    <i class="fa-solid fa-download"></i>
-                    <span>📥 Télécharger ce Film en MP4</span>
-                </button>
+                <!-- Ligne de Boutons sous le lecteur (Trailer + Télécharger) -->
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button type="button" id="btnMobWatchTrailerInPlayer" class="mob-btn" style="flex:1;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;font-weight:800;font-size:0.88rem;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(139,92,246,0.35);">
+                        <i class="fa-solid fa-clapperboard"></i>
+                        <span>🎬 Bande-Annonce</span>
+                    </button>
+                    <button type="button" id="btnMobSwitchBackFullMovie" class="mob-btn" style="display:none;flex:1;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:800;font-size:0.88rem;padding:12px;border-radius:12px;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(16,185,129,0.35);">
+                        <i class="fa-solid fa-play"></i>
+                        <span>▶️ Voir le Film Complet</span>
+                    </button>
+                    <button type="button" id="btnDownloadCurrentStreaming" class="mob-btn" style="flex:1.2;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-weight:800;font-size:0.88rem;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(239,68,68,0.35);">
+                        <i class="fa-solid fa-download"></i>
+                        <span>📥 Télécharger MP4</span>
+                    </button>
+                </div>
             </div>
         </div>
 
         <div id="mobStreamLoader" class="mob-loader" style="display:none">
-            <div class="mob-spinner" style="border-top-color:#10b981;"></div>
-            <span>Recherche des films et séries en streaming…</span>
+            <div class="mob-spinner" style="border-top-color:#0284c7;"></div>
+            <span>Chargement des films et séries du box-office…</span>
+        </div>
+
+        <!-- Section au MILIEU : Les Films les Plus Regardés (Demandé expressément par l'utilisateur) -->
+        <div id="mobStreamMiddleHeader" style="margin:14px 0 10px 0;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+                <div id="mobStreamSectionTitle" style="font-size:1.05rem;font-weight:900;color:#fff;display:flex;align-items:center;gap:8px;">
+                    <i class="fa-solid fa-fire" style="color:#ef4444;"></i> Les Films les Plus Regardés
+                </div>
+                <div id="mobStreamSectionDesc" style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">
+                    Top Box-Office mondial & films tendances disponibles en streaming gratuit
+                </div>
+            </div>
         </div>
 
         <div id="mobStreamResults" class="mob-results-list"></div>
 
-        <div id="mobStreamEmpty" class="mob-empty">
+        <div id="mobStreamEmpty" class="mob-empty" style="display:none;">
             <i class="fa-solid fa-film" style="font-size:3rem;color:var(--text-muted);margin-bottom:12px;"></i>
             <h3>Mode Streaming Cinéma & Séries</h3>
-            <p>Tape le nom d'un film (ex: Avatar, Spider-Man, Astérix) ou d'une série pour regarder le film complet en français (VF/VOSTFR) et le télécharger en MP4 !</p>
+            <p>Tape le nom d'un film ou clique sur une catégorie Disney+ ci-dessus pour lancer le film complet et regarder la bande-annonce !</p>
         </div>
     </div>
 
