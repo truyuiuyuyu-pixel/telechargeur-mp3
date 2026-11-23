@@ -424,17 +424,37 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+                document.querySelectorAll('.tab-pane').forEach(p => {
+                    p.classList.remove('active');
+                    p.style.display = 'none';
+                });
 
                 btn.classList.add('active');
                 const targetPane = document.getElementById(btn.dataset.tab);
-                if (targetPane) targetPane.classList.add('active');
+                if (targetPane) {
+                    targetPane.classList.add('active');
+                    targetPane.style.display = 'block';
+                }
 
                 if (btn.dataset.tab === 'tab-library') {
                     loadLibrary();
                 }
                 if (btn.dataset.tab === 'tab-themes') {
                     loadThemesCatalog();
+                }
+                if (btn.dataset.tab === 'tab-streaming') {
+                    // Supprimer la musique en mode streaming : arrêt immédiat de la lecture et masquage du mini-lecteur
+                    try {
+                        const audio = document.getElementById('globalAudioElement');
+                        if (audio && !audio.paused) audio.pause();
+                    } catch {}
+                    const globalBar = document.getElementById('globalAudioPlayerBar');
+                    if (globalBar) globalBar.style.display = 'none';
+
+                    const results = document.getElementById('deskStreamResults');
+                    if (results && !results.children.length) {
+                        doSearchDeskStreaming('tendances');
+                    }
                 }
             });
         });
@@ -1742,35 +1762,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const logoIcon = document.getElementById('deskLogoIcon');
         const navTabs = document.querySelector('.nav-tabs');
 
-        // Masquer tous les tab-panes
-        document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+        // Toujours garder la barre de navigation active et visible
+        if (navTabs) navTabs.style.display = 'flex';
 
         if (mode === 'music') {
             if (modeBadge) modeBadge.textContent = '🎵 Mode Musique';
             if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-music"></i>';
-            if (navTabs) navTabs.style.display = 'flex';
-            const activeTabBtn = document.querySelector('.nav-tabs .tab-btn.active') || document.querySelector('[data-tab="tab-search"]');
-            if (activeTabBtn) {
-                const targetId = activeTabBtn.dataset.tab;
-                const targetPane = document.getElementById(targetId);
-                if (targetPane) targetPane.style.display = 'block';
-            }
+            const activeTabBtn = document.querySelector('.nav-tabs .tab-btn.active');
+            const target = (activeTabBtn && activeTabBtn.dataset.tab !== 'tab-streaming' && activeTabBtn.dataset.tab !== 'tab-video') ? activeTabBtn : document.querySelector('[data-tab="tab-search"]');
+            if (target) target.click();
         } else if (mode === 'video') {
             if (modeBadge) modeBadge.textContent = '🎬 Mode Vidéo MP4';
             if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-video"></i>';
-            if (navTabs) navTabs.style.display = 'none';
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => {
+                p.classList.remove('active');
+                p.style.display = 'none';
+            });
             const vPane = document.getElementById('tab-video');
-            if (vPane) vPane.style.display = 'block';
+            if (vPane) {
+                vPane.classList.add('active');
+                vPane.style.display = 'block';
+            }
         } else if (mode === 'streaming') {
             if (modeBadge) modeBadge.textContent = '📺 Mode Streaming';
             if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-film"></i>';
-            if (navTabs) navTabs.style.display = 'none';
-            const sPane = document.getElementById('tab-streaming');
-            if (sPane) sPane.style.display = 'block';
-            const results = document.getElementById('deskStreamResults');
-            if (results && !results.children.length) {
-                doSearchDeskStreaming('tendances');
-            }
+            const streamTabBtn = document.querySelector('[data-tab="tab-streaming"]');
+            if (streamTabBtn) streamTabBtn.click();
         }
     }
 
@@ -1957,6 +1975,140 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnVO) {
             btnVO.onclick = () => activateDeskLang('vo');
         }
+
+        // --- GESTION DES SITES DE STREAMING MANUELS (DESKTOP) ---
+        const btnLaunchManual = document.getElementById('btnDeskLaunchManualStream');
+        const btnSaveManual = document.getElementById('btnDeskSaveManualStream');
+        const manualUrlInput = document.getElementById('deskManualStreamUrl');
+        const manualNameInput = document.getElementById('deskManualStreamName');
+
+        if (btnLaunchManual) {
+            btnLaunchManual.addEventListener('click', () => {
+                let u = (manualUrlInput ? manualUrlInput.value : '').trim();
+                if (!u) {
+                    showToast("Veuillez entrer une adresse de site ou vidéo", true);
+                    return;
+                }
+                if (!u.startsWith('http://') && !u.startsWith('https://')) {
+                    u = 'https://' + u;
+                }
+                const name = (manualNameInput ? manualNameInput.value : '').trim() || "Site Streaming Manuel";
+                playDeskVideoStream({
+                    id: "manual_" + Date.now(),
+                    title: name,
+                    embed_url: u,
+                    url: u,
+                    servers: { "1. 🌐 Lecteur Manuel Direct": u },
+                    type_label: "🌐 Flux Web Manuel",
+                    is_series: false
+                });
+                showToast(`🚀 Lancement du site : ${name}`);
+            });
+        }
+
+        if (btnSaveManual) {
+            btnSaveManual.addEventListener('click', () => {
+                let u = (manualUrlInput ? manualUrlInput.value : '').trim();
+                if (!u) {
+                    showToast("Entrez l'URL à sauvegarder", true);
+                    return;
+                }
+                if (!u.startsWith('http://') && !u.startsWith('https://')) {
+                    u = 'https://' + u;
+                }
+                const name = (manualNameInput ? manualNameInput.value : '').trim() || u.replace(/^https?:\/\//, '').split('/')[0];
+                saveDeskCustomStreamingSite(name, u);
+                if (manualUrlInput) manualUrlInput.value = '';
+                if (manualNameInput) manualNameInput.value = '';
+                showToast(`💾 Site "${name}" enregistré !`);
+            });
+        }
+
+        // Raccourcis de sites recommandés
+        document.querySelectorAll('.desk-quick-site-btn').forEach(b => {
+            b.addEventListener('click', () => {
+                const u = b.dataset.url;
+                const name = b.dataset.name;
+                if (manualUrlInput) manualUrlInput.value = u;
+                if (manualNameInput) manualNameInput.value = name;
+                if (btnLaunchManual) btnLaunchManual.click();
+            });
+        });
+
+        loadDeskCustomStreamingSites();
+    }
+
+    function getDeskCustomStreamingSites() {
+        try {
+            return JSON.parse(localStorage.getItem('custom_streaming_sites') || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    function saveDeskCustomStreamingSite(name, url) {
+        const sites = getDeskCustomStreamingSites().filter(s => s.url !== url);
+        sites.unshift({ name, url, date: Date.now() });
+        localStorage.setItem('custom_streaming_sites', JSON.stringify(sites));
+        loadDeskCustomStreamingSites();
+    }
+
+    function deleteDeskCustomStreamingSite(url) {
+        const sites = getDeskCustomStreamingSites().filter(s => s.url !== url);
+        localStorage.setItem('custom_streaming_sites', JSON.stringify(sites));
+        loadDeskCustomStreamingSites();
+        showToast("Site retiré des favoris");
+    }
+
+    function loadDeskCustomStreamingSites() {
+        const container = document.getElementById('deskCustomSitesContainer');
+        const list = document.getElementById('deskCustomSitesList');
+        if (!container || !list) return;
+
+        const sites = getDeskCustomStreamingSites();
+        if (!sites.length) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        list.innerHTML = '';
+
+        sites.forEach(site => {
+            const pill = document.createElement('div');
+            pill.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:rgba(255,255,255,0.06);border-radius:10px;border:1px solid #334155;';
+            pill.innerHTML = `
+                <i class="fa-solid fa-link" style="color:#38bdf8;font-size:0.8rem;"></i>
+                <strong style="color:#fff;font-size:0.82rem;">${escapeHtml(site.name)}</strong>
+                <button type="button" class="btn-desk-launch-fav" style="padding:3px 8px;border-radius:6px;background:#10b981;color:#fff;border:none;font-size:0.75rem;font-weight:700;cursor:pointer;">
+                    ▶️ Lancer
+                </button>
+                <a href="${escapeHtml(site.url)}" target="_blank" rel="noopener" style="padding:3px 8px;border-radius:6px;background:#0284c7;color:#fff;text-decoration:none;font-size:0.75rem;font-weight:700;display:inline-flex;align-items:center;">
+                    🔗 Ouvrir
+                </a>
+                <button type="button" class="btn-desk-del-fav" style="background:none;border:none;color:#ef4444;font-size:0.8rem;cursor:pointer;padding:2px 4px;">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            `;
+
+            pill.querySelector('.btn-desk-launch-fav').onclick = () => {
+                playDeskVideoStream({
+                    id: "custom_" + Date.now(),
+                    title: site.name,
+                    embed_url: site.url,
+                    url: site.url,
+                    servers: { "1. 🌐 Lecteur Favori": site.url },
+                    type_label: "🌐 Flux Favori",
+                    is_series: false
+                });
+            };
+
+            pill.querySelector('.btn-desk-del-fav').onclick = () => {
+                deleteDeskCustomStreamingSite(site.url);
+            };
+
+            list.appendChild(pill);
+        });
     }
 
     function activateDeskLang(lang) {
@@ -1969,14 +2121,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!btns.length) return;
 
         if (lang === 'vf') {
+            // Serveur 1 : Frembed VF / VOSTFR
             btns[0].click();
-            showToast("🇫🇷 Piste Française (VF) activée ! Cliquez sur l'icône 🔊 Audio du lecteur si besoin");
+            showToast("🇫🇷 Piste Française (VF) activée !");
         } else if (lang === 'vostfr') {
             if (btns.length >= 2) btns[1].click();
             else btns[0].click();
             showToast("💬 VOSTFR sélectionné (Sous-titres français disponibles)");
         } else if (lang === 'vo') {
-            if (btns.length >= 4) btns[3].click();
+            if (btns.length >= 3) btns[2].click();
             else btns[btns.length - 1].click();
             showToast("🇬🇧 Version Originale (VO) activée");
         }
@@ -2095,15 +2248,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${v.actors ? `<p style="color:var(--text-muted);font-size:0.78rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px;"><i class="fa-solid fa-circle-info"></i> ${escapeHtml(v.actors)}</p>` : ''}
                     <span style="color:#10b981;font-size:0.8rem;font-weight:600;"><i class="fa-solid fa-circle-check"></i> Streaming Gratuit Illimité</span>
                 </div>
-                <div style="display:flex;gap:6px;margin-top:auto;">
-                    <button type="button" class="btn-desk-play-stream" style="flex:1.2;padding:10px 4px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(16,185,129,0.3);">
+                <div style="display:flex;gap:8px;margin-top:auto;">
+                    <button type="button" class="btn-desk-play-stream" style="flex:1.2;padding:11px 8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.86rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(16,185,129,0.35);">
                         <i class="fa-solid fa-play"></i> <span>${v.is_series ? 'Regarder Série' : 'Regarder Film'}</span>
                     </button>
-                    <button type="button" class="btn-desk-play-trailer" style="flex:1.1;padding:10px 4px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(139,92,246,0.3);">
+                    <button type="button" class="btn-desk-play-trailer" style="flex:1;padding:11px 8px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.86rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(139,92,246,0.35);">
                         <i class="fa-solid fa-clapperboard"></i> <span>Bande-Annonce</span>
-                    </button>
-                    <button type="button" class="btn-desk-stream-dl" style="flex:1;padding:10px 4px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(239,68,68,0.3);">
-                        <i class="fa-solid fa-download"></i> <span>MP4</span>
                     </button>
                 </div>
             `;
@@ -2116,14 +2266,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const btnTrailer = card.querySelector('.btn-desk-play-trailer');
             if (btnTrailer) {
                 btnTrailer.onclick = () => playDeskVideoTrailer(v);
-            }
-
-            const btnDl = card.querySelector('.btn-desk-stream-dl');
-            if (btnDl) {
-                btnDl.onclick = () => {
-                    const dlTarget = v.download_url || v.url || v.title;
-                    triggerDeskVideoDownload(dlTarget, v.title, btnDl);
-                };
             }
 
             results.appendChild(card);
@@ -2181,13 +2323,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (iframe) iframe.src = video.embed_url || video.url;
 
-        // Générer les serveurs
-        if (srvList) {
+        // Fonction d'affichage des serveurs
+        function renderDeskServerButtons(srvMap) {
+            if (!srvList) return;
             srvList.innerHTML = '';
-            const servers = video.servers || { "Serveur 1": video.embed_url || video.url };
             let idx = 1;
-            Object.keys(servers).forEach(sName => {
-                const sUrl = servers[sName];
+            Object.keys(srvMap).forEach(sName => {
+                const sUrl = srvMap[sName];
                 const srvBtn = document.createElement('button');
                 srvBtn.type = 'button';
                 srvBtn.textContent = sName;
@@ -2207,6 +2349,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 srvList.appendChild(srvBtn);
                 idx++;
             });
+        }
+
+        renderDeskServerButtons(video.servers || { "1. 🇫🇷 Serveur 1": video.embed_url || video.url });
+
+        // Si le film n'a pas encore le Serveur 1 Frembed VF résolu, on l'interroge en direct
+        if (video.id && video.id.startsWith('tt') && (!video.servers || !Object.keys(video.servers)[0].includes('Frembed'))) {
+            fetch(`/api/streaming/servers?id=${encodeURIComponent(video.id)}&type=${video.is_series ? 'series' : 'movie'}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.servers) {
+                        video.servers = data.servers;
+                        renderDeskServerButtons(data.servers);
+                        const firstUrl = Object.values(data.servers)[0];
+                        if (firstUrl && iframe) {
+                            iframe.src = firstUrl;
+                        }
+                    }
+                }).catch(() => {});
         }
 
         // Afficher ou cacher les contrôles de série

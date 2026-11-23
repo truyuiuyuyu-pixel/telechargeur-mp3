@@ -354,12 +354,34 @@
         document.querySelectorAll('.mob-tab').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.mob-tab').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.mob-tab-pane').forEach(p => p.classList.remove('active'));
+                document.querySelectorAll('.mob-tab-pane').forEach(p => {
+                    p.classList.remove('active');
+                    p.style.display = 'none';
+                });
                 btn.classList.add('active');
                 const pane = $(`mobPane-${btn.dataset.pane}`);
-                if (pane) pane.classList.add('active');
+                if (pane) {
+                    pane.classList.add('active');
+                    pane.style.display = 'block';
+                }
                 if (btn.dataset.pane === 'library') loadLibrary();
                 if (btn.dataset.pane === 'themes') loadMobThemes();
+                if (btn.dataset.pane === 'streaming') {
+                    // Supprimer la musique en mode streaming : arrêt immédiat de la lecture et masquage du mini-lecteur
+                    try {
+                        const audio = $('mobAudioElement') || document.querySelector('audio');
+                        if (audio && !audio.paused) audio.pause();
+                    } catch {}
+                    const pBar = $('mobGlobalAudioPlayerBar');
+                    if (pBar) pBar.style.display = 'none';
+                    const mPlayer = $('mobPlayer');
+                    if (mPlayer) mPlayer.style.display = 'none';
+
+                    const results = $('mobStreamResults');
+                    if (results && !results.children.length) {
+                        doSearchStreaming('tendances');
+                    }
+                }
             });
         });
     }
@@ -1644,8 +1666,8 @@
             c.style.borderColor = isMatch ? 'var(--primary)' : 'var(--border)';
         });
 
-        document.querySelectorAll('.mob-tab-pane').forEach(p => p.style.display = 'none');
         const tabbar = document.querySelector('.mob-tabbar');
+        if (tabbar) tabbar.style.display = 'flex'; // Toujours garder la barre d'onglets visible et utilisable !
 
         const modeBadge = $('mobCurrentModeLabel');
         const logoIcon = $('mobLogoIcon');
@@ -1653,26 +1675,27 @@
         if (mode === 'music') {
             if (modeBadge) modeBadge.textContent = '🎵 Mode Musique';
             if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-music"></i>';
-            if (tabbar) tabbar.style.display = 'flex';
-            const activeTab = document.querySelector('.mob-tab.active')?.dataset.pane || 'search';
-            const pane = $(`mobPane-${activeTab}`);
-            if (pane) pane.style.display = 'block';
+            const activeTab = document.querySelector('.mob-tab.active')?.dataset.pane;
+            const target = (activeTab && activeTab !== 'streaming' && activeTab !== 'video') ? document.querySelector(`.mob-tab[data-pane="${activeTab}"]`) : document.querySelector('.mob-tab[data-pane="search"]');
+            if (target) target.click();
         } else if (mode === 'video') {
             if (modeBadge) modeBadge.textContent = '🎬 Mode Vidéo MP4';
             if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-video"></i>';
-            if (tabbar) tabbar.style.display = 'none';
+            document.querySelectorAll('.mob-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.mob-tab-pane').forEach(p => {
+                p.classList.remove('active');
+                p.style.display = 'none';
+            });
             const vPane = $('mobPane-video');
-            if (vPane) vPane.style.display = 'block';
+            if (vPane) {
+                vPane.classList.add('active');
+                vPane.style.display = 'block';
+            }
         } else if (mode === 'streaming') {
             if (modeBadge) modeBadge.textContent = '📺 Mode Streaming';
             if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-film"></i>';
-            if (tabbar) tabbar.style.display = 'none';
-            const sPane = $('mobPane-streaming');
-            if (sPane) sPane.style.display = 'block';
-            const results = $('mobStreamResults');
-            if (results && !results.children.length) {
-                doSearchStreaming('tendances');
-            }
+            const streamTab = document.querySelector('.mob-tab[data-pane="streaming"]');
+            if (streamTab) streamTab.click();
         }
     }
 
@@ -1868,6 +1891,144 @@
         if (btnVO) {
             btnVO.onclick = () => activateMobLang('vo');
         }
+
+        // --- GESTION DES SITES DE STREAMING MANUELS ---
+        const btnLaunchManual = $('btnMobLaunchManualStream');
+        const btnSaveManual = $('btnMobSaveManualStream');
+        const manualUrlInput = $('mobManualStreamUrl');
+        const manualNameInput = $('mobManualStreamName');
+
+        if (btnLaunchManual) {
+            btnLaunchManual.addEventListener('click', () => {
+                let u = (manualUrlInput ? manualUrlInput.value : '').trim();
+                if (!u) {
+                    showToast("Veuillez entrer une adresse de site ou vidéo", true);
+                    return;
+                }
+                if (!u.startsWith('http://') && !u.startsWith('https://')) {
+                    u = 'https://' + u;
+                }
+                const name = (manualNameInput ? manualNameInput.value : '').trim() || "Site Streaming Manuel";
+                playVideoStream({
+                    id: "manual_" + Date.now(),
+                    title: name,
+                    embed_url: u,
+                    url: u,
+                    servers: { "1. 🌐 Lecteur Manuel Direct": u },
+                    type_label: "🌐 Flux Web Manuel",
+                    is_series: false
+                });
+                showToast(`🚀 Lancement du site manuel : ${name}`);
+            });
+        }
+
+        if (btnSaveManual) {
+            btnSaveManual.addEventListener('click', () => {
+                let u = (manualUrlInput ? manualUrlInput.value : '').trim();
+                if (!u) {
+                    showToast("Entrez l'URL à enregistrer", true);
+                    return;
+                }
+                if (!u.startsWith('http://') && !u.startsWith('https://')) {
+                    u = 'https://' + u;
+                }
+                const name = (manualNameInput ? manualNameInput.value : '').trim() || u.replace(/^https?:\/\//, '').split('/')[0];
+                saveCustomStreamingSite(name, u);
+                if (manualUrlInput) manualUrlInput.value = '';
+                if (manualNameInput) manualNameInput.value = '';
+                showToast(`💾 Site "${name}" enregistré dans vos favoris !`);
+            });
+        }
+
+        // Raccourcis de sites recommandés
+        document.querySelectorAll('.mob-quick-site-btn').forEach(b => {
+            b.addEventListener('click', () => {
+                const u = b.dataset.url;
+                const name = b.dataset.name;
+                if (manualUrlInput) manualUrlInput.value = u;
+                if (manualNameInput) manualNameInput.value = name;
+                if (btnLaunchManual) btnLaunchManual.click();
+            });
+        });
+
+        loadMobCustomStreamingSites();
+    }
+
+    function getCustomStreamingSites() {
+        try {
+            return JSON.parse(localStorage.getItem('custom_streaming_sites') || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    function saveCustomStreamingSite(name, url) {
+        const sites = getCustomStreamingSites().filter(s => s.url !== url);
+        sites.unshift({ name, url, date: Date.now() });
+        localStorage.setItem('custom_streaming_sites', JSON.stringify(sites));
+        loadMobCustomStreamingSites();
+    }
+
+    function deleteCustomStreamingSite(url) {
+        const sites = getCustomStreamingSites().filter(s => s.url !== url);
+        localStorage.setItem('custom_streaming_sites', JSON.stringify(sites));
+        loadMobCustomStreamingSites();
+        showToast("Site supprimé des favoris");
+    }
+
+    function loadMobCustomStreamingSites() {
+        const container = $('mobCustomSitesContainer');
+        const list = $('mobCustomSitesList');
+        if (!container || !list) return;
+
+        const sites = getCustomStreamingSites();
+        if (!sites.length) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'block';
+        list.innerHTML = '';
+
+        sites.forEach(site => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:rgba(255,255,255,0.05);border-radius:8px;border:1px solid #334155;';
+            row.innerHTML = `
+                <div style="flex:1;min-width:0;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-link" style="color:#38bdf8;font-size:0.75rem;"></i>
+                    <strong style="color:#fff;font-size:0.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(site.name)}</strong>
+                </div>
+                <div style="display:flex;gap:4px;flex-shrink:0;">
+                    <button type="button" class="btn-launch-site" style="padding:4px 8px;border-radius:6px;background:#10b981;color:#fff;border:none;font-size:0.72rem;font-weight:700;cursor:pointer;">
+                        ▶️ Lancer
+                    </button>
+                    <a href="${esc(site.url)}" target="_blank" rel="noopener" style="padding:4px 8px;border-radius:6px;background:#0284c7;color:#fff;text-decoration:none;font-size:0.72rem;font-weight:700;display:inline-flex;align-items:center;">
+                        🔗 Ouvrir
+                    </a>
+                    <button type="button" class="btn-del-site" style="padding:4px 6px;border-radius:6px;background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid #ef4444;font-size:0.72rem;cursor:pointer;">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `;
+
+            row.querySelector('.btn-launch-site').onclick = () => {
+                playVideoStream({
+                    id: "custom_" + Date.now(),
+                    title: site.name,
+                    embed_url: site.url,
+                    url: site.url,
+                    servers: { "1. 🌐 Lecteur Favori": site.url },
+                    type_label: "🌐 Flux Favori",
+                    is_series: false
+                });
+            };
+
+            row.querySelector('.btn-del-site').onclick = () => {
+                deleteCustomStreamingSite(site.url);
+            };
+
+            list.appendChild(row);
+        });
     }
 
     function activateMobLang(lang) {
@@ -1880,17 +2041,15 @@
         if (!btns.length) return;
 
         if (lang === 'vf') {
-            // Serveur 1 (VF / Multi) ou Serveur 3 (VidSrc VF / FR)
+            // Serveur 1 : Frembed VF / VOSTFR
             btns[0].click();
-            showToast("🇫🇷 Piste Française (VF) activée ! Cliquez sur l'icône 🔊 Audio du lecteur si besoin");
+            showToast("🇫🇷 Piste Française (VF) activée !");
         } else if (lang === 'vostfr') {
-            // Serveur 2 (Français HD) ou Serveur 1
             if (btns.length >= 2) btns[1].click();
             else btns[0].click();
             showToast("💬 VOSTFR sélectionné (Sous-titres français disponibles)");
         } else if (lang === 'vo') {
-            // Serveur 4 ou 5
-            if (btns.length >= 4) btns[3].click();
+            if (btns.length >= 3) btns[2].click();
             else btns[btns.length - 1].click();
             showToast("🇬🇧 Version Originale (VO) activée");
         }
@@ -2019,16 +2178,13 @@
                         <div style="font-size:0.75rem;color:#10b981;font-weight:700;"><i class="fa-solid fa-circle-check"></i> Streaming Gratuit • 8 Serveurs</div>
                     </div>
                 </div>
-                <!-- 3 BOUTONS PAR FILM : REGARDER FILM, BANDE-ANNONCE, TÉLÉCHARGER MP4 -->
-                <div style="display:flex;gap:6px;width:100%;margin-top:2px;">
-                    <button type="button" class="btn-play-stream" style="flex:1.2;padding:11px 6px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(16,185,129,0.3);">
+                <!-- BOUTONS PAR FILM : REGARDER FILM & BANDE-ANNONCE -->
+                <div style="display:flex;gap:8px;width:100%;margin-top:4px;">
+                    <button type="button" class="btn-play-stream" style="flex:1.2;padding:12px 8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:0.86rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(16,185,129,0.35);">
                         <i class="fa-solid fa-play"></i> <span>${v.is_series ? 'Regarder Série' : 'Regarder Film'}</span>
                     </button>
-                    <button type="button" class="btn-play-trailer" style="flex:1.1;padding:11px 6px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(139,92,246,0.3);">
+                    <button type="button" class="btn-play-trailer" style="flex:1;padding:12px 8px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:0.86rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(139,92,246,0.35);">
                         <i class="fa-solid fa-clapperboard"></i> <span>Bande-Annonce</span>
-                    </button>
-                    <button type="button" class="btn-stream-dl-mp4" style="flex:1;padding:11px 6px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.82rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 3px 10px rgba(239,68,68,0.3);">
-                        <i class="fa-solid fa-download"></i> <span>MP4</span>
                     </button>
                 </div>
             `;
@@ -2041,14 +2197,6 @@
             const btnTrailer = card.querySelector('.btn-play-trailer');
             if (btnTrailer) {
                 btnTrailer.onclick = () => playVideoTrailer(v);
-            }
-
-            const btnDl = card.querySelector('.btn-stream-dl-mp4');
-            if (btnDl) {
-                btnDl.onclick = () => {
-                    const dlTarget = v.download_url || v.url || v.title;
-                    triggerVideoDownload(dlTarget, v.title, btnDl);
-                };
             }
 
             results.appendChild(card);
@@ -2104,16 +2252,16 @@
         if (titleEl) titleEl.textContent = video.title || 'Film en streaming';
         if (upEl) upEl.innerHTML = `<i class="fa-solid fa-film"></i> ${esc(video.type_label || 'Film Complet')} • ${esc(video.year || '')} • 🇫🇷 VF / VOSTFR`;
         
-        // Charger la première source (MultiEmbed ou AutoEmbed qui n'ont aucun bot check)
+        // Charger la première source (Frembed VF ou MultiEmbed)
         if (iframe) iframe.src = video.embed_url || video.url;
 
-        // Générer les boutons de serveurs
-        if (srvList) {
+        // Fonction d'affichage des boutons serveurs
+        function renderServerButtons(srvMap) {
+            if (!srvList) return;
             srvList.innerHTML = '';
-            const servers = video.servers || { "Serveur 1": video.embed_url || video.url };
             let idx = 1;
-            Object.keys(servers).forEach(sName => {
-                const sUrl = servers[sName];
+            Object.keys(srvMap).forEach(sName => {
+                const sUrl = srvMap[sName];
                 const srvBtn = document.createElement('button');
                 srvBtn.type = 'button';
                 srvBtn.textContent = sName;
@@ -2133,6 +2281,24 @@
                 srvList.appendChild(srvBtn);
                 idx++;
             });
+        }
+
+        renderServerButtons(video.servers || { "1. 🇫🇷 Serveur 1": video.embed_url || video.url });
+
+        // Si le film n'a pas encore le Serveur 1 Frembed VF, on le résout immédiatement
+        if (video.id && video.id.startsWith('tt') && (!video.servers || !Object.keys(video.servers)[0].includes('Frembed'))) {
+            fetch(`/api/streaming/servers?id=${encodeURIComponent(video.id)}&type=${video.is_series ? 'series' : 'movie'}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.servers) {
+                        video.servers = data.servers;
+                        renderServerButtons(data.servers);
+                        const firstUrl = Object.values(data.servers)[0];
+                        if (firstUrl && iframe) {
+                            iframe.src = firstUrl;
+                        }
+                    }
+                }).catch(() => {});
         }
 
         // Afficher ou cacher les contrôles de série

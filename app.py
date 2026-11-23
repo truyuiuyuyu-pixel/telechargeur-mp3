@@ -246,6 +246,22 @@ def api_streaming_search():
     results = streaming.search_streaming(q, limit=limit)
     return jsonify(results)
 
+@app.route('/api/streaming/servers')
+def api_streaming_servers():
+    """Génère la liste complète des serveurs pour un film ou une série avec résolution VF instantanée."""
+    imdb_id = request.args.get('id', '').strip()
+    mtype = request.args.get('type', 'movie').strip()
+    is_series = mtype in ['series', 'serie', 'tv']
+    season = int(request.args.get('season', 1))
+    episode = int(request.args.get('episode', 1))
+
+    if not imdb_id:
+        return jsonify({"error": "Identifiant manquant"}), 400
+
+    tmdb_id = streaming.get_tmdb_id(imdb_id, is_series=is_series)
+    servers = streaming.build_servers(imdb_id, tmdb_id=tmdb_id, is_series=is_series, season=season, episode=episode)
+    return jsonify({"id": imdb_id, "tmdb_id": tmdb_id, "servers": servers})
+
 @app.route('/api/streaming/episode')
 def api_streaming_episode():
     """Génère l'URL d'un épisode spécifique d'une série pour un serveur donné."""

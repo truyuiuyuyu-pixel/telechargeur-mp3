@@ -561,6 +561,48 @@
             </div>
         </div>
 
+        <!-- Section Ajout Manuel de Sites de Streaming (Demandé expressément par l'utilisateur) -->
+        <div class="mob-card" style="margin-bottom:14px;padding:13px;background:linear-gradient(135deg,rgba(15,23,42,0.95),rgba(30,41,59,0.95));border:1px solid #0284c7;border-radius:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:0.88rem;font-weight:900;color:#38bdf8;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-globe"></i> Ajouter un Site de Streaming Manuel
+                </span>
+                <span style="font-size:0.7rem;background:rgba(2,132,199,0.25);color:#38bdf8;padding:2px 8px;border-radius:12px;font-weight:700;">VF / VOSTFR</span>
+            </div>
+            <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:8px;line-height:1.35;">
+                Collez l'adresse web de votre site de streaming favori (Wiflix, French-Stream, embed ou lien vidéo direct) pour le regarder immédiatement :
+            </p>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <input type="url" id="mobManualStreamUrl" class="mob-input" placeholder="🔗 https://wiflix... ou lien vidéo / embed" style="font-size:0.85rem;">
+                <div style="display:flex;gap:6px;">
+                    <input type="text" id="mobManualStreamName" class="mob-input" placeholder="🏷️ Nom du site (ex: Wiflix VF)" style="flex:1;font-size:0.85rem;">
+                    <button type="button" id="btnMobLaunchManualStream" class="mob-btn" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:800;padding:0 14px;border-radius:10px;font-size:0.8rem;white-space:nowrap;">
+                        <i class="fa-solid fa-play"></i> Lancer
+                    </button>
+                    <button type="button" id="btnMobSaveManualStream" class="mob-btn" style="background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;font-weight:800;padding:0 12px;border-radius:10px;font-size:0.8rem;white-space:nowrap;">
+                        <i class="fa-solid fa-bookmark"></i> Sauver
+                    </button>
+                </div>
+            </div>
+
+            <!-- Raccourcis Rapides de Vrais Sites de Streaming Français Recommandés -->
+            <div style="margin-top:10px;padding-top:8px;border-top:1px solid #334155;">
+                <div style="font-size:0.7rem;font-weight:800;color:#cbd5e1;margin-bottom:6px;">⚡ Sites Français recommandés :</div>
+                <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;">
+                    <button type="button" class="mob-quick-site-btn" data-url="https://frembed.shop" data-name="Frembed VF" style="flex-shrink:0;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid #475569;color:#e2e8f0;font-size:0.72rem;cursor:pointer;font-weight:700;">🇫🇷 Frembed VF</button>
+                    <button type="button" class="mob-quick-site-btn" data-url="https://wiflix.voto" data-name="Wiflix" style="flex-shrink:0;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid #475569;color:#e2e8f0;font-size:0.72rem;cursor:pointer;font-weight:700;">🍿 Wiflix</button>
+                    <button type="button" class="mob-quick-site-btn" data-url="https://french-stream.bio" data-name="French-Stream" style="flex-shrink:0;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid #475569;color:#e2e8f0;font-size:0.72rem;cursor:pointer;font-weight:700;">🎬 French-Stream</button>
+                    <button type="button" class="mob-quick-site-btn" data-url="https://darkino.net" data-name="Darkino" style="flex-shrink:0;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid #475569;color:#e2e8f0;font-size:0.72rem;cursor:pointer;font-weight:700;">🛡️ Darkino</button>
+                </div>
+            </div>
+
+            <!-- Liste des sites personnalisés enregistrés -->
+            <div id="mobCustomSitesContainer" style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed #334155;">
+                <div style="font-size:0.72rem;font-weight:800;color:#38bdf8;margin-bottom:6px;"><i class="fa-solid fa-list-check"></i> Mes Sites Favoris Enregistrés :</div>
+                <div id="mobCustomSitesList" style="display:flex;flex-direction:column;gap:5px;"></div>
+            </div>
+        </div>
+
         <!-- Lecteur Vidéo & Bande-Annonce Intégré -->
         <div id="mobStreamingPlayerContainer" style="display:none;background:#000;border:1px solid #334155;border-radius:18px;overflow:hidden;margin-bottom:16px;box-shadow:0 12px 36px rgba(0,0,0,0.85);">
             <div style="position:relative;padding-top:56.25%;background:#000;">
@@ -575,8 +617,8 @@
                     <div style="display:flex;align-items:center;gap:6px;font-weight:800;color:#38bdf8;margin-bottom:2px;">
                         <i class="fa-solid fa-circle-question"></i> Astuce Lecteur & Version Française (VF) :
                     </div>
-                    • <b>Pour la langue :</b> Cliquez sur <b>⚙️ Paramètres</b> ou <b>🔊/💬 Audio</b> dans la vidéo et sélectionnez <b>French (VF)</b>.<br>
-                    • <b>Si un serveur affiche « Just a quick check » :</b> Cliquez sur le bouton bleu <i>« Continue to Vidsrc »</i> ou basculez en 1 clic sur les <b>Serveurs 1, 2, 3</b> ci-dessous qui démarrent sans aucune vérification !
+                    • <b>Pour la langue :</b> Le Serveur 1 Frembed démarre automatiquement en <b>VF</b> ! Vous pouvez aussi changer de serveur en 1 clic ci-dessous.<br>
+                    • <b>Si un serveur affiche « Just a quick check » :</b> Cliquez sur le bouton bleu ou basculez sur les <b>Serveurs 1, 2, 3</b> qui démarrent sans aucune vérification !
                 </div>
                 
                 <!-- Sélection Rapide de la Langue -->
@@ -593,7 +635,7 @@
                 </div>
 
                 <!-- Sélecteur de Serveurs Streaming -->
-                <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;"><i class="fa-solid fa-server"></i> 8 Serveurs de streaming gratuits :</div>
+                <div style="font-size:0.75rem;font-weight:800;color:var(--text-muted);margin-bottom:6px;"><i class="fa-solid fa-server"></i> Serveurs de streaming gratuits (VF & VOSTFR) :</div>
                 <div id="mobStreamingServerList" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:10px;scrollbar-width:none;"></div>
 
                 <!-- Sélecteur Saison / Épisode pour les séries -->
@@ -605,8 +647,8 @@
                     <button type="button" id="btnMobStreamApplyEp" class="mob-btn" style="padding:5px 12px;font-size:0.8rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border-radius:6px;font-weight:700;">OK</button>
                 </div>
 
-                <!-- Ligne de Boutons sous le lecteur (Trailer + Télécharger) -->
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <!-- Ligne de Boutons sous le lecteur (Trailer + Film Complet) -->
+                <div style="display:flex;gap:8px;">
                     <button type="button" id="btnMobWatchTrailerInPlayer" class="mob-btn" style="flex:1;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;font-weight:800;font-size:0.88rem;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(139,92,246,0.35);">
                         <i class="fa-solid fa-clapperboard"></i>
                         <span>🎬 Bande-Annonce</span>
@@ -614,10 +656,6 @@
                     <button type="button" id="btnMobSwitchBackFullMovie" class="mob-btn" style="display:none;flex:1;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:800;font-size:0.88rem;padding:12px;border-radius:12px;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(16,185,129,0.35);">
                         <i class="fa-solid fa-play"></i>
                         <span>▶️ Voir le Film Complet</span>
-                    </button>
-                    <button type="button" id="btnDownloadCurrentStreaming" class="mob-btn" style="flex:1.2;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-weight:800;font-size:0.88rem;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(239,68,68,0.35);">
-                        <i class="fa-solid fa-download"></i>
-                        <span>📥 Télécharger MP4</span>
                     </button>
                 </div>
             </div>
@@ -666,6 +704,10 @@
         <button class="mob-tab" data-pane="library">
             <i class="fa-solid fa-folder-open"></i>
             Ma Musique
+        </button>
+        <button class="mob-tab" data-pane="streaming" style="color:#34d399;font-weight:800;">
+            <i class="fa-solid fa-film"></i>
+            Streaming
         </button>
     </nav>
 

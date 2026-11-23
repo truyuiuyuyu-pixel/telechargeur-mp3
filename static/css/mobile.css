@@ -329,7 +329,7 @@ html, body {
 
 /* ===== TAB PANES ===== */
 .mob-tab-pane { display: none; padding: 16px; }
-.mob-tab-pane.active { display: block; }
+.mob-tab-pane.active { display: block !important; }
 
 /* ===== SEARCH SECTION ===== */
 .mob-search-box {

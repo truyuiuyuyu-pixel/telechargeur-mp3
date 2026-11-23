@@ -2,6 +2,7 @@
 """
 streaming.py — Moteur Haute Puissance de Films Complets, Séries & Bandes-Annonces
 Style Disney+ & Box-Office Mondial
+Intègre de VRAIS serveurs français (VF / VOSTFR) et exclusion stricte des musiques.
 """
 
 import urllib.request
@@ -18,6 +19,36 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 }
 
+# Filtre strict anti-musique : aucune chanson, bande son, album ou clip en mode streaming
+MUSIC_FILTER_RE = re.compile(
+    r'\b(music video|soundtrack|clip officiel|song|chanson|ost|audio track|album|single|concert|clip|paroles|karaoke|bande originale)\b',
+    re.IGNORECASE
+)
+
+# Cache mémoire rapide pour convertir instantanément IMDb ID en TMDB ID
+TMDB_CACHE = {}
+
+def get_tmdb_id(imdb_id: str, is_series: bool = False) -> str:
+    """Récupère l'identifiant TMDB correspondant à un IMDb ID."""
+    if not imdb_id or not imdb_id.startswith('tt'):
+        return ""
+    if imdb_id in TMDB_CACHE:
+        return TMDB_CACHE[imdb_id]
+
+    try:
+        mtype = "series" if is_series else "movie"
+        url = f"https://v3-cinemeta.strem.io/meta/{mtype}/{imdb_id}.json"
+        req = urllib.request.Request(url, headers=HEADERS)
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=2.5) as r:
+            data = json.loads(r.read().decode('utf-8'))
+            mid = data.get('meta', {}).get('moviedb_id')
+            if mid:
+                TMDB_CACHE[imdb_id] = str(mid)
+                return str(mid)
+    except Exception:
+        pass
+    return ""
+
 def clean_query(q: str) -> str:
     """Nettoie la requête utilisateur."""
     if not q:
@@ -25,42 +56,52 @@ def clean_query(q: str) -> str:
     q = re.sub(r'[^\w\s\-\'\.]', ' ', q, flags=re.UNICODE)
     return " ".join(q.split()).strip()
 
-def build_servers(imdb_id: str, is_series: bool = False, season: int = 1, episode: int = 1):
+def build_servers(imdb_id: str, tmdb_id: str = "", is_series: bool = False, season: int = 1, episode: int = 1):
     """
-    Génère 8 serveurs de streaming fiables.
-    IMPORTANT : Les serveurs SANS écran de vérification (MultiEmbed, AutoEmbed, 2Embed, Smashy)
-    sont placés en premier pour éviter tout blocage ou écran de bot check.
+    Génère les serveurs de streaming fiables.
+    Si tmdb_id est disponible (instantané via le catalogue ou cache), Frembed VF est mis en Serveur 1.
     """
     s = max(1, int(season))
     e = max(1, int(episode))
 
+    if not tmdb_id and imdb_id in TMDB_CACHE:
+        tmdb_id = TMDB_CACHE[imdb_id]
+
+    servers = {}
+
     if is_series:
-        return {
-            "1. 🇫🇷 Serveur 1 (VF / Multi)": f"https://multiembed.mov/?video_id={imdb_id}&s={s}&e={e}",
-            "2. 🎬 Serveur 2 (AutoEmbed Rapide)": f"https://autoembed.to/tv/imdb/{imdb_id}-{s}-{e}",
-            "3. 🍿 Serveur 3 (2Embed Cinéma)": f"https://www.2embed.cc/embedtv/{imdb_id}&s={s}&e={e}",
-            "4. 🇫🇷 Serveur 4 (Français HD - Smashy)": f"https://embed.smashystream.com/playere.php?imdb={imdb_id}&season={s}&episode={e}",
-            "5. 🌐 Serveur 5 (StreamM4u)": f"https://streamm4u.com/embed/tv/{imdb_id}/{s}/{e}",
-            "6. ⚡ Serveur 6 (VidSrc TO)": f"https://vidsrc.to/embed/tv/{imdb_id}/{s}/{e}",
-            "7. ⚡ Serveur 7 (VidSrc ME - Vérif)": f"https://vidsrc.me/embed/tv?imdb={imdb_id}&season={s}&episode={e}&ds_lang=fr",
-            "8. 🛡️ Serveur 8 (VidSrc NET Miroir)": f"https://vidsrc.net/embed/tv/{imdb_id}/{s}/{e}"
-        }
+        if tmdb_id:
+            servers["1. 🇫🇷 Serveur 1 (Frembed VF / VOSTFR)"] = f"https://frembed.shop/api/serie.php?id={tmdb_id}&sa={s}&epi={e}"
+            servers["2. 🇫🇷 Serveur 2 (MultiEmbed Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}&s={s}&e={e}"
+        else:
+            servers["1. 🇫🇷 Serveur 1 (MultiEmbed VF / Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}&s={s}&e={e}"
+
+        servers["3. 🎬 Serveur 3 (AutoEmbed Rapide)"] = f"https://autoembed.to/tv/imdb/{imdb_id}-{s}-{e}"
+        servers["4. 🍿 Serveur 4 (2Embed Cinéma)"] = f"https://www.2embed.cc/embedtv/{imdb_id}&s={s}&e={e}"
+        servers["5. 🇫🇷 Serveur 5 (Français HD - Smashy)"] = f"https://embed.smashystream.com/playere.php?imdb={imdb_id}&season={s}&episode={e}"
+        servers["6. ⚡ Serveur 6 (VidSrc FR)"] = f"https://vidsrc.me/embed/tv?imdb={imdb_id}&season={s}&episode={e}&ds_lang=fr"
+        servers["7. 🌐 Serveur 7 (StreamM4u)"] = f"https://streamm4u.com/embed/tv/{imdb_id}/{s}/{e}"
+        servers["8. 🛡️ Serveur 8 (VidSrc TO)"] = f"https://vidsrc.to/embed/tv/{imdb_id}/{s}/{e}"
     else:
-        return {
-            "1. 🇫🇷 Serveur 1 (VF / Multi)": f"https://multiembed.mov/?video_id={imdb_id}",
-            "2. 🎬 Serveur 2 (AutoEmbed Rapide)": f"https://autoembed.to/movie/imdb/{imdb_id}",
-            "3. 🍿 Serveur 3 (2Embed Cinéma)": f"https://www.2embed.cc/embed/{imdb_id}",
-            "4. 🇫🇷 Serveur 4 (Français HD - Smashy)": f"https://embed.smashystream.com/playere.php?imdb={imdb_id}",
-            "5. 🌐 Serveur 5 (StreamM4u)": f"https://streamm4u.com/embed/movie/{imdb_id}",
-            "6. ⚡ Serveur 6 (VidSrc TO)": f"https://vidsrc.to/embed/movie/{imdb_id}",
-            "7. ⚡ Serveur 7 (VidSrc ME - Vérif)": f"https://vidsrc.me/embed/movie?imdb={imdb_id}&ds_lang=fr",
-            "8. 🛡️ Serveur 8 (VidSrc NET Miroir)": f"https://vidsrc.net/embed/movie/{imdb_id}"
-        }
+        if tmdb_id:
+            servers["1. 🇫🇷 Serveur 1 (Frembed VF / VOSTFR)"] = f"https://frembed.shop/api/film.php?id={tmdb_id}"
+            servers["2. 🇫🇷 Serveur 2 (MultiEmbed Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}"
+        else:
+            servers["1. 🇫🇷 Serveur 1 (MultiEmbed VF / Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}"
+
+        servers["3. 🎬 Serveur 3 (AutoEmbed Rapide)"] = f"https://autoembed.to/movie/imdb/{imdb_id}"
+        servers["4. 🍿 Serveur 4 (2Embed Cinéma)"] = f"https://www.2embed.cc/embed/{imdb_id}"
+        servers["5. 🇫🇷 Serveur 5 (Français HD - Smashy)"] = f"https://embed.smashystream.com/playere.php?imdb={imdb_id}"
+        servers["6. ⚡ Serveur 6 (VidSrc FR)"] = f"https://vidsrc.me/embed/movie?imdb={imdb_id}&ds_lang=fr"
+        servers["7. 🌐 Serveur 7 (StreamM4u)"] = f"https://streamm4u.com/embed/movie/{imdb_id}"
+        servers["8. 🛡️ Serveur 8 (VidSrc TO)"] = f"https://vidsrc.to/embed/movie/{imdb_id}"
+
+    return servers
 
 def get_trailer_url(imdb_id: str = "", title: str = "", year: str = "") -> str:
     """
     Récupère la bande-annonce officielle en HD / VF pour un film ou une série.
-    Utilise les métadonnées officielles Cinemeta, ou une recherche de bande-annonce officielle.
+    Filtre strictement pour ne JAMAIS lancer de chanson ou clip musical.
     """
     if imdb_id and imdb_id.startswith('tt'):
         try:
@@ -76,8 +117,8 @@ def get_trailer_url(imdb_id: str = "", title: str = "", year: str = "") -> str:
         except Exception:
             pass
 
-    # Recherche de la bande-annonce française officielle
-    clean_t = urllib.parse.quote(f"{title} {year} bande annonce francaise vf officiel trailer")
+    # Recherche de la vraie bande-annonce officielle en excluant musique et clips
+    clean_t = urllib.parse.quote(f"{title} {year} film bande annonce vf officielle trailer cinema -musique -clip -soundtrack")
     return f"https://www.youtube-nocookie.com/embed?listType=search&list={clean_t}&autoplay=1&playsinline=1"
 
 def get_series_stream_url(imdb_id: str, season: int = 1, episode: int = 1, server_idx: int = 1):
@@ -106,11 +147,20 @@ def search_cinemeta(query: str, limit: int = 35):
                 iid = m.get('imdb_id')
                 if not iid or not iid.startswith('tt'):
                     continue
+                title = m.get('name', 'Film')
+                # Exclure les musiques et concerts
+                if MUSIC_FILTER_RE.search(title):
+                    continue
+
                 year = str(m.get('releaseInfo') or m.get('year') or '')
                 poster = m.get('poster') or ""
-                title = m.get('name', 'Film')
+                mid = str(m.get('moviedb_id') or '')
+                if mid:
+                    TMDB_CACHE[iid] = mid
+
                 results[iid] = {
                     "id": iid,
+                    "tmdb_id": mid,
                     "title": title,
                     "year": year,
                     "type": "movie",
@@ -118,8 +168,8 @@ def search_cinemeta(query: str, limit: int = 35):
                     "is_series": False,
                     "actors": m.get('description', '')[:120] if m.get('description') else '',
                     "thumbnail": poster or "/static/icons/icon-192.png",
-                    "servers": build_servers(iid, is_series=False),
-                    "embed_url": f"https://multiembed.mov/?video_id={iid}",
+                    "servers": build_servers(iid, tmdb_id=mid, is_series=False),
+                    "embed_url": f"https://frembed.shop/api/film.php?id={mid}" if mid else f"https://multiembed.mov/?video_id={iid}",
                     "url": f"https://www.imdb.com/title/{iid}/",
                     "source": "Cinéma Gratuit (VF / VOSTFR)",
                     "duration": f"Sortie : {year}" if year else "Film Complet"
@@ -137,11 +187,19 @@ def search_cinemeta(query: str, limit: int = 35):
                 iid = s.get('imdb_id')
                 if not iid or not iid.startswith('tt') or iid in results:
                     continue
+                title = s.get('name', 'Série')
+                if MUSIC_FILTER_RE.search(title):
+                    continue
+
                 year = str(s.get('releaseInfo') or s.get('year') or '')
                 poster = s.get('poster') or ""
-                title = s.get('name', 'Série')
+                mid = str(s.get('moviedb_id') or '')
+                if mid:
+                    TMDB_CACHE[iid] = mid
+
                 results[iid] = {
                     "id": iid,
+                    "tmdb_id": mid,
                     "title": title,
                     "year": year,
                     "type": "serie",
@@ -149,8 +207,8 @@ def search_cinemeta(query: str, limit: int = 35):
                     "is_series": True,
                     "actors": s.get('description', '')[:120] if s.get('description') else '',
                     "thumbnail": poster or "/static/icons/icon-192.png",
-                    "servers": build_servers(iid, is_series=True),
-                    "embed_url": f"https://multiembed.mov/?video_id={iid}&s=1&e=1",
+                    "servers": build_servers(iid, tmdb_id=mid, is_series=True),
+                    "embed_url": f"https://frembed.shop/api/serie.php?id={mid}&sa=1&epi=1" if mid else f"https://multiembed.mov/?video_id={iid}&s=1&e=1",
                     "url": f"https://www.imdb.com/title/{iid}/",
                     "source": "Série Streaming (VF / VOSTFR)",
                     "duration": f"Série • {year}" if year else "Série Complète"
@@ -161,7 +219,7 @@ def search_cinemeta(query: str, limit: int = 35):
     return list(results.values())
 
 def search_imdb(query: str, limit: int = 15):
-    """Recherche officielle IMDb avec filtrage strict anti-bruit."""
+    """Recherche officielle IMDb avec filtrage strict anti-bruit et anti-musique."""
     clean_q = clean_query(query)
     if not clean_q:
         return []
@@ -181,19 +239,26 @@ def search_imdb(query: str, limit: int = 15):
                     continue
 
                 qtype = (item.get('q') or '').lower()
-                if qtype in ['podcast series', 'video game', 'music video']:
+                # Exclure podcasts, jeux et musiques
+                if qtype in ['podcast series', 'video game', 'music video', 'soundtrack', 'music', 'song', 'album']:
+                    continue
+
+                title = item.get('l', 'Film')
+                # Filtre anti-musique
+                if MUSIC_FILTER_RE.search(title):
                     continue
 
                 is_series = 'series' in qtype or 'tv' in qtype
-                title = item.get('l', 'Film')
                 year = item.get('y', '')
                 actors = item.get('s', '')
                 
                 img_data = item.get('i') or {}
                 poster = img_data.get('imageUrl') or ""
+                mid = TMDB_CACHE.get(imdb_id, '')
 
                 results.append({
                     "id": imdb_id,
+                    "tmdb_id": mid,
                     "title": title,
                     "year": str(year) if year else "",
                     "type": "serie" if is_series else "movie",
@@ -201,8 +266,8 @@ def search_imdb(query: str, limit: int = 15):
                     "is_series": is_series,
                     "actors": actors,
                     "thumbnail": poster or "/static/icons/icon-192.png",
-                    "servers": build_servers(imdb_id, is_series=is_series),
-                    "embed_url": f"https://multiembed.mov/?video_id={imdb_id}" + ("&s=1&e=1" if is_series else ""),
+                    "servers": build_servers(imdb_id, tmdb_id=mid, is_series=is_series),
+                    "embed_url": f"https://frembed.shop/api/film.php?id={mid}" if mid else f"https://multiembed.mov/?video_id={imdb_id}",
                     "url": f"https://www.imdb.com/title/{imdb_id}/",
                     "source": "Cinéma Gratuit (VF / VOSTFR)",
                     "duration": f"Sortie : {year}" if year else "Film Complet"
@@ -226,10 +291,18 @@ def get_trending_catalog(limit: int = 40):
                 iid = m.get('imdb_id')
                 if not iid or not iid.startswith('tt'):
                     continue
-                year = str(m.get('releaseInfo') or m.get('year') or '')
                 title = m.get('name', 'Film')
+                if MUSIC_FILTER_RE.search(title):
+                    continue
+
+                year = str(m.get('releaseInfo') or m.get('year') or '')
+                mid = str(m.get('moviedb_id') or '')
+                if mid:
+                    TMDB_CACHE[iid] = mid
+
                 results[iid] = {
                     "id": iid,
+                    "tmdb_id": mid,
                     "title": title,
                     "year": year,
                     "type": "movie",
@@ -237,8 +310,8 @@ def get_trending_catalog(limit: int = 40):
                     "is_series": False,
                     "actors": m.get('description', '')[:100] if m.get('description') else '',
                     "thumbnail": m.get('poster') or "/static/icons/icon-192.png",
-                    "servers": build_servers(iid, is_series=False),
-                    "embed_url": f"https://multiembed.mov/?video_id={iid}",
+                    "servers": build_servers(iid, tmdb_id=mid, is_series=False),
+                    "embed_url": f"https://frembed.shop/api/film.php?id={mid}" if mid else f"https://multiembed.mov/?video_id={iid}",
                     "url": f"https://www.imdb.com/title/{iid}/",
                     "source": "Top Box-Office",
                     "duration": f"Sortie : {year}" if year else "Film Complet"
@@ -255,10 +328,18 @@ def get_trending_catalog(limit: int = 40):
                 iid = s.get('imdb_id')
                 if not iid or not iid.startswith('tt') or iid in results:
                     continue
-                year = str(s.get('releaseInfo') or s.get('year') or '')
                 title = s.get('name', 'Série')
+                if MUSIC_FILTER_RE.search(title):
+                    continue
+
+                year = str(s.get('releaseInfo') or s.get('year') or '')
+                mid = str(s.get('moviedb_id') or '')
+                if mid:
+                    TMDB_CACHE[iid] = mid
+
                 results[iid] = {
                     "id": iid,
+                    "tmdb_id": mid,
                     "title": title,
                     "year": year,
                     "type": "serie",
@@ -266,8 +347,8 @@ def get_trending_catalog(limit: int = 40):
                     "is_series": True,
                     "actors": s.get('description', '')[:100] if s.get('description') else '',
                     "thumbnail": s.get('poster') or "/static/icons/icon-192.png",
-                    "servers": build_servers(iid, is_series=True),
-                    "embed_url": f"https://multiembed.mov/?video_id={iid}&s=1&e=1",
+                    "servers": build_servers(iid, tmdb_id=mid, is_series=True),
+                    "embed_url": f"https://frembed.shop/api/serie.php?id={mid}&sa=1&epi=1" if mid else f"https://multiembed.mov/?video_id={iid}&s=1&e=1",
                     "url": f"https://www.imdb.com/title/{iid}/",
                     "source": "Série Populaire",
                     "duration": f"Série • {year}" if year else "Série Complète"
@@ -277,7 +358,7 @@ def get_trending_catalog(limit: int = 40):
 
     return list(results.values())[:limit]
 
-# Mappages des catégories Disney+ & sous-boutons Marvel
+# Mappages des catégories Disney+ & sous-boutons Marvel & requêtes courantes en français
 CATEGORY_QUERIES = {
     # Sous-boutons Marvel demandés par l'utilisateur
     "marvel": "Marvel",
@@ -298,12 +379,35 @@ CATEGORY_QUERIES = {
     "action": "Action",
     "anime": "One Piece",
     "comedie_fr": "Asterix",
-    "series": "Stranger Things"
+    "series": "Stranger Things",
+
+    # Traductions directes de titres de films populaires français vers l'original
+    "le roi lion": "The Lion King",
+    "la reine des neiges": "Frozen",
+    "vice versa": "Inside Out",
+    "vice-versa": "Inside Out",
+    "vaiana": "Moana",
+    "raiponce": "Tangled",
+    "les gardiens de la galaxie": "Guardians of the Galaxy",
+    "gardiens de la galaxie": "Guardians of the Galaxy",
+    "le seigneur des anneaux": "Lord of the Rings",
+    "pirates des caraibes": "Pirates of the Caribbean",
+    "moi moche et mechant": "Despicable Me",
+    "moi, moche et mechant": "Despicable Me",
+    "l'age de glace": "Ice Age",
+    "la belle et la bete": "Beauty and the Beast",
+    "cendrillon": "Cinderella",
+    "aladdin": "Aladdin",
+    "mulan": "Mulan",
+    "dragons": "How to Train Your Dragon",
+    "intouchables": "The Intouchables",
+    "amelie poulain": "Amelie",
+    "le cinquieme element": "The Fifth Element"
 }
 
 def search_streaming(query: str, limit: int = 35):
     """
-    Recherche universelle ultra-complète avec prise en charge des styles Disney+ et Marvel.
+    Recherche universelle ultra-complète avec prise en charge des styles Disney+, Marvel et VF.
     """
     query = (query or "").strip()
 
@@ -311,7 +415,7 @@ def search_streaming(query: str, limit: int = 35):
     if not query or query.lower() in ["top", "tendance", "tendances", "populaire", "films", "all"]:
         return get_trending_catalog(limit=limit)
 
-    # Si c'est un tag de catégorie Disney+ ou sous-bouton Marvel
+    # Si c'est un tag de catégorie Disney+ ou sous-bouton Marvel ou titre VF traduit
     clean_key = query.lower()
     if clean_key in CATEGORY_QUERIES:
         query = CATEGORY_QUERIES[clean_key]
@@ -343,21 +447,27 @@ def search_streaming(query: str, limit: int = 35):
             "duration": "Direct"
         }]
 
-    # 1. Recherche mondiale Cinemeta
-    cm_results = search_cinemeta(query, limit=limit)
-
-    # 2. Recherche complémentaire IMDb
+    # 1. Recherche IMDb (très efficace pour traduire les requêtes françaises)
     imdb_results = search_imdb(query, limit=15)
+
+    # 2. Recherche mondiale Cinemeta
+    cm_results = search_cinemeta(query, limit=limit)
 
     merged = {}
     q_words = [w.lower() for w in clean_query(query).split() if len(w) > 1]
 
-    for item in cm_results + imdb_results:
+    # On ajoute d'abord les résultats IMDb (qui comprennent les titres traduits)
+    for item in imdb_results:
+        iid = item.get('id')
+        if iid and iid not in merged:
+            merged[iid] = item
+
+    # Puis on ajoute les résultats Cinemeta pertinents
+    for item in cm_results:
         iid = item.get('id')
         if not iid or iid in merged:
             continue
         title_lower = item.get('title', '').lower()
-        # Élimination des hors-sujets
         if q_words and not any(w in title_lower for w in q_words):
             continue
         merged[iid] = item
@@ -377,6 +487,6 @@ def search_streaming(query: str, limit: int = 35):
 
     sorted_list = sorted(list(merged.values()), key=sort_score, reverse=True)
     if not sorted_list:
-        sorted_list = list(merged.values()) or cm_results or imdb_results
+        sorted_list = list(merged.values()) or imdb_results or cm_results
 
     return sorted_list[:limit]

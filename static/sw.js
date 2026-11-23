@@ -1,6 +1,6 @@
 // Service Worker — Téléchargeur MP3 HD
-// Version du cache : mp3dl-v16-disney-plus-marvel-trailer
-const CACHE_VERSION = 'mp3dl-v16-disney-plus-marvel-trailer';
+// Version du cache : mp3dl-v17-tabs-manual-stream-vf
+const CACHE_VERSION = 'mp3dl-v17-tabs-manual-stream-vf';
 
 // ——— Installation : Activer immédiatement sans attendre ———
 self.addEventListener('install', (event) => {
