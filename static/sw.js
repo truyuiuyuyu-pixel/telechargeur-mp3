@@ -1,6 +1,6 @@
 // Service Worker — Téléchargeur MP3 HD
-// Version du cache : mp3dl-v18-fullscreen-unblocker-sitesearch
-const CACHE_VERSION = 'mp3dl-v18-fullscreen-unblocker-sitesearch';
+// Version du cache : mp3dl-v18b-hide-adult-buttons
+const CACHE_VERSION = 'mp3dl-v18b-hide-adult-buttons';
 
 // ——— Installation : Activer immédiatement sans attendre ———
 self.addEventListener('install', (event) => {
