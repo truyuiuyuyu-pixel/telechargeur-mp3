@@ -561,21 +561,21 @@
             </div>
         </div>
 
-        <!-- Section Ajout Manuel de Sites de Streaming (Demandé expressément par l'utilisateur) -->
+        <!-- Section Ajout Manuel de Sites de Streaming & Recherche Intégrée (Demandé par l'utilisateur) -->
         <div class="mob-card" style="margin-bottom:14px;padding:13px;background:linear-gradient(135deg,rgba(15,23,42,0.95),rgba(30,41,59,0.95));border:1px solid #0284c7;border-radius:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                 <span style="font-size:0.88rem;font-weight:900;color:#38bdf8;display:flex;align-items:center;gap:6px;">
-                    <i class="fa-solid fa-globe"></i> Ajouter un Site de Streaming Manuel
+                    <i class="fa-solid fa-globe"></i> Sites Manuels & Recherche Directe
                 </span>
-                <span style="font-size:0.7rem;background:rgba(2,132,199,0.25);color:#38bdf8;padding:2px 8px;border-radius:12px;font-weight:700;">VF / VOSTFR</span>
+                <span style="font-size:0.7rem;background:rgba(16,185,129,0.25);color:#34d399;border:1px solid rgba(16,185,129,0.5);padding:2px 8px;border-radius:12px;font-weight:700;">🔓 Tous Sites & -18 Acceptés</span>
             </div>
             <p style="font-size:0.75rem;color:#94a3b8;margin-bottom:8px;line-height:1.35;">
-                Collez l'adresse web de votre site de streaming favori (Wiflix, French-Stream, embed ou lien vidéo direct) pour le regarder immédiatement :
+                Collez l'adresse de <b>n'importe quel site web ou vidéo</b> (y compris sites -18, Wiflix, French-Stream...) et recherchez directement à l'intérieur :
             </p>
             <div style="display:flex;flex-direction:column;gap:8px;">
-                <input type="url" id="mobManualStreamUrl" class="mob-input" placeholder="🔗 https://wiflix... ou lien vidéo / embed" style="font-size:0.85rem;">
+                <input type="url" id="mobManualStreamUrl" class="mob-input" placeholder="🔗 Adresse du site (ex: https://wiflix.voto ou site -18)" style="font-size:0.85rem;">
                 <div style="display:flex;gap:6px;">
-                    <input type="text" id="mobManualStreamName" class="mob-input" placeholder="🏷️ Nom du site (ex: Wiflix VF)" style="flex:1;font-size:0.85rem;">
+                    <input type="text" id="mobManualStreamName" class="mob-input" placeholder="🏷️ Nom du site (optionnel)" style="flex:1;font-size:0.85rem;">
                     <button type="button" id="btnMobLaunchManualStream" class="mob-btn" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:800;padding:0 14px;border-radius:10px;font-size:0.8rem;white-space:nowrap;">
                         <i class="fa-solid fa-play"></i> Lancer
                     </button>
@@ -583,16 +583,25 @@
                         <i class="fa-solid fa-bookmark"></i> Sauver
                     </button>
                 </div>
+                <!-- Recherche directe dans le site donné -->
+                <div style="display:flex;gap:6px;">
+                    <input type="text" id="mobManualSiteQuery" class="mob-input" placeholder="🔍 Que chercher sur ce site ? (ex: avatar, clip...)" style="flex:1;font-size:0.85rem;border-color:#38bdf8;">
+                    <button type="button" id="btnMobSearchInsideSite" class="mob-btn" style="background:linear-gradient(135deg,#38bdf8,#0284c7);color:#fff;font-weight:800;padding:0 14px;border-radius:10px;font-size:0.8rem;white-space:nowrap;">
+                        <i class="fa-solid fa-magnifying-glass"></i> Chercher
+                    </button>
+                </div>
             </div>
 
-            <!-- Raccourcis Rapides de Vrais Sites de Streaming Français Recommandés -->
+            <!-- Raccourcis Rapides de Vrais Sites Recommandés (Classiques & -18) -->
             <div style="margin-top:10px;padding-top:8px;border-top:1px solid #334155;">
-                <div style="font-size:0.7rem;font-weight:800;color:#cbd5e1;margin-bottom:6px;">⚡ Sites Français recommandés :</div>
+                <div style="font-size:0.7rem;font-weight:800;color:#cbd5e1;margin-bottom:6px;">⚡ Sites recommandés en 1 clic :</div>
                 <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;">
                     <button type="button" class="mob-quick-site-btn" data-url="https://frembed.shop" data-name="Frembed VF" style="flex-shrink:0;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid #475569;color:#e2e8f0;font-size:0.72rem;cursor:pointer;font-weight:700;">🇫🇷 Frembed VF</button>
                     <button type="button" class="mob-quick-site-btn" data-url="https://wiflix.voto" data-name="Wiflix" style="flex-shrink:0;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid #475569;color:#e2e8f0;font-size:0.72rem;cursor:pointer;font-weight:700;">🍿 Wiflix</button>
                     <button type="button" class="mob-quick-site-btn" data-url="https://french-stream.bio" data-name="French-Stream" style="flex-shrink:0;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid #475569;color:#e2e8f0;font-size:0.72rem;cursor:pointer;font-weight:700;">🎬 French-Stream</button>
                     <button type="button" class="mob-quick-site-btn" data-url="https://darkino.net" data-name="Darkino" style="flex-shrink:0;padding:5px 10px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid #475569;color:#e2e8f0;font-size:0.72rem;cursor:pointer;font-weight:700;">🛡️ Darkino</button>
+                    <button type="button" class="mob-quick-site-btn" data-url="https://xvideos.com" data-name="XVideos" style="flex-shrink:0;padding:5px 10px;border-radius:8px;background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;font-size:0.72rem;cursor:pointer;font-weight:700;">🔞 XVideos</button>
+                    <button type="button" class="mob-quick-site-btn" data-url="https://xhamster.com" data-name="XHamster" style="flex-shrink:0;padding:5px 10px;border-radius:8px;background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#fca5a5;font-size:0.72rem;cursor:pointer;font-weight:700;">🔞 XHamster</button>
                 </div>
             </div>
 
@@ -604,9 +613,12 @@
         </div>
 
         <!-- Lecteur Vidéo & Bande-Annonce Intégré -->
-        <div id="mobStreamingPlayerContainer" style="display:none;background:#000;border:1px solid #334155;border-radius:18px;overflow:hidden;margin-bottom:16px;box-shadow:0 12px 36px rgba(0,0,0,0.85);">
+        <div id="mobStreamingPlayerContainer" style="display:none;background:#000;border:1px solid #334155;border-radius:18px;overflow:hidden;margin-bottom:16px;box-shadow:0 12px 36px rgba(0,0,0,0.85);position:relative;">
+            <button type="button" id="btnMobPlayerFloatingFs" title="Passer en plein écran" style="position:absolute;top:10px;right:10px;z-index:9999;background:rgba(0,0,0,0.8);border:1px solid rgba(255,255,255,0.4);color:#fff;width:40px;height:40px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;backdrop-filter:blur(4px);box-shadow:0 4px 12px rgba(0,0,0,0.5);">
+                <i class="fa-solid fa-expand"></i>
+            </button>
             <div style="position:relative;padding-top:56.25%;background:#000;">
-                <iframe id="mobStreamingIframe" src="" frameborder="0" allowfullscreen allow="autoplay; fullscreen; encrypted-media" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
+                <iframe id="mobStreamingIframe" src="" frameborder="0" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen *" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"></iframe>
             </div>
             <div style="padding:14px;background:var(--bg-card);">
                 <div id="mobStreamingPlayerTitle" style="font-weight:800;font-size:1.05rem;color:#fff;margin-bottom:4px;">Titre de la vidéo</div>
@@ -647,7 +659,7 @@
                     <button type="button" id="btnMobStreamApplyEp" class="mob-btn" style="padding:5px 12px;font-size:0.8rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border-radius:6px;font-weight:700;">OK</button>
                 </div>
 
-                <!-- Ligne de Boutons sous le lecteur (Trailer + Film Complet) -->
+                <!-- Ligne de Boutons sous le lecteur (Trailer + Film Complet + Plein Écran) -->
                 <div style="display:flex;gap:8px;">
                     <button type="button" id="btnMobWatchTrailerInPlayer" class="mob-btn" style="flex:1;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;font-weight:800;font-size:0.88rem;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(139,92,246,0.35);">
                         <i class="fa-solid fa-clapperboard"></i>
@@ -656,6 +668,10 @@
                     <button type="button" id="btnMobSwitchBackFullMovie" class="mob-btn" style="display:none;flex:1;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:800;font-size:0.88rem;padding:12px;border-radius:12px;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(16,185,129,0.35);">
                         <i class="fa-solid fa-play"></i>
                         <span>▶️ Voir le Film Complet</span>
+                    </button>
+                    <button type="button" id="btnMobPlayerFullscreen" class="mob-btn" style="flex:0.9;background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff;font-weight:800;font-size:0.88rem;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(2,132,199,0.35);">
+                        <i class="fa-solid fa-expand"></i>
+                        <span>⛶ Plein Écran</span>
                     </button>
                 </div>
             </div>

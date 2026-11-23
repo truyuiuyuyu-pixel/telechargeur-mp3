@@ -18,7 +18,10 @@ import json
 import time
 import zipfile
 import requests
-from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, abort, redirect, url_for
+import urllib.request
+import urllib.parse
+import re
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory, abort, redirect, url_for, make_response, Response
 
 from config import load_config, save_config, DEFAULT_CONFIG
 from music_tagger import sanitize_filename
@@ -282,6 +285,112 @@ def api_streaming_trailer():
     year = request.args.get('year', '').strip()
     trailer_url = streaming.get_trailer_url(imdb_id, title=title, year=year)
     return jsonify({"trailer_url": trailer_url, "title": title, "year": year})
+
+@app.route('/api/streaming/proxy')
+def api_streaming_proxy():
+    """
+    Proxy débloqueur universel : permet d'intégrer N'IMPORTE QUEL site dans le lecteur iframe,
+    y compris les sites avec X-Frame-Options (sites de streaming, sites -18, etc.).
+    Supprime les en-têtes bloquants et injecte <base href="..."> pour charger images/scripts.
+    """
+    target_url = request.args.get('url', '').strip()
+    if not target_url:
+        return "URL manquante", 400
+
+    if not target_url.startswith(('http://', 'https://')):
+        target_url = 'https://' + target_url
+
+    try:
+        req = urllib.request.Request(
+            target_url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none'
+            }
+        )
+        with urllib.request.urlopen(req, context=streaming.SSL_CTX, timeout=10) as resp:
+            content_type = resp.headers.get('Content-Type', 'text/html')
+            data = resp.read()
+
+            if 'text/html' in content_type:
+                try:
+                    html_text = data.decode('utf-8')
+                except Exception:
+                    html_text = data.decode('latin-1', errors='ignore')
+
+                parsed = urllib.parse.urlparse(target_url)
+                base_href = f"{parsed.scheme}://{parsed.netloc}/"
+                base_tag = f'<base href="{base_href}">'
+
+                # Désactiver les framebusters JS si présents
+                html_text = re.sub(r'top\.location\s*!=\s*self\.location', 'false', html_text)
+                html_text = re.sub(r'top\.location\.href\s*=', 'console.log(', html_text)
+
+                if re.search(r'<head[^>]*>', html_text, re.IGNORECASE):
+                    html_text = re.sub(r'(<head[^>]*>)', r'\1' + base_tag, html_text, count=1, flags=re.IGNORECASE)
+                else:
+                    html_text = base_tag + html_text
+
+                response = make_response(html_text)
+                response.headers['Content-Type'] = content_type
+                response.headers.pop('X-Frame-Options', None)
+                response.headers.pop('Content-Security-Policy', None)
+                response.headers['Access-Control-Allow-Origin'] = '*'
+                return response
+            else:
+                response = make_response(data)
+                response.headers['Content-Type'] = content_type
+                response.headers.pop('X-Frame-Options', None)
+                response.headers.pop('Content-Security-Policy', None)
+                response.headers['Access-Control-Allow-Origin'] = '*'
+                return response
+
+    except Exception as e:
+        parsed = urllib.parse.urlparse(target_url)
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head><meta charset="utf-8"><title>{parsed.netloc}</title>
+        <style>body{{font-family:sans-serif;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;padding:20px;}}</style>
+        </head>
+        <body>
+            <div>
+                <h2>🔒 Protection de sécurité externe détectée</h2>
+                <p>Le site <b>{parsed.netloc}</b> nécessite une ouverture directe :</p>
+                <a href="{target_url}" target="_blank" rel="noopener" style="display:inline-block;padding:12px 24px;background:#10b981;color:#fff;text-decoration:none;border-radius:10px;font-weight:bold;margin-top:10px;">
+                    🌐 Ouvrir {parsed.netloc} dans un nouvel onglet
+                </a>
+            </div>
+        </body>
+        </html>
+        """, 200
+
+@app.route('/api/streaming/search_site')
+def api_streaming_search_site():
+    """
+    Recherche directement dans le site manuel donné par l'utilisateur.
+    Construit l'URL de recherche dédiée et tente d'extraire les vidéos du site.
+    """
+    site_url = request.args.get('site', '').strip()
+    query = request.args.get('q', '').strip()
+    if not site_url or not query:
+        return jsonify({"error": "Paramètres 'site' et 'q' requis"}), 400
+
+    search_url = streaming.build_site_search_url(site_url, query)
+    proxy_url = f"/api/streaming/proxy?url={urllib.parse.quote(search_url)}"
+    results = streaming.scrape_site_results(search_url, site_url)
+
+    return jsonify({
+        "site_url": site_url,
+        "query": query,
+        "search_url": search_url,
+        "proxy_url": proxy_url,
+        "results": results
+    })
 
 # =====================================================================
 # API THÈMES & AMBIANCES

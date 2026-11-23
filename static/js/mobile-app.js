@@ -1892,11 +1892,119 @@
             btnVO.onclick = () => activateMobLang('vo');
         }
 
-        // --- GESTION DES SITES DE STREAMING MANUELS ---
+        // --- GESTION DU PLEIN ÉCRAN LECTEUR (Demandé expressément par l'utilisateur) ---
+        function toggleMobPlayerFullscreen() {
+            const container = $('mobStreamingPlayerContainer');
+            const iframe = $('mobStreamingIframe');
+            if (!container) return;
+
+            const isNativeFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+            const isCssFull = container.classList.contains('player-css-fullscreen');
+
+            function syncFsIcons(full) {
+                const btns = [$('btnMobPlayerFloatingFs'), $('btnMobPlayerFullscreen')];
+                btns.forEach(b => {
+                    if (!b) return;
+                    const i = b.querySelector('i');
+                    if (i) {
+                        i.className = full ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
+                    }
+                    const s = b.querySelector('span');
+                    if (s) {
+                        s.textContent = full ? '⛶ Quitter Plein Écran' : '⛶ Plein Écran';
+                    }
+                });
+            }
+
+            if (isNativeFull) {
+                if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+                container.classList.remove('player-css-fullscreen');
+                document.body.style.overflow = '';
+                syncFsIcons(false);
+            } else if (isCssFull) {
+                container.classList.remove('player-css-fullscreen');
+                document.body.style.overflow = '';
+                syncFsIcons(false);
+            } else {
+                // Tenter le plein écran natif de l'iframe ou du container, avec fallback CSS garanti
+                const target = iframe || container;
+                const req = target.requestFullscreen || target.webkitRequestFullscreen || target.mozRequestFullScreen || target.msRequestFullscreen || container.requestFullscreen || container.webkitRequestFullscreen;
+                if (req) {
+                    req.call(target).then(() => {
+                        syncFsIcons(true);
+                    }).catch(() => {
+                        container.classList.add('player-css-fullscreen');
+                        document.body.style.overflow = 'hidden';
+                        syncFsIcons(true);
+                    });
+                } else {
+                    container.classList.add('player-css-fullscreen');
+                    document.body.style.overflow = 'hidden';
+                    syncFsIcons(true);
+                }
+            }
+        }
+
+        const btnMobFs = $('btnMobPlayerFloatingFs');
+        if (btnMobFs) {
+            btnMobFs.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleMobPlayerFullscreen();
+            });
+        }
+
+        const btnMobActFs = $('btnMobPlayerFullscreen');
+        if (btnMobActFs) {
+            btnMobActFs.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleMobPlayerFullscreen();
+            });
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            const container = $('mobStreamingPlayerContainer');
+            if (!isFull && container) {
+                container.classList.remove('player-css-fullscreen');
+                document.body.style.overflow = '';
+                const b1 = $('btnMobPlayerFloatingFs');
+                if (b1 && b1.querySelector('i')) b1.querySelector('i').className = 'fa-solid fa-expand';
+                const b2 = $('btnMobPlayerFullscreen');
+                if (b2) {
+                    if (b2.querySelector('i')) b2.querySelector('i').className = 'fa-solid fa-expand';
+                    if (b2.querySelector('span')) b2.querySelector('span').textContent = '⛶ Plein Écran';
+                }
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const container = $('mobStreamingPlayerContainer');
+                if (container && container.classList.contains('player-css-fullscreen')) {
+                    container.classList.remove('player-css-fullscreen');
+                    document.body.style.overflow = '';
+                    const b1 = $('btnMobPlayerFloatingFs');
+                    if (b1 && b1.querySelector('i')) b1.querySelector('i').className = 'fa-solid fa-expand';
+                    const b2 = $('btnMobPlayerFullscreen');
+                    if (b2) {
+                        if (b2.querySelector('i')) b2.querySelector('i').className = 'fa-solid fa-expand';
+                        if (b2.querySelector('span')) b2.querySelector('span').textContent = '⛶ Plein Écran';
+                    }
+                }
+            }
+        });
+
+        // --- GESTION DES SITES DE STREAMING MANUELS & RECHERCHE INTERNE (Sites -18 & classiques débloqués) ---
         const btnLaunchManual = $('btnMobLaunchManualStream');
         const btnSaveManual = $('btnMobSaveManualStream');
         const manualUrlInput = $('mobManualStreamUrl');
         const manualNameInput = $('mobManualStreamName');
+        const mobSiteQuery = $('mobManualSiteQuery');
+        const btnMobSearchSite = $('btnMobSearchInsideSite');
 
         if (btnLaunchManual) {
             btnLaunchManual.addEventListener('click', () => {
@@ -1908,17 +2016,90 @@
                 if (!u.startsWith('http://') && !u.startsWith('https://')) {
                     u = 'https://' + u;
                 }
-                const name = (manualNameInput ? manualNameInput.value : '').trim() || "Site Streaming Manuel";
+                let host = 'Site';
+                try { host = new URL(u).hostname; } catch(e){}
+                const name = (manualNameInput ? manualNameInput.value : '').trim() || host;
+                const proxyUrl = `/api/streaming/proxy?url=${encodeURIComponent(u)}`;
                 playVideoStream({
                     id: "manual_" + Date.now(),
                     title: name,
-                    embed_url: u,
+                    embed_url: proxyUrl,
                     url: u,
-                    servers: { "1. 🌐 Lecteur Manuel Direct": u },
+                    servers: {
+                        "1. 🔓 Lecteur Débloqué (Anti-Blocage)": proxyUrl,
+                        "2. 🌐 Lecteur Direct": u
+                    },
                     type_label: "🌐 Flux Web Manuel",
                     is_series: false
                 });
-                showToast(`🚀 Lancement du site manuel : ${name}`);
+                showToast(`🚀 Lancement de ${name} (débloqué sans restriction)`);
+            });
+        }
+
+        async function doMobSearchInsideSite() {
+            let u = (manualUrlInput ? manualUrlInput.value : '').trim();
+            const q = (mobSiteQuery ? mobSiteQuery.value : '').trim();
+            if (!u) {
+                showToast("Veuillez d'abord indiquer l'adresse du site", true);
+                if (manualUrlInput) manualUrlInput.focus();
+                return;
+            }
+            if (!q) {
+                showToast("Veuillez indiquer ce que vous cherchez sur ce site", true);
+                if (mobSiteQuery) mobSiteQuery.focus();
+                return;
+            }
+            if (!u.startsWith('http://') && !u.startsWith('https://')) {
+                u = 'https://' + u;
+            }
+            let host = 'Site';
+            try { host = new URL(u).hostname; } catch(e){}
+            showToast(`🔍 Recherche de "${q}" sur ${host}...`);
+
+            try {
+                const res = await fetch(`/api/streaming/search_site?site=${encodeURIComponent(u)}&q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                if (data.error) {
+                    showToast(data.error, true);
+                    return;
+                }
+
+                // Charger immédiatement la page de recherche débloquée dans le lecteur
+                playVideoStream({
+                    id: "search_site_" + Date.now(),
+                    title: `🔍 "${q}" sur ${host}`,
+                    embed_url: data.proxy_url,
+                    url: data.search_url,
+                    servers: {
+                        "1. 🔓 Page de Recherche Débloquée": data.proxy_url,
+                        "2. 🌐 Recherche Directe": data.search_url
+                    },
+                    type_label: `🔍 Recherche sur ${host}`,
+                    is_series: false
+                });
+
+                // Si des vidéos ou articles ont été trouvés sur le site, les afficher dans la liste
+                if (data.results && data.results.length > 0) {
+                    renderStreamingResults(data.results);
+                    showToast(`✅ ${data.results.length} résultats trouvés sur ${host} !`);
+                } else {
+                    showToast(`✅ Page de recherche affichée dans le lecteur !`);
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Erreur lors de la recherche sur le site", true);
+            }
+        }
+
+        if (btnMobSearchSite) {
+            btnMobSearchSite.addEventListener('click', doMobSearchInsideSite);
+        }
+        if (mobSiteQuery) {
+            mobSiteQuery.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    doMobSearchInsideSite();
+                }
             });
         }
 
@@ -2283,7 +2464,18 @@
             });
         }
 
-        renderServerButtons(video.servers || { "1. 🇫🇷 Serveur 1": video.embed_url || video.url });
+        let srvs = video.servers;
+        if (!srvs) {
+            if (video.embed_url && video.embed_url.includes('/api/streaming/proxy')) {
+                srvs = {
+                    "1. 🔓 Lecteur Débloqué (Anti-Blocage)": video.embed_url,
+                    "2. 🌐 Lecteur Direct": video.url || video.embed_url
+                };
+            } else {
+                srvs = { "1. 🇫🇷 Serveur 1": video.embed_url || video.url };
+            }
+        }
+        renderServerButtons(srvs);
 
         // Si le film n'a pas encore le Serveur 1 Frembed VF, on le résout immédiatement
         if (video.id && video.id.startsWith('tt') && (!video.servers || !Object.keys(video.servers)[0].includes('Frembed'))) {

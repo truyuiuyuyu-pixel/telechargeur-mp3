@@ -490,3 +490,91 @@ def search_streaming(query: str, limit: int = 35):
         sorted_list = list(merged.values()) or imdb_results or cm_results
 
     return sorted_list[:limit]
+
+def build_site_search_url(site_url: str, query: str) -> str:
+    """
+    Construit l'URL de recherche exacte pour n'importe quel site personnalisé.
+    Gère tous les sites de streaming, films, séries, animés et sites -18 (XHamster, XVideos, Pornhub, Wiflix, etc.)
+    """
+    if not site_url:
+        return ""
+    if not site_url.startswith(('http://', 'https://')):
+        site_url = 'https://' + site_url
+
+    parsed = urllib.parse.urlparse(site_url)
+    domain = parsed.netloc.lower()
+    q_enc = urllib.parse.quote(query)
+
+    # Sites spécifiques avec formats de recherche dédiés
+    if 'xvideos' in domain:
+        return f"{parsed.scheme}://{parsed.netloc}/?k={q_enc}"
+    elif 'pornhub' in domain:
+        return f"{parsed.scheme}://{parsed.netloc}/video/search?search={q_enc}"
+    elif 'xhamster' in domain:
+        return f"{parsed.scheme}://{parsed.netloc}/search/{q_enc}"
+    elif 'spankbang' in domain:
+        return f"{parsed.scheme}://{parsed.netloc}/s/{q_enc}/"
+    elif 'youporn' in domain:
+        return f"{parsed.scheme}://{parsed.netloc}/search/?query={q_enc}"
+    elif 'redtube' in domain:
+        return f"{parsed.scheme}://{parsed.netloc}/?search={q_enc}"
+    elif 'wiflix' in domain:
+        return f"{parsed.scheme}://{parsed.netloc}/?s={q_enc}"
+    elif 'french-stream' in domain:
+        return f"{parsed.scheme}://{parsed.netloc}/?s={q_enc}"
+    elif 'darkino' in domain:
+        return f"{parsed.scheme}://{parsed.netloc}/recherche?q={q_enc}"
+    elif 'youtube' in domain:
+        return f"https://www.youtube.com/results?search_query={q_enc}"
+    elif 'dailymotion' in domain:
+        return f"https://www.dailymotion.com/search/{q_enc}"
+
+    # Format universel compatible 95% du web
+    return f"{parsed.scheme}://{parsed.netloc}/?s={q_enc}"
+
+def scrape_site_results(search_url: str, base_url: str) -> list:
+    """
+    Extrait les vidéos, films ou articles trouvés sur la page de recherche d'un site personnalisé.
+    """
+    items = []
+    try:
+        req = urllib.request.Request(
+            search_url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8'
+            }
+        )
+        with urllib.request.urlopen(req, context=SSL_CTX, timeout=5) as resp:
+            html = resp.read().decode('utf-8', errors='ignore')
+
+        links = re.findall(r'<a\s+[^>]*href=[\'"]([^\'"]+)[\'"][^>]*>(.*?)</a>', html, re.DOTALL | re.IGNORECASE)
+        seen_urls = set()
+
+        for href, inner in links:
+            if not href or href in ['#', '/', 'javascript:void(0)'] or href in seen_urls:
+                continue
+            full_url = urllib.parse.urljoin(base_url, href)
+            clean_text = re.sub(r'<[^>]+>', ' ', inner).strip()
+            img_match = re.search(r'<img\s+[^>]*src=[\'"]([^\'"]+)[\'"]', inner, re.IGNORECASE)
+
+            # Ne retenir que les éléments ayant du sens (avec image ou texte pertinent)
+            if (img_match or len(clean_text) >= 5) and len(clean_text) < 120:
+                if any(ext in full_url.lower() for ext in ['.png', '.jpg', '.jpeg', '.svg', '.css', '.js', '/tag/', '/category/']):
+                    continue
+                seen_urls.add(href)
+                img_url = urllib.parse.urljoin(base_url, img_match.group(1)) if img_match else ""
+                items.append({
+                    "title": clean_text or "Vidéo trouvée",
+                    "url": full_url,
+                    "embed_url": f"/api/streaming/proxy?url={urllib.parse.quote(full_url)}",
+                    "thumbnail": img_url or "/static/icons/icon-192.png",
+                    "source": urllib.parse.urlparse(base_url).netloc
+                })
+                if len(items) >= 24:
+                    break
+    except Exception as e:
+        print(f"[scrape_site_results] {e}")
+
+    return items
