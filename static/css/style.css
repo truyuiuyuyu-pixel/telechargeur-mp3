@@ -2024,4 +2024,762 @@ input:checked + .slider:before {
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
+/* =====================================================================
+   DISNEY+ PRO STREAMING THEME & DESIGN SYSTEM (PRO DESIGNER)
+   ===================================================================== */
+body.mode-disney-streaming {
+    background: radial-gradient(1200px circle at 50% 0%, #151e36 0%, #090b13 55%, #04060a 100%) fixed !important;
+    color: #f9f9f9;
+}
 
+body.mode-disney-streaming .header {
+    background: rgba(9, 11, 19, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Disney+ Spotlight Hero Banner Carousel */
+.disney-hero-banner {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+    background-color: #090b13;
+}
+
+.disney-hero-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.8s ease-in-out;
+    background-size: cover;
+    background-position: center 25%;
+    display: flex;
+    align-items: flex-end;
+    padding: 32px 36px;
+}
+
+.disney-hero-slide.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.disney-hero-slide::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, #090b13 0%, rgba(9, 11, 19, 0.85) 35%, rgba(9, 11, 19, 0.25) 70%, transparent 100%),
+                linear-gradient(90deg, #090b13 0%, rgba(9, 11, 19, 0.85) 40%, rgba(9, 11, 19, 0.2) 75%, transparent 100%);
+    pointer-events: none;
+}
+
+.disney-hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 640px;
+}
+
+.disney-hero-badges {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.badge-disney-exclusive {
+    background: linear-gradient(135deg, #00d2ff, #0072d2);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 900;
+    padding: 3px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(0, 210, 255, 0.4);
+}
+
+.badge-disney-tech {
+    background: rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.badge-disney-vf {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid #10b981;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.disney-hero-title {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 8px;
+    line-height: 1.15;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.9);
+}
+
+.disney-hero-synopsis {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    margin-bottom: 16px;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.disney-hero-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.btn-disney-play {
+    background: linear-gradient(135deg, #00d2ff 0%, #0072d2 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 24px;
+    font-size: 0.92rem;
+    font-weight: 900;
+    letter-spacing: 0.6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 18px rgba(0, 180, 255, 0.45);
+    transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.btn-disney-play:hover {
+    transform: scale(1.04) translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 210, 255, 0.65);
+}
+
+.btn-disney-trailer {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    backdrop-filter: blur(8px);
+    transition: all 0.25s ease;
+}
+
+.btn-disney-trailer:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #fff;
+    transform: scale(1.03);
+}
+
+.disney-hero-dots {
+    position: absolute;
+    bottom: 14px;
+    right: 24px;
+    display: flex;
+    gap: 6px;
+    z-index: 3;
+}
+
+.hero-dot {
+    width: 22px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.hero-dot.active {
+    width: 38px;
+    background: #00d2ff;
+    box-shadow: 0 0 8px #00d2ff;
+}
+
+/* Disney+ Movie Poster Grid & Card */
+.disney-poster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 18px;
+    margin-top: 16px;
+}
+
+.disney-movie-card {
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #1a1d29;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.disney-movie-card:hover {
+    transform: scale(1.06) translateY(-6px);
+    border-color: rgba(249, 249, 249, 0.9);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.9), 0 0 24px rgba(0, 180, 255, 0.45);
+    z-index: 5;
+}
+
+.disney-poster-wrapper {
+    position: relative;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    background: #090b13;
+}
+
+.disney-poster-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+.disney-movie-card:hover .disney-poster-img {
+    transform: scale(1.08);
+}
+
+.disney-card-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(9, 11, 19, 0.85);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 3px 7px;
+    border-radius: 6px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.disney-card-vf-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(16, 185, 129, 0.9);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 900;
+    padding: 3px 6px;
+    border-radius: 6px;
+    letter-spacing: 0.4px;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+}
+
+.disney-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(9, 11, 19, 0.95) 0%, rgba(9, 11, 19, 0.5) 50%, transparent 100%);
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 14px;
+    gap: 8px;
+    transition: opacity 0.3s ease;
+}
+
+.disney-movie-card:hover .disney-card-overlay {
+    opacity: 1;
+}
+
+.disney-card-info {
+    padding: 10px 12px;
+    background: #1a1d29;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.disney-card-title {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.25;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.disney-card-meta {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+
+
+
+/* ============================================================
+   DISNEY+ COMPTES, PROFILS & REPRISE DE LECTURE (DESKTOP)
+   ============================================================ */
+
+.disney-auth-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+.disney-auth-pill:hover {
+    background: rgba(0, 99, 229, 0.25);
+    border-color: #00d2ff;
+    transform: translateY(-1px);
+}
+.disney-auth-pill.logged-in {
+    padding: 4px 14px 4px 5px;
+    background: rgba(19, 21, 31, 0.9);
+    border-color: rgba(0, 210, 255, 0.45);
+}
+.disney-pill-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* ---- Reprendre la lecture (Horizontal Row) ---- */
+.disney-continue-row {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 4px 2px 12px;
+    scrollbar-width: thin;
+}
+.disney-continue-card {
+    position: relative;
+    min-width: 170px;
+    max-width: 170px;
+    background: #13151f;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px solid rgba(255,255,255,0.08);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.disney-continue-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: #00d2ff;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+}
+.disney-continue-poster {
+    position: relative;
+    width: 100%;
+    height: 110px;
+    background: #1a1d2e;
+    overflow: hidden;
+}
+.disney-continue-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.disney-continue-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.75);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    font-size: 0.85rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 3;
+}
+.disney-continue-remove:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+}
+.disney-continue-badge {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    background: rgba(0, 99, 229, 0.9);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 5px;
+    backdrop-filter: blur(4px);
+}
+.disney-continue-progress-track {
+    height: 3px;
+    width: 100%;
+    background: rgba(255,255,255,0.15);
+}
+.disney-continue-progress-fill {
+    height: 100%;
+    width: 55%;
+    background: linear-gradient(90deg, #0063e5, #00d2ff);
+}
+.disney-continue-info {
+    padding: 8px 10px 10px;
+}
+.disney-continue-title {
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+.disney-continue-sub {
+    color: #9ca3af;
+    font-size: 0.7rem;
+}
+
+/* ---- Modal Disney+ Compte & Profils ---- */
+.disney-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: radial-gradient(circle at top, rgba(19, 29, 54, 0.96), rgba(9, 11, 19, 0.98));
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.disney-modal-card {
+    position: relative;
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #13151f;
+    border: 1.5px solid rgba(255,255,255,0.12);
+    border-radius: 22px;
+    padding: 28px 26px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.85), 0 0 40px rgba(0, 99, 229, 0.15);
+    color: #f9fafb;
+}
+.disney-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #cbd5e1;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.disney-modal-close:hover {
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+}
+.disney-modal-brand {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.disney-brand-badge {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 12px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #0063e5, #00d2ff);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(0, 99, 229, 0.45);
+}
+.disney-modal-brand h2 {
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 6px;
+}
+.disney-modal-brand p {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    line-height: 1.4;
+}
+.disney-auth-tabs {
+    display: flex;
+    gap: 8px;
+    background: rgba(255,255,255,0.05);
+    padding: 5px;
+    border-radius: 12px;
+    margin-bottom: 18px;
+}
+.disney-auth-tab {
+    flex: 1;
+    padding: 9px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    font-weight: 700;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.disney-auth-tab.active {
+    background: linear-gradient(135deg, #0063e5, #0091ff);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(0, 99, 229, 0.4);
+}
+.disney-auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.disney-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.disney-field label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.disney-field input {
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1.5px solid rgba(255,255,255,0.14);
+    background: #090b13;
+    color: #fff;
+    font-size: 0.92rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.disney-field input:focus {
+    border-color: #00d2ff;
+}
+.disney-auth-error {
+    background: rgba(239, 68, 68, 0.16);
+    border: 1px solid rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+    font-size: 0.82rem;
+    padding: 9px 12px;
+    border-radius: 9px;
+    font-weight: 600;
+}
+.disney-guest-btn {
+    width: 100%;
+    margin-top: 14px;
+    padding: 10px;
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 0.84rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.disney-guest-btn:hover {
+    color: #fff;
+    text-decoration: underline;
+}
+
+/* ---- "Qui regarde ?" Profiles Grid ---- */
+.disney-profiles-header {
+    text-align: center;
+    margin-bottom: 22px;
+}
+.disney-profiles-header h2 {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #fff;
+    margin-bottom: 4px;
+}
+.disney-account-sub {
+    font-size: 0.8rem;
+    color: #38bdf8;
+    font-weight: 700;
+}
+.disney-profiles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+    gap: 18px;
+    justify-items: center;
+    margin-bottom: 24px;
+}
+.disney-profile-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.25s ease;
+}
+.disney-profile-item:hover {
+    transform: scale(1.06);
+}
+.disney-profile-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #fff;
+    border: 3px solid transparent;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.55);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+}
+.disney-profile-item:hover .disney-profile-avatar,
+.disney-profile-item.active .disney-profile-avatar {
+    border-color: #f9fafb;
+    box-shadow: 0 0 22px rgba(0, 210, 255, 0.55);
+}
+.disney-profile-avatar.add-avatar {
+    background: rgba(255,255,255,0.08);
+    border: 2px dashed rgba(255,255,255,0.28);
+    color: #cbd5e1;
+}
+.disney-profile-edit-badge {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #fff;
+}
+.disney-profile-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #cbd5e1;
+    text-align: center;
+    max-width: 105px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.disney-profile-item.active .disney-profile-name,
+.disney-profile-item:hover .disney-profile-name {
+    color: #fff;
+}
+.disney-profiles-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.disney-secondary-btn {
+    padding: 9px 16px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #e2e8f0;
+    font-weight: 700;
+    font-size: 0.84rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+.disney-secondary-btn:hover {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+}
+.disney-danger-btn {
+    padding: 9px 16px;
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.14);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+    font-weight: 700;
+    font-size: 0.84rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+.disney-danger-btn:hover {
+    background: rgba(239, 68, 68, 0.28);
+    color: #fff;
+}
+.disney-avatar-picker {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 6px;
+}
+.disney-avatar-option {
+    height: 54px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    color: #fff;
+    cursor: pointer;
+    border: 2.5px solid transparent;
+    transition: transform 0.2s, border-color 0.2s;
+}
+.disney-avatar-option.selected {
+    border-color: #fff;
+    transform: scale(1.06);
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
+}

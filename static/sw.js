@@ -1,6 +1,6 @@
 // Service Worker — Téléchargeur MP3 HD
-// Version du cache : mp3dl-v21-french-series-fix
-const CACHE_VERSION = 'mp3dl-v21-french-series-fix';
+// Version du cache : mp3dl-v23-disney-profiles-progress
+const CACHE_VERSION = 'mp3dl-v23-disney-profiles-progress';
 
 // ——— Installation : Activer immédiatement sans attendre ———
 self.addEventListener('install', (event) => {

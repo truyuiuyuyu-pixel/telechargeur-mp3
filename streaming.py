@@ -19,11 +19,21 @@ HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 }
 
-# Filtre strict anti-musique : aucune chanson, bande son, album ou clip en mode streaming
+# Filtre absolu anti-musique : élimine TOUTE chanson, bande son, album, clip, concert, live ou mention musicale
 MUSIC_FILTER_RE = re.compile(
-    r'\b(music video|soundtrack|clip officiel|song|chanson|ost|audio track|album|single|concert|clip|paroles|karaoke|bande originale)\b',
+    r'\b(music|musique|soundtrack|clip|chanson|chansons|song|songs|ost|audio|album|single|concert|tour|live|recital|spectacle musical|comédie musicale|paroles|lyrics|karaoke|karaoké|bande originale|discography|discographie|acoustique|acoustic|symphony|orchestra|orchestre|remix|ft\.|feat\.|dj|vevo|official audio|official video|music video|videoclip|track|b\.o\.|bo)\b',
     re.IGNORECASE
 )
+
+def is_music_content(title: str = "", qtype: str = "", desc: str = "") -> bool:
+    """Vérifie strictement si un contenu est musical pour l'exclure du mode streaming."""
+    text = f"{title} {desc}".lower()
+    if MUSIC_FILTER_RE.search(text):
+        return True
+    qtype = (qtype or "").lower()
+    if any(m in qtype for m in ['music', 'song', 'album', 'podcast', 'video game', 'audiobook', 'short']):
+        return True
+    return False
 
 # Cache mémoire rapide pour convertir instantanément IMDb ID en TMDB ID
 TMDB_CACHE = {}
@@ -161,8 +171,8 @@ def search_cinemeta(query: str, limit: int = 35):
                 if not iid or not iid.startswith('tt'):
                     continue
                 title = m.get('name', 'Film')
-                # Exclure les musiques et concerts
-                if MUSIC_FILTER_RE.search(title):
+                # Exclure strictement toute musique, concert ou clip
+                if is_music_content(title, desc=m.get('description', '')):
                     continue
 
                 year = str(m.get('releaseInfo') or m.get('year') or '')
@@ -201,7 +211,7 @@ def search_cinemeta(query: str, limit: int = 35):
                 if not iid or not iid.startswith('tt') or iid in results:
                     continue
                 title = s.get('name', 'Série')
-                if MUSIC_FILTER_RE.search(title):
+                if is_music_content(title, desc=s.get('description', '')):
                     continue
 
                 year = str(s.get('releaseInfo') or s.get('year') or '')
@@ -252,13 +262,10 @@ def search_imdb(query: str, limit: int = 15):
                     continue
 
                 qtype = (item.get('q') or '').lower()
-                # Exclure podcasts, jeux et musiques
-                if qtype in ['podcast series', 'video game', 'music video', 'soundtrack', 'music', 'song', 'album']:
-                    continue
-
                 title = item.get('l', 'Film')
-                # Filtre anti-musique
-                if MUSIC_FILTER_RE.search(title):
+                actors = item.get('s', '')
+                # Exclure strictement musiques, clips, concerts, jeux et podcasts
+                if is_music_content(title, qtype=qtype, desc=actors):
                     continue
 
                 is_series = 'series' in qtype or 'tv' in qtype
@@ -310,7 +317,7 @@ def get_trending_catalog(limit: int = 40):
                 if not iid or not iid.startswith('tt'):
                     continue
                 title = m.get('name', 'Film')
-                if MUSIC_FILTER_RE.search(title):
+                if is_music_content(title, desc=m.get('description', '')):
                     continue
 
                 year = str(m.get('releaseInfo') or m.get('year') or '')
@@ -347,7 +354,7 @@ def get_trending_catalog(limit: int = 40):
                 if not iid or not iid.startswith('tt') or iid in results:
                     continue
                 title = s.get('name', 'Série')
-                if MUSIC_FILTER_RE.search(title):
+                if is_music_content(title, desc=s.get('description', '')):
                     continue
 
                 year = str(s.get('releaseInfo') or s.get('year') or '')
@@ -375,6 +382,104 @@ def get_trending_catalog(limit: int = 40):
         print(f"[Trending Séries] Erreur: {e}")
 
     return list(results.values())[:limit]
+
+def make_curated_item(iid: str, mid: str, title: str, year: str, is_series: bool, poster: str, desc: str = ""):
+    TMDB_CACHE[iid] = mid
+    srvs = build_servers(iid, tmdb_id=mid, title=title, is_series=is_series)
+    first_url = list(srvs.values())[0] if srvs else f"https://frembed.pics/embed/movie/{mid}"
+    return {
+        "id": iid,
+        "tmdb_id": mid,
+        "title": title,
+        "year": str(year),
+        "type": "serie" if is_series else "movie",
+        "type_label": "📺 Série Disney+" if is_series else "🎬 Chef-d'œuvre Disney+",
+        "is_series": is_series,
+        "actors": desc,
+        "thumbnail": poster,
+        "servers": srvs,
+        "embed_url": first_url,
+        "url": f"https://www.imdb.com/title/{iid}/",
+        "source": "Disney+ Exclusif",
+        "duration": f"Sortie : {year}" if year else "Film Complet"
+    }
+
+CURATED_DATA = {
+    "disney": [
+        ("tt0110357", "8587", "Le Roi Lion (The Lion King)", "1994", False, "https://image.tmdb.org/t/p/w500/dzBtMocZuJbjK4vJu4ONRIwn29D.jpg", "Grand Classique Disney • Animation Culte"),
+        ("tt2294629", "109445", "La Reine des Neiges (Frozen)", "2013", False, "https://image.tmdb.org/t/p/w500/kgNjxUa0mK9v9J7QGZ5s39kR5K5.jpg", "Grand Classique Disney • Aventure & Magie"),
+        ("tt3521164", "284053", "Vaiana : La Légende du bout du monde", "2016", False, "https://image.tmdb.org/t/p/w500/4n74VjP793R73f7zN2J1m4XvT4p.jpg", "Grand Classique Disney • Océanie & Dieux"),
+        ("tt0103639", "812", "Aladdin", "1992", False, "https://image.tmdb.org/t/p/w500/fL1hHn8Y5o1z33tU2g5k8RkQe6p.jpg", "Grand Classique Disney • Génie & Mille et une nuits"),
+        ("tt0101414", "597", "La Belle et la Bête", "1991", False, "https://image.tmdb.org/t/p/w500/yA0tS1J3gM6fU6r6tH0wXqK5n7.jpg", "Grand Classique Disney • Conte Magique"),
+        ("tt0398286", "38757", "Raiponce (Tangled)", "2010", False, "https://image.tmdb.org/t/p/w500/ym7Kst6a4uodih2ilHO7qKo2Iso.jpg", "Grand Classique Disney • Tour Magique"),
+        ("tt2953050", "568124", "Encanto : La Fantastique Famille Madrigal", "2021", False, "https://image.tmdb.org/t/p/w500/4j0PNHkMr5ax3AsUsRJ2xsne3N9.jpg", "Magie Disney • Colombie & Famille"),
+        ("tt2948356", "269149", "Zootopie", "2016", False, "https://image.tmdb.org/t/p/w500/hlK0e0wAQ3VdoMuZJuAc48rwPng.jpg", "Comédie Disney • Judy Hopps & Nick Wilde"),
+        ("tt0120762", "10674", "Mulan", "1998", False, "https://image.tmdb.org/t/p/w500/51X5kHkQ2Y6bXoK6F8L4W9rE9b.jpg", "Grand Classique Disney • Chine & Légende"),
+        ("tt0042332", "11224", "Cendrillon", "1950", False, "https://image.tmdb.org/t/p/w500/avZJ5XpTj7B5Q2o0s1W9l3E1w9.jpg", "Grand Classique Disney • Soulier de verre"),
+        ("tt0097757", "10144", "La Petite Sirène", "1989", False, "https://image.tmdb.org/t/p/w500/plcffbV4Z8c5f6M9l3W5rE1x2.jpg", "Grand Classique Disney • Sous l'océan"),
+        ("tt0120855", "37135", "Tarzan", "1999", False, "https://image.tmdb.org/t/p/w500/bP7W6h6l0u9e5j1n1w6m3E5b6.jpg", "Grand Classique Disney • Jungle & Aventure")
+    ],
+    "pixar": [
+        ("tt22022452", "1022789", "Vice-Versa 2 (Inside Out 2)", "2024", False, "https://image.tmdb.org/t/p/w500/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg", "Chef-d'œuvre Pixar 2024 • Émotions d'Adolescence"),
+        ("tt2096673", "150540", "Vice-Versa (Inside Out)", "2015", False, "https://image.tmdb.org/t/p/w500/2H1TmgdfNtsKlU9jKdeNyYL5y8T.jpg", "Studios Pixar • Joie, Tristesse & Colère"),
+        ("tt2380307", "354912", "Coco", "2017", False, "https://image.tmdb.org/t/p/w500/askg3SMvhqEl4OL52YuvdtY40Yb.jpg", "Studios Pixar • Fête des Morts & Famille"),
+        ("tt0382932", "2062", "Ratatouille", "2007", False, "https://image.tmdb.org/t/p/w500/t3vaWRPSf6W1nRZa6b9xJrJrnvJ.jpg", "Studios Pixar • Remy le Chef à Paris"),
+        ("tt1979376", "301528", "Toy Story 4", "2019", False, "https://image.tmdb.org/t/p/w500/w9kR8qbmQ01HwnvK4JsqW29VdrD.jpg", "Studios Pixar • Woody & Buzz l'Éclair"),
+        ("tt0266543", "12", "Le Monde de Némo (Finding Nemo)", "2003", False, "https://image.tmdb.org/t/p/w500/eHuGQ10ocelZIoIdXJioVI4Ki63.jpg", "Studios Pixar • Grande Barrière de Corail"),
+        ("tt0317705", "9806", "Les Indestructibles", "2004", False, "https://image.tmdb.org/t/p/w500/2LqaLgk4Z226KkgPJuiOQ58wvrm.jpg", "Studios Pixar • Famille de Super-Héros"),
+        ("tt1049413", "14160", "Là-Haut (Up)", "2009", False, "https://image.tmdb.org/t/p/w500/vpbaStTMt8qqgE27qvqda6VOFiH.jpg", "Studios Pixar • Maison Volante & Ballons"),
+        ("tt0198781", "585", "Monstres & Cie (Monsters, Inc.)", "2001", False, "https://image.tmdb.org/t/p/w500/93TDM1vVOpdt57GZep20m6w7n8G.jpg", "Studios Pixar • Sulli & Bob Razowski"),
+        ("tt0317219", "920", "Cars : Quatre Roues", "2006", False, "https://image.tmdb.org/t/p/w500/abW592jhdjQ74nmmf8cvWl0c26x.jpg", "Studios Pixar • Flash McQueen & Route 66"),
+        ("tt0910970", "10681", "WALL-E", "2008", False, "https://image.tmdb.org/t/p/w500/hbhFnRzzg6ZDmm8YAmxBnQMiQRS.jpg", "Studios Pixar • Petit Robot de l'Espace"),
+        ("tt15789038", "976573", "Élémentaire (Elemental)", "2023", False, "https://image.tmdb.org/t/p/w500/8riWfqPTlRWIz97ghF97hEUwqdZ.jpg", "Studios Pixar • Le Feu & L'Eau")
+    ],
+    "marvel": [
+        ("tt6263850", "533535", "Deadpool & Wolverine", "2024", False, "https://image.tmdb.org/t/p/w500/8cdWjvZQUExUUTzyp4tmnEdMubf.jpg", "Marvel Studios 2024 • Duo Explosif"),
+        ("tt4154796", "299534", "Avengers: Endgame", "2019", False, "https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg", "Marvel Studios • Le Combat Final"),
+        ("tt4154756", "299536", "Avengers: Infinity War", "2018", False, "https://image.tmdb.org/t/p/w500/7WsyChQLEftFiDOVTGkv3hFpyyt.jpg", "Marvel Studios • Thanos & les Pierres d'Infinité"),
+        ("tt10872600", "634649", "Spider-Man: No Way Home", "2021", False, "https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg", "Marvel Studios • Multivers & Peter Parker"),
+        ("tt0371746", "1726", "Iron Man", "2008", False, "https://image.tmdb.org/t/p/w500/78lPtwv72eTNqFW9COBYI0dWDJa.jpg", "Marvel Studios • Tony Stark"),
+        ("tt3501632", "284053", "Thor: Ragnarok", "2017", False, "https://image.tmdb.org/t/p/w500/rzRwTcFvttcN1ZpX2xv4j3tSdJu.jpg", "Marvel Studios • Asgard & Hulk"),
+        ("tt2015381", "118340", "Les Gardiens de la Galaxie", "2014", False, "https://image.tmdb.org/t/p/w500/r7vmZjiyZw9rpJMQJdXpjgiCOk9.jpg", "Marvel Studios • Star-Lord & Groot"),
+        ("tt3498820", "271110", "Captain America: Civil War", "2016", False, "https://image.tmdb.org/t/p/w500/rAGi1vgGUQg90fHbviuyHq8jXqD.jpg", "Marvel Studios • Affrontement Fratricide"),
+        ("tt1825683", "284054", "Black Panther", "2018", False, "https://image.tmdb.org/t/p/w500/uxzzxijgPIY7slzFvMotPv8wjKA.jpg", "Marvel Studios • Wakanda Éternel"),
+        ("tt3315342", "263115", "Logan", "2017", False, "https://image.tmdb.org/t/p/w500/fnbjcRDYn6YviCcePDnGdyAkYsB.jpg", "Marvel • Le Baroud d'Honneur de Wolverine"),
+        ("tt1877832", "127585", "X-Men: Days of Future Past", "2014", False, "https://image.tmdb.org/t/p/w500/tK0A31fNlH0eY7U8e7Q6Uo69F4F.jpg", "Marvel • Voyage dans le Temps"),
+        ("tt12593682", "670292", "The Marvels", "2023", False, "https://image.tmdb.org/t/p/w500/9GBhzXMFjgcZ3FdR9w3bUMMTps5.jpg", "Marvel Studios • Trio Cosmique")
+    ],
+    "starwars": [
+        ("tt8111088", "82856", "The Mandalorian", "2019", True, "https://image.tmdb.org/t/p/w500/eU1i6eHXlzMOlEq0ku1R07Y9W7r.jpg", "Lucasfilm • Din Djarin & Grogu"),
+        ("tt0076759", "11", "Star Wars IV : Un Nouvel Espoir", "1977", False, "https://image.tmdb.org/t/p/w500/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg", "Lucasfilm • Luke Skywalker & la Force"),
+        ("tt0080684", "1891", "Star Wars V : L'Empire Contre-Attaque", "1980", False, "https://image.tmdb.org/t/p/w500/2l05cFUJrqRIFiAnOPpkGgm1yQ4.jpg", "Lucasfilm • Je suis ton père"),
+        ("tt0086190", "1892", "Star Wars VI : Le Retour du Jedi", "1983", False, "https://image.tmdb.org/t/p/w500/xxcn34Gv5E911X8eF8lHjHwZc3r.jpg", "Lucasfilm • La Chute de l'Empereur"),
+        ("tt0121766", "1895", "Star Wars III : La Revanche des Sith", "2005", False, "https://image.tmdb.org/t/p/w500/xfSAoBVPxtk6HaR1vTwF7P09um.jpg", "Lucasfilm • La Naissance de Dark Vador"),
+        ("tt2488496", "140607", "Star Wars VII : Le Réveil de la Force", "2015", False, "https://image.tmdb.org/t/p/w500/wqnLen9tJw5y07W1sYqbtD76JqS.jpg", "Lucasfilm • Rey & Kylo Ren"),
+        ("tt3748528", "330459", "Rogue One: A Star Wars Story", "2016", False, "https://image.tmdb.org/t/p/w500/qjiskwlV1cmwnOC0RtRJvH70q1K.jpg", "Lucasfilm • Les Plans de l'Étoile Noire"),
+        ("tt13622776", "114461", "Star Wars : Ahsoka", "2023", True, "https://image.tmdb.org/t/p/w500/laCJxobHoPVaLQTKxc14Y2zV64J.jpg", "Lucasfilm • La Jedi Ahsoka Tano"),
+        ("tt9253284", "83867", "Star Wars : Andor", "2022", True, "https://image.tmdb.org/t/p/w500/59SVNwL2OcyGv9STXTRI2xDUkp2.jpg", "Lucasfilm • Les Racines de la Rébellion")
+    ],
+    "series": [
+        ("tt7235466", "75219", "9-1-1", "2018", True, "https://image.tmdb.org/t/p/w500/6N0x4b7bT9eE6l8l9xT6p5zN8k0.jpg", "Série Urgences & Pompiers Los Angeles"),
+        ("tt4574334", "66732", "Stranger Things", "2016", True, "https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg", "Série Fantastique Culte • Hawkins & Demogorgon"),
+        ("tt3581920", "100088", "The Last of Us", "2023", True, "https://image.tmdb.org/t/p/w500/uKvVjHNqB5VmOrdxqAt2V7J78ED.jpg", "Série Post-Apocalyptique • Joel & Ellie"),
+        ("tt13443470", "119051", "Mercredi (Wednesday)", "2022", True, "https://image.tmdb.org/t/p/w500/9PFonB99qQezRaDr5Zz995d3q2A.jpg", "Série Fantastique • Famille Addams & Nevermore"),
+        ("tt11198330", "94997", "House of the Dragon", "2022", True, "https://image.tmdb.org/t/p/w500/1X4h40fcB4WWUmIBK0auT4zRBAV.jpg", "Série Épique • Les Targaryen & Dragons"),
+        ("tt0944947", "1399", "Game of Thrones", "2011", True, "https://image.tmdb.org/t/p/w500/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg", "Série Culte Mondiale • Le Trône de Fer"),
+        ("tt0903747", "1396", "Breaking Bad", "2008", True, "https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg", "Série Culte • Walter White & Jesse Pinkman"),
+        ("tt9140554", "84958", "Loki", "2021", True, "https://image.tmdb.org/t/p/w500/voHUmlvjysv91ZzQfR5pX1L0q.jpg", "Marvel Studios • Le Dieu de la Malice & le TVA")
+    ]
+}
+
+# Sous-collections Marvel dédiées
+CURATED_DATA["marvel_avengers"] = [x for x in CURATED_DATA["marvel"] if "Avengers" in x[2]]
+CURATED_DATA["marvel_spiderman"] = [x for x in CURATED_DATA["marvel"] if "Spider-Man" in x[2]]
+CURATED_DATA["marvel_deadpool"] = [x for x in CURATED_DATA["marvel"] if "Deadpool" in x[2]]
+CURATED_DATA["marvel_ironman"] = [x for x in CURATED_DATA["marvel"] if "Iron Man" in x[2]]
+CURATED_DATA["marvel_thor"] = [x for x in CURATED_DATA["marvel"] if "Thor" in x[2]]
+CURATED_DATA["marvel_guardians"] = [x for x in CURATED_DATA["marvel"] if "Gardiens" in x[2]]
+CURATED_DATA["marvel_captain"] = [x for x in CURATED_DATA["marvel"] if "Captain America" in x[2]]
+CURATED_DATA["marvel_xmen"] = [x for x in CURATED_DATA["marvel"] if "X-Men" in x[2] or "Logan" in x[2]]
+CURATED_DATA["marvel_wolverine"] = [x for x in CURATED_DATA["marvel"] if "Wolverine" in x[2] or "Logan" in x[2]]
 
 # Mappages des catégories Disney+ & sous-boutons Marvel & requêtes courantes en français
 CATEGORY_QUERIES = {
@@ -433,10 +538,17 @@ def search_streaming(query: str, limit: int = 35):
     if not query or query.lower() in ["top", "tendance", "tendances", "populaire", "films", "all"]:
         return get_trending_catalog(limit=limit)
 
-    # Si c'est un tag de catégorie Disney+ ou sous-bouton Marvel ou titre VF traduit
+    # Si c'est une collection officielle Disney+, Pixar, Marvel, Star Wars, Séries
     clean_key = query.lower()
+    if clean_key in CURATED_DATA:
+        return [make_curated_item(*x) for x in CURATED_DATA[clean_key]][:limit]
+
+    # Si c'est un tag de catégorie Disney+ ou sous-bouton Marvel ou titre VF traduit
     if clean_key in CATEGORY_QUERIES:
-        query = CATEGORY_QUERIES[clean_key]
+        mapped = CATEGORY_QUERIES[clean_key]
+        if mapped.lower() in CURATED_DATA:
+            return [make_curated_item(*x) for x in CURATED_DATA[mapped.lower()]][:limit]
+        query = mapped
 
     # Si lien direct
     if query.startswith(('http://', 'https://')):
@@ -507,6 +619,8 @@ def search_streaming(query: str, limit: int = 35):
     if not sorted_list:
         sorted_list = list(merged.values()) or imdb_results or cm_results
 
+    # Filtrage final strict et absolu : zéro musique, zéro concert, zéro clip
+    sorted_list = [it for it in sorted_list if not is_music_content(it.get('title', ''), desc=it.get('actors', ''))]
     return sorted_list[:limit]
 
 def build_site_search_url(site_url: str, query: str) -> str:

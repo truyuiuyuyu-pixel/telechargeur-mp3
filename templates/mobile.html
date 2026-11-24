@@ -111,7 +111,11 @@
                     </div>
                 </div>
             </div>
-            <div class="mob-header-actions">
+            <div class="mob-header-actions" style="display:flex;align-items:center;gap:8px;">
+                <button type="button" class="disney-mob-auth-pill" id="btnMobAccount" title="Se connecter pour sauvegarder votre avancement">
+                    <i class="fa-solid fa-user-circle"></i>
+                    <span>Se connecter</span>
+                </button>
                 <button class="mob-icon-btn" id="btnMobSettings" title="Paramètres">
                     <i class="fa-solid fa-gear"></i>
                 </button>
@@ -690,6 +694,25 @@
                     <button type="button" id="btnMobStreamApplyEp" class="mob-btn" style="padding:5px 12px;font-size:0.8rem;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border-radius:6px;font-weight:700;">OK</button>
                 </div>
 
+                <!-- Sauvegarde de l'avancement -->
+                <div id="mobStreamProgressBar" style="margin-bottom:12px;padding:9px 11px;background:rgba(0,99,229,0.12);border:1px solid rgba(0,210,255,0.25);border-radius:10px;display:flex;flex-direction:column;gap:8px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                        <span id="mobStreamProgressStatus" style="font-size:0.76rem;color:#cbd5e1;display:flex;align-items:center;gap:6px;">
+                            <i class="fa-solid fa-bookmark" style="color:#00d2ff;"></i> Avancement sauvegardé
+                        </span>
+                        <button type="button" id="btnMobPromptSync" style="display:none;background:none;border:none;color:#38bdf8;font-size:0.74rem;font-weight:700;cursor:pointer;text-decoration:underline;">
+                            Se connecter
+                        </button>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:0.75rem;color:#94a3b8;">Reprendre à :</span>
+                        <input type="text" id="mobStreamTimeNote" placeholder="42:15" maxlength="15" style="width:68px;padding:4px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:#0f172a;color:#fff;font-size:0.78rem;text-align:center;font-weight:700;">
+                        <button type="button" id="btnMobSaveTimeNote" class="mob-btn" style="padding:5px 10px;font-size:0.75rem;background:linear-gradient(135deg,#0063e5,#00d2ff);color:#fff;border-radius:6px;font-weight:700;">
+                            Sauvegarder
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Ligne de Boutons sous le lecteur (Trailer + Film Complet + Plein Écran) -->
                 <div style="display:flex;gap:8px;">
                     <button type="button" id="btnMobWatchTrailerInPlayer" class="mob-btn" style="flex:1;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;font-weight:800;font-size:0.88rem;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 14px rgba(139,92,246,0.35);">
@@ -711,6 +734,17 @@
         <div id="mobStreamLoader" class="mob-loader" style="display:none">
             <div class="mob-spinner" style="border-top-color:#0284c7;"></div>
             <span>Chargement des films et séries du box-office…</span>
+        </div>
+
+        <!-- Section Reprendre la lecture (Style Disney+) -->
+        <div id="mobContinueWatchingSection" style="display:none;margin:10px 0 14px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="font-size:0.98rem;font-weight:900;color:#fff;display:flex;align-items:center;gap:7px;">
+                    <i class="fa-solid fa-clock-rotate-left" style="color:#00d2ff;"></i> Reprendre la lecture
+                </div>
+                <span id="mobContinueProfileTag" style="font-size:0.72rem;color:#38bdf8;font-weight:700;"></span>
+            </div>
+            <div id="mobContinueWatchingList" class="disney-continue-row"></div>
         </div>
 
         <!-- Section au MILIEU : Les Films les Plus Regardés (Demandé expressément par l'utilisateur) -->
@@ -906,9 +940,87 @@
     </div>
 </div>
 
+<!-- Modal Compte & Profils Style Disney+ (Mobile) -->
+<div id="mobDisneyAccountModal" class="disney-modal-overlay" style="display:none;">
+    <div class="disney-modal-card">
+        <button type="button" id="btnMobAccountClose" class="disney-modal-close" title="Fermer">&times;</button>
+
+        <!-- Vue Connexion / Inscription -->
+        <div id="mobAuthView">
+            <div class="disney-modal-brand">
+                <div class="disney-brand-badge"><i class="fa-solid fa-film"></i></div>
+                <h2>Votre Espace Streaming</h2>
+                <p>Connectez-vous pour retrouver vos profils et reprendre vos films et séries là où vous vous êtes arrêté.</p>
+            </div>
+
+            <div class="disney-auth-tabs">
+                <button type="button" class="disney-auth-tab active" data-auth-tab="login">Se connecter</button>
+                <button type="button" class="disney-auth-tab" data-auth-tab="register">Créer un compte</button>
+            </div>
+
+            <form id="mobAuthForm" class="disney-auth-form">
+                <div class="disney-field">
+                    <label>Identifiant</label>
+                    <input type="text" id="mobAuthUsername" placeholder="Votre identifiant" autocomplete="username" required>
+                </div>
+                <div class="disney-field">
+                    <label>Mot de passe</label>
+                    <input type="password" id="mobAuthPassword" placeholder="Votre mot de passe" autocomplete="current-password" required>
+                </div>
+                <div id="mobAuthError" class="disney-auth-error" style="display:none;"></div>
+                <button type="submit" id="btnMobAuthSubmit" class="btn-disney-play" style="width:100%;justify-content:center;padding:13px;font-size:0.95rem;">
+                    Se connecter
+                </button>
+            </form>
+
+            <button type="button" id="btnMobContinueGuest" class="disney-guest-btn">
+                Continuer sans compte
+            </button>
+        </div>
+
+        <!-- Vue "Qui regarde ?" (Style Disney+) -->
+        <div id="mobProfilesView" style="display:none;">
+            <div class="disney-profiles-header">
+                <h2>Qui regarde ?</h2>
+                <p id="mobAccountTag" class="disney-account-sub"></p>
+            </div>
+
+            <div id="mobProfilesGrid" class="disney-profiles-grid"></div>
+
+            <div class="disney-profiles-actions">
+                <button type="button" id="btnMobToggleEditProfiles" class="disney-secondary-btn">
+                    <i class="fa-solid fa-pen"></i> Modifier les profils
+                </button>
+                <button type="button" id="btnMobLogout" class="disney-danger-btn">
+                    <i class="fa-solid fa-right-from-bracket"></i> Déconnexion
+                </button>
+            </div>
+        </div>
+
+        <!-- Vue Ajouter / Modifier un Profil -->
+        <div id="mobProfileEditView" style="display:none;">
+            <h2 id="mobProfileEditTitle" style="color:#fff;font-size:1.25rem;font-weight:900;margin-bottom:14px;text-align:center;">Nouveau profil</h2>
+            <div class="disney-field">
+                <label>Nom du profil</label>
+                <input type="text" id="mobProfileNameInput" placeholder="Nom du profil" maxlength="20">
+            </div>
+            <div class="disney-field" style="margin-top:12px;">
+                <label>Choisir un avatar</label>
+                <div id="mobAvatarPicker" class="disney-avatar-picker"></div>
+            </div>
+            <div id="mobProfileEditError" class="disney-auth-error" style="display:none;"></div>
+            <div style="display:flex;gap:10px;margin-top:18px;">
+                <button type="button" id="btnMobProfileCancel" class="disney-secondary-btn" style="flex:1;">Annuler</button>
+                <button type="button" id="btnMobProfileDelete" class="disney-danger-btn" style="display:none;"><i class="fa-solid fa-trash"></i></button>
+                <button type="button" id="btnMobProfileSave" class="btn-disney-play" style="flex:1.4;justify-content:center;">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Toast -->
 <div class="mob-toast" id="mobToast"></div>
 
-<script src="/static/js/mobile-app.js?v=13.0"></script>
+<script src="/static/js/mobile-app.js?v=14.0"></script>
 </body>
 </html>

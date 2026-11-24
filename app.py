@@ -41,6 +41,7 @@ from downloader import (
 import scanner
 import themes
 import streaming
+import profiles
 import qrcode
 from temp_cleaner import reset_temp_storage, auto_clean_old_temp_files
 from downloader import download_single_track_sync
@@ -924,6 +925,144 @@ def scanner_summary():
         "pc_count": len([x for x in existing if "PC" in x.get("source", "") or "App" in x.get("source", "")]),
         "phone_count": len([x for x in existing if "Téléphone" in x.get("source", "")])
     })
+
+# =====================================================================
+# COMPTES, PROFILS DISNEY+ & REPRISE DE LECTURE
+# =====================================================================
+
+def _get_auth_username():
+    token = request.cookies.get('mp3dl_auth_token') or request.headers.get('X-Auth-Token', '')
+    return profiles.verify_token(token)
+
+
+@app.route('/api/auth/me')
+def auth_me():
+    username = _get_auth_username()
+    if not username:
+        return jsonify({"logged_in": False, "avatars": profiles.AVATAR_PRESETS})
+    info = profiles.get_account_info(username)
+    if not info:
+        return jsonify({"logged_in": False, "avatars": profiles.AVATAR_PRESETS})
+    return jsonify({
+        "logged_in": True,
+        "username": info["username"],
+        "profiles": info["profiles"],
+        "avatars": profiles.AVATAR_PRESETS
+    })
+
+
+@app.route('/api/auth/register', methods=['POST'])
+def auth_register():
+    data = request.json or {}
+    ok, msg, payload = profiles.register_account(data.get('username'), data.get('password'))
+    if not ok:
+        return jsonify({"success": False, "error": msg}), 400
+    resp = jsonify({
+        "success": True,
+        "message": msg,
+        "username": payload["username"],
+        "profiles": payload["profiles"],
+        "token": payload["token"]
+    })
+    resp.set_cookie('mp3dl_auth_token', payload["token"], max_age=60*60*24*90, httponly=True, samesite='Lax')
+    return resp
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    data = request.json or {}
+    ok, msg, payload = profiles.login_account(data.get('username'), data.get('password'))
+    if not ok:
+        return jsonify({"success": False, "error": msg}), 401
+    resp = jsonify({
+        "success": True,
+        "message": msg,
+        "username": payload["username"],
+        "profiles": payload["profiles"],
+        "token": payload["token"]
+    })
+    resp.set_cookie('mp3dl_auth_token', payload["token"], max_age=60*60*24*90, httponly=True, samesite='Lax')
+    return resp
+
+
+@app.route('/api/auth/logout', methods=['POST'])
+def auth_logout():
+    resp = jsonify({"success": True})
+    resp.delete_cookie('mp3dl_auth_token')
+    return resp
+
+
+@app.route('/api/profiles/add', methods=['POST'])
+def api_profile_add():
+    username = _get_auth_username()
+    if not username:
+        return jsonify({"success": False, "error": "Non connecté"}), 401
+    data = request.json or {}
+    ok, msg, profs = profiles.add_profile(username, data.get('name'), data.get('avatar', 'star'))
+    if not ok:
+        return jsonify({"success": False, "error": msg}), 400
+    return jsonify({"success": True, "message": msg, "profiles": profs})
+
+
+@app.route('/api/profiles/update', methods=['POST'])
+def api_profile_update():
+    username = _get_auth_username()
+    if not username:
+        return jsonify({"success": False, "error": "Non connecté"}), 401
+    data = request.json or {}
+    ok, msg, profs = profiles.update_profile(
+        username, data.get('profile_id'), name=data.get('name'), avatar=data.get('avatar')
+    )
+    if not ok:
+        return jsonify({"success": False, "error": msg}), 400
+    return jsonify({"success": True, "message": msg, "profiles": profs})
+
+
+@app.route('/api/profiles/delete', methods=['POST'])
+def api_profile_delete():
+    username = _get_auth_username()
+    if not username:
+        return jsonify({"success": False, "error": "Non connecté"}), 401
+    data = request.json or {}
+    ok, msg, profs = profiles.delete_profile(username, data.get('profile_id'))
+    if not ok:
+        return jsonify({"success": False, "error": msg}), 400
+    return jsonify({"success": True, "message": msg, "profiles": profs})
+
+
+@app.route('/api/profiles/progress', methods=['GET'])
+def api_profile_progress_get():
+    username = _get_auth_username()
+    profile_id = request.args.get('profile_id', '')
+    if not username or not profile_id:
+        return jsonify({"progress": []})
+    prog = profiles.get_profile_progress(username, profile_id)
+    return jsonify({"progress": prog})
+
+
+@app.route('/api/profiles/progress', methods=['POST'])
+def api_profile_progress_save():
+    username = _get_auth_username()
+    if not username:
+        return jsonify({"success": False, "error": "Non connecté"}), 401
+    data = request.json or {}
+    profile_id = data.get('profile_id')
+    item = data.get('item')
+    if not profile_id or not item:
+        return jsonify({"success": False, "error": "Données manquantes"}), 400
+    ok, prog = profiles.save_profile_progress(username, profile_id, item)
+    return jsonify({"success": ok, "progress": prog})
+
+
+@app.route('/api/profiles/progress/remove', methods=['POST'])
+def api_profile_progress_remove():
+    username = _get_auth_username()
+    if not username:
+        return jsonify({"success": False, "error": "Non connecté"}), 401
+    data = request.json or {}
+    ok, prog = profiles.remove_profile_progress(username, data.get('profile_id'), data.get('item_id'))
+    return jsonify({"success": ok, "progress": prog})
+
 
 # =====================================================================
 # DÉMARRAGE DU SERVEUR

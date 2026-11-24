@@ -150,6 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupSingerMode();
         setupThemes();
         initGlobalAudioPlayer();
+        setupDeskAccountSystem();
     }
 
     // --- Lecteur d'extrait audio 30s ---
@@ -1765,6 +1766,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Toujours garder la barre de navigation active et visible
         if (navTabs) navTabs.style.display = 'flex';
 
+        // Disney+ body class toggle
+        if (mode === 'streaming') {
+            document.body.classList.add('mode-disney-streaming');
+        } else {
+            document.body.classList.remove('mode-disney-streaming');
+        }
+
         if (mode === 'music') {
             if (modeBadge) modeBadge.textContent = '🎵 Mode Musique';
             if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-music"></i>';
@@ -2371,6 +2379,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentDeskStreamingVideo.servers = srvData.servers;
                 renderDeskServerButtons(srvData.servers);
             }
+            saveDeskStreamProgress(currentDeskStreamingVideo, { season, episode });
         } catch {
             showToast("Erreur chargement épisode", true);
         }
@@ -2449,49 +2458,40 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        videos.forEach((v, index) => {
-            const card = document.createElement('div');
-            card.className = 'result-card';
-            card.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:0 6px 20px rgba(0,0,0,0.35);';
+        results.className = 'disney-poster-grid';
+        results.style.cssText = 'grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));';
 
-            const badgeBg = v.is_series ? 'rgba(59,130,246,0.2)' : 'rgba(16,185,129,0.2)';
-            const badgeColor = v.is_series ? '#60a5fa' : '#34d399';
-            const badgeBorder = v.is_series ? '#3b82f6' : '#10b981';
+        videos.forEach((v) => {
+            const card = document.createElement('div');
+            card.className = 'disney-movie-card';
+
+            const badgeClass = v.is_series ? 'disney-card-badge badge-series' : 'disney-card-badge';
+            const badgeLabel = v.is_series ? '📺 Série' : '🎬 Film';
+            const poster = v.thumbnail || '/static/icons/icon-512.png';
 
             card.innerHTML = `
-                <div style="position:relative;width:100%;height:220px;border-radius:10px;overflow:hidden;background:#1a202c;">
-                    <img src="${escapeHtml(v.thumbnail)}" alt="" onerror="this.src='/static/icons/icon-512.png'" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;">
-                    <span style="position:absolute;top:8px;left:8px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.75rem;padding:3px 8px;border-radius:6px;font-weight:900;">#${index + 1}</span>
-                    ${v.year ? `<span style="position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.75rem;padding:3px 8px;border-radius:6px;font-weight:800;">${escapeHtml(v.year)}</span>` : ''}
-                    <span style="position:absolute;bottom:8px;right:8px;background:rgba(239,68,68,0.9);color:#fff;font-size:0.7rem;padding:3px 8px;border-radius:6px;font-weight:800;">VF / VOSTFR</span>
-                </div>
-                <div style="flex:1;min-width:0;">
-                    <div style="margin-bottom:6px;">
-                        <span style="background:${badgeBg};color:${badgeColor};border:1px solid ${badgeBorder};font-size:0.72rem;padding:2px 8px;border-radius:6px;font-weight:700;">${escapeHtml(v.type_label || '🎬 Film Complet')}</span>
+                <div class="disney-poster-wrapper">
+                    <img class="disney-poster-img" src="${escapeHtml(poster)}" alt="${escapeHtml(v.title)}" onerror="this.src='/static/icons/icon-512.png'" loading="lazy">
+                    <span class="${badgeClass}">${badgeLabel}</span>
+                    <span class="disney-card-vf-badge">🇫🇷 VF</span>
+                    <div class="disney-card-overlay">
+                        <button type="button" class="disney-card-play-btn btn-desk-play-stream"><i class="fa-solid fa-play"></i> Regarder</button>
                     </div>
-                    <h4 style="color:#fff;font-size:1.05rem;font-weight:800;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:4px;line-height:1.3;">${escapeHtml(v.title)}</h4>
-                    ${v.actors ? `<p style="color:var(--text-muted);font-size:0.78rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px;"><i class="fa-solid fa-circle-info"></i> ${escapeHtml(v.actors)}</p>` : ''}
-                    <span style="color:#10b981;font-size:0.8rem;font-weight:600;"><i class="fa-solid fa-circle-check"></i> Streaming Gratuit Illimité</span>
                 </div>
-                <div style="display:flex;gap:8px;margin-top:auto;">
-                    <button type="button" class="btn-desk-play-stream" style="flex:1.2;padding:11px 8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.86rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(16,185,129,0.35);">
-                        <i class="fa-solid fa-play"></i> <span>${v.is_series ? 'Regarder Série' : 'Regarder Film'}</span>
-                    </button>
-                    <button type="button" class="btn-desk-play-trailer" style="flex:1;padding:11px 8px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:0.86rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(139,92,246,0.35);">
-                        <i class="fa-solid fa-clapperboard"></i> <span>Bande-Annonce</span>
-                    </button>
+                <div class="disney-card-info">
+                    <div class="disney-card-title">${escapeHtml(v.title)}</div>
+                    <div class="disney-card-meta">
+                        ${v.year ? `<span class="meta-year">${escapeHtml(v.year)}</span>` : ''}
+                        <span>${escapeHtml(v.type_label || 'Film Complet')}</span>
+                    </div>
                 </div>
             `;
 
             const btnPlay = card.querySelector('.btn-desk-play-stream');
             if (btnPlay) {
-                btnPlay.onclick = () => playDeskVideoStream(v);
+                btnPlay.onclick = (e) => { e.stopPropagation(); playDeskVideoStream(v); };
             }
-
-            const btnTrailer = card.querySelector('.btn-desk-play-trailer');
-            if (btnTrailer) {
-                btnTrailer.onclick = () => playDeskVideoTrailer(v);
-            }
+            card.onclick = () => playDeskVideoStream(v);
 
             results.appendChild(card);
         });
@@ -2583,15 +2583,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (seriesControls) {
             if (video.is_series || video.type === 'serie') {
                 seriesControls.style.display = 'flex';
+                const sIn = document.getElementById('deskStreamSeason');
+                const eIn = document.getElementById('deskStreamEpisode');
+                if (sIn && video._resumeSeason) sIn.value = video._resumeSeason;
+                if (eIn && video._resumeEpisode) eIn.value = video._resumeEpisode;
             } else {
                 seriesControls.style.display = 'none';
             }
         }
 
+        const noteIn = document.getElementById('deskStreamTimeNote');
+        if (noteIn) noteIn.value = video._resumeTimeNote || '';
+
         if (container) {
             container.style.display = 'block';
             container.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+        saveDeskStreamProgress(video, {
+            season: video._resumeSeason || (document.getElementById('deskStreamSeason') ? parseInt(document.getElementById('deskStreamSeason').value, 10) || 1 : 1),
+            episode: video._resumeEpisode || (document.getElementById('deskStreamEpisode') ? parseInt(document.getElementById('deskStreamEpisode').value, 10) || 1 : 1),
+            time_note: video._resumeTimeNote || ''
+        });
         showToast(`▶️ Lancement du film : ${video.title}`);
     }
 
@@ -2644,6 +2656,455 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast("Erreur lancement", true);
             if (btnEl) btnEl.disabled = false;
         }
+    }
+
+    // =========================================================
+    // COMPTES, PROFILS STYLE DISNEY+ & REPRISE DE LECTURE (DESKTOP)
+    // =========================================================
+    let deskAuthState = { loggedIn: false, username: '', profiles: [], avatars: [], activeProfileId: localStorage.getItem('mp3_active_profile_id') || '' };
+    let deskAuthMode = 'login';
+    let deskEditProfilesMode = false;
+    let deskEditingProfileId = null;
+    let deskSelectedAvatar = 'star';
+
+    function setupDeskAccountSystem() {
+        const btnAcc = document.getElementById('btnDeskAccount');
+        const modal = document.getElementById('deskDisneyAccountModal');
+        const btnClose = document.getElementById('btnDeskAccountClose');
+        const btnGuest = document.getElementById('btnDeskContinueGuest');
+        const btnPromptSync = document.getElementById('btnDeskPromptSync');
+        const authForm = document.getElementById('deskAuthForm');
+        const btnLogout = document.getElementById('btnDeskLogout');
+        const btnToggleEdit = document.getElementById('btnDeskToggleEditProfiles');
+        const btnProfCancel = document.getElementById('btnDeskProfileCancel');
+        const btnProfSave = document.getElementById('btnDeskProfileSave');
+        const btnProfDel = document.getElementById('btnDeskProfileDelete');
+        const btnSaveNote = document.getElementById('btnDeskSaveTimeNote');
+
+        if (btnAcc) btnAcc.addEventListener('click', () => openDeskAccountModal());
+        if (btnPromptSync) btnPromptSync.addEventListener('click', () => openDeskAccountModal());
+        if (btnClose) btnClose.addEventListener('click', () => { if (modal) modal.style.display = 'none'; });
+        if (btnGuest) btnGuest.addEventListener('click', () => { if (modal) modal.style.display = 'none'; });
+        if (modal) {
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+        }
+
+        document.querySelectorAll('#deskAuthView .disney-auth-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('#deskAuthView .disney-auth-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                deskAuthMode = tab.dataset.authTab;
+                const subBtn = document.getElementById('btnDeskAuthSubmit');
+                if (subBtn) subBtn.textContent = deskAuthMode === 'register' ? 'Créer un compte' : 'Se connecter';
+                const err = document.getElementById('deskAuthError');
+                if (err) err.style.display = 'none';
+            });
+        });
+
+        if (authForm) {
+            authForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const u = document.getElementById('deskAuthUsername').value.trim();
+                const p = document.getElementById('deskAuthPassword').value;
+                const err = document.getElementById('deskAuthError');
+                if (err) err.style.display = 'none';
+
+                const endpoint = deskAuthMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: u, password: p })
+                    });
+                    const data = await res.json();
+                    if (!data.success) {
+                        if (err) { err.textContent = data.error || 'Erreur'; err.style.display = 'block'; }
+                        return;
+                    }
+                    deskAuthState.loggedIn = true;
+                    deskAuthState.username = data.username;
+                    deskAuthState.profiles = data.profiles || [];
+                    if (!deskAuthState.activeProfileId && deskAuthState.profiles.length) {
+                        deskAuthState.activeProfileId = deskAuthState.profiles[0].id;
+                        localStorage.setItem('mp3_active_profile_id', deskAuthState.activeProfileId);
+                    }
+                    updateDeskAccountPill();
+                    showDeskProfilesView();
+                    await loadDeskContinueWatching();
+                    showToast(`✨ Bienvenue ${data.username} !`);
+                } catch {
+                    if (err) { err.textContent = 'Erreur réseau'; err.style.display = 'block'; }
+                }
+            });
+        }
+
+        if (btnLogout) {
+            btnLogout.addEventListener('click', async () => {
+                await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+                deskAuthState.loggedIn = false;
+                deskAuthState.username = '';
+                deskAuthState.profiles = [];
+                deskAuthState.activeProfileId = '';
+                localStorage.removeItem('mp3_active_profile_id');
+                updateDeskAccountPill();
+                if (modal) modal.style.display = 'none';
+                await loadDeskContinueWatching();
+                showToast('Déconnecté');
+            });
+        }
+
+        if (btnToggleEdit) {
+            btnToggleEdit.addEventListener('click', () => {
+                deskEditProfilesMode = !deskEditProfilesMode;
+                btnToggleEdit.innerHTML = deskEditProfilesMode
+                    ? '<i class="fa-solid fa-check"></i> Terminer'
+                    : '<i class="fa-solid fa-pen"></i> Modifier les profils';
+                renderDeskProfilesGrid();
+            });
+        }
+
+        if (btnProfCancel) {
+            btnProfCancel.addEventListener('click', () => showDeskProfilesView());
+        }
+
+        if (btnProfSave) {
+            btnProfSave.addEventListener('click', async () => {
+                const name = (document.getElementById('deskProfileNameInput').value || '').trim();
+                const err = document.getElementById('deskProfileEditError');
+                if (err) err.style.display = 'none';
+                if (!name) {
+                    if (err) { err.textContent = 'Veuillez saisir un nom.'; err.style.display = 'block'; }
+                    return;
+                }
+                const endpoint = deskEditingProfileId ? '/api/profiles/update' : '/api/profiles/add';
+                const body = deskEditingProfileId
+                    ? { profile_id: deskEditingProfileId, name, avatar: deskSelectedAvatar }
+                    : { name, avatar: deskSelectedAvatar };
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await res.json();
+                    if (!data.success) {
+                        if (err) { err.textContent = data.error || 'Erreur'; err.style.display = 'block'; }
+                        return;
+                    }
+                    deskAuthState.profiles = data.profiles || [];
+                    updateDeskAccountPill();
+                    showDeskProfilesView();
+                } catch {
+                    if (err) { err.textContent = 'Erreur réseau'; err.style.display = 'block'; }
+                }
+            });
+        }
+
+        if (btnProfDel) {
+            btnProfDel.addEventListener('click', async () => {
+                if (!deskEditingProfileId) return;
+                const err = document.getElementById('deskProfileEditError');
+                try {
+                    const res = await fetch('/api/profiles/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ profile_id: deskEditingProfileId })
+                    });
+                    const data = await res.json();
+                    if (!data.success) {
+                        if (err) { err.textContent = data.error || 'Impossible de supprimer'; err.style.display = 'block'; }
+                        return;
+                    }
+                    deskAuthState.profiles = data.profiles || [];
+                    if (deskAuthState.activeProfileId === deskEditingProfileId && deskAuthState.profiles.length) {
+                        deskAuthState.activeProfileId = deskAuthState.profiles[0].id;
+                        localStorage.setItem('mp3_active_profile_id', deskAuthState.activeProfileId);
+                    }
+                    updateDeskAccountPill();
+                    showDeskProfilesView();
+                    await loadDeskContinueWatching();
+                } catch {}
+            });
+        }
+
+        if (btnSaveNote) {
+            btnSaveNote.addEventListener('click', () => {
+                if (!currentDeskStreamingVideo) return;
+                const note = (document.getElementById('deskStreamTimeNote')?.value || '').trim();
+                const s = document.getElementById('deskStreamSeason') ? parseInt(document.getElementById('deskStreamSeason').value, 10) || 1 : 1;
+                const e = document.getElementById('deskStreamEpisode') ? parseInt(document.getElementById('deskStreamEpisode').value, 10) || 1 : 1;
+                saveDeskStreamProgress(currentDeskStreamingVideo, { season: s, episode: e, time_note: note });
+                showToast(note ? `⏱️ Position "${note}" sauvegardée !` : '🔖 Avancement sauvegardé !');
+            });
+        }
+
+        checkDeskAuthStatus();
+    }
+
+    async function checkDeskAuthStatus() {
+        try {
+            const res = await fetch('/api/auth/me');
+            const data = await res.json();
+            deskAuthState.avatars = data.avatars || [];
+            if (data.logged_in) {
+                deskAuthState.loggedIn = true;
+                deskAuthState.username = data.username;
+                deskAuthState.profiles = data.profiles || [];
+                const found = deskAuthState.profiles.find(p => p.id === deskAuthState.activeProfileId);
+                if (!found && deskAuthState.profiles.length) {
+                    deskAuthState.activeProfileId = deskAuthState.profiles[0].id;
+                    localStorage.setItem('mp3_active_profile_id', deskAuthState.activeProfileId);
+                }
+            }
+        } catch {}
+        updateDeskAccountPill();
+        await loadDeskContinueWatching();
+    }
+
+    function updateDeskAccountPill() {
+        const btn = document.getElementById('btnDeskAccount');
+        const promptSync = document.getElementById('btnDeskPromptSync');
+        const statusEl = document.getElementById('deskStreamProgressStatus');
+        if (!btn) return;
+
+        if (deskAuthState.loggedIn) {
+            const prof = deskAuthState.profiles.find(p => p.id === deskAuthState.activeProfileId) || deskAuthState.profiles[0];
+            btn.classList.add('logged-in');
+            btn.innerHTML = prof
+                ? `<span class="disney-pill-avatar" style="background:${prof.gradient}"><i class="fa-solid ${prof.icon}"></i></span><span>${escapeHtml(prof.name)}</span>`
+                : `<i class="fa-solid fa-user-check"></i><span>${escapeHtml(deskAuthState.username)}</span>`;
+            if (promptSync) promptSync.style.display = 'none';
+            if (statusEl && prof) statusEl.textContent = `Sauvegardé sur le profil ${prof.name}`;
+        } else {
+            btn.classList.remove('logged-in');
+            btn.innerHTML = `<i class="fa-solid fa-user-circle"></i><span>Se connecter</span>`;
+            if (promptSync) promptSync.style.display = 'inline-block';
+            if (statusEl) statusEl.textContent = 'Sauvegardé sur cet appareil';
+        }
+    }
+
+    function openDeskAccountModal() {
+        const modal = document.getElementById('deskDisneyAccountModal');
+        if (!modal) return;
+        deskEditProfilesMode = false;
+        if (deskAuthState.loggedIn) {
+            showDeskProfilesView();
+        } else {
+            document.getElementById('deskAuthView').style.display = 'block';
+            document.getElementById('deskProfilesView').style.display = 'none';
+            document.getElementById('deskProfileEditView').style.display = 'none';
+        }
+        modal.style.display = 'flex';
+    }
+
+    function showDeskProfilesView() {
+        document.getElementById('deskAuthView').style.display = 'none';
+        document.getElementById('deskProfileEditView').style.display = 'none';
+        document.getElementById('deskProfilesView').style.display = 'block';
+        const tag = document.getElementById('deskAccountTag');
+        if (tag) tag.textContent = `Compte : ${deskAuthState.username}`;
+        const btnEdit = document.getElementById('btnDeskToggleEditProfiles');
+        if (btnEdit) {
+            btnEdit.innerHTML = deskEditProfilesMode
+                ? '<i class="fa-solid fa-check"></i> Terminer'
+                : '<i class="fa-solid fa-pen"></i> Modifier les profils';
+        }
+        renderDeskProfilesGrid();
+    }
+
+    function renderDeskProfilesGrid() {
+        const grid = document.getElementById('deskProfilesGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        deskAuthState.profiles.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'disney-profile-item' + (p.id === deskAuthState.activeProfileId ? ' active' : '');
+            item.innerHTML = `
+                <div class="disney-profile-avatar" style="background:${p.gradient};">
+                    <i class="fa-solid ${p.icon}"></i>
+                    ${deskEditProfilesMode ? '<div class="disney-profile-edit-badge"><i class="fa-solid fa-pen"></i></div>' : ''}
+                </div>
+                <div class="disney-profile-name">${escapeHtml(p.name)}</div>
+            `;
+            item.onclick = async () => {
+                if (deskEditProfilesMode) {
+                    openDeskProfileEditor(p);
+                } else {
+                    deskAuthState.activeProfileId = p.id;
+                    localStorage.setItem('mp3_active_profile_id', p.id);
+                    updateDeskAccountPill();
+                    document.getElementById('deskDisneyAccountModal').style.display = 'none';
+                    await loadDeskContinueWatching();
+                    showToast(`🍿 Profil actif : ${p.name}`);
+                }
+            };
+            grid.appendChild(item);
+        });
+
+        if (deskAuthState.profiles.length < 8) {
+            const addItem = document.createElement('div');
+            addItem.className = 'disney-profile-item';
+            addItem.innerHTML = `
+                <div class="disney-profile-avatar add-avatar"><i class="fa-solid fa-plus"></i></div>
+                <div class="disney-profile-name">Ajouter</div>
+            `;
+            addItem.onclick = () => openDeskProfileEditor(null);
+            grid.appendChild(addItem);
+        }
+    }
+
+    function openDeskProfileEditor(prof) {
+        document.getElementById('deskProfilesView').style.display = 'none';
+        document.getElementById('deskProfileEditView').style.display = 'block';
+        deskEditingProfileId = prof ? prof.id : null;
+        deskSelectedAvatar = prof ? prof.avatar : 'star';
+        document.getElementById('deskProfileEditTitle').textContent = prof ? 'Modifier le profil' : 'Nouveau profil';
+        document.getElementById('deskProfileNameInput').value = prof ? prof.name : '';
+        document.getElementById('deskProfileEditError').style.display = 'none';
+        document.getElementById('btnDeskProfileDelete').style.display = (prof && deskAuthState.profiles.length > 1) ? 'inline-flex' : 'none';
+
+        const picker = document.getElementById('deskAvatarPicker');
+        picker.innerHTML = '';
+        (deskAuthState.avatars || []).forEach(av => {
+            const opt = document.createElement('div');
+            opt.className = 'disney-avatar-option' + (av.id === deskSelectedAvatar ? ' selected' : '');
+            opt.style.background = av.gradient;
+            opt.innerHTML = `<i class="fa-solid ${av.icon}"></i>`;
+            opt.onclick = () => {
+                deskSelectedAvatar = av.id;
+                picker.querySelectorAll('.disney-avatar-option').forEach(x => x.classList.remove('selected'));
+                opt.classList.add('selected');
+            };
+            picker.appendChild(opt);
+        });
+    }
+
+    async function saveDeskStreamProgress(video, opts = {}) {
+        if (!video || !video.id) return;
+        const entry = {
+            id: video.id,
+            title: video.title || 'Titre',
+            thumbnail: video.thumbnail || '',
+            year: video.year || '',
+            is_series: !!(video.is_series || video.type === 'serie'),
+            type_label: video.type_label || (video.is_series ? 'Série' : 'Film Complet'),
+            embed_url: video.embed_url || video.url || '',
+            season: opts.season || 1,
+            episode: opts.episode || 1,
+            server_idx: currentDeskStreamingServerIdx || 1,
+            lang: 'vf',
+            time_note: opts.time_note !== undefined ? opts.time_note : (document.getElementById('deskStreamTimeNote')?.value || '').trim()
+        };
+
+        if (deskAuthState.loggedIn && deskAuthState.activeProfileId) {
+            try {
+                const res = await fetch('/api/profiles/progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_id: deskAuthState.activeProfileId, item: entry })
+                });
+                const data = await res.json();
+                if (data && data.progress) {
+                    renderDeskContinueWatching(data.progress);
+                    return;
+                }
+            } catch {}
+        }
+
+        // Sauvegarde locale (mode invité)
+        let local = [];
+        try { local = JSON.parse(localStorage.getItem('mp3_guest_progress') || '[]'); } catch {}
+        local = local.filter(x => String(x.id) !== String(entry.id));
+        local.unshift(entry);
+        local = local.slice(0, 20);
+        localStorage.setItem('mp3_guest_progress', JSON.stringify(local));
+        renderDeskContinueWatching(local);
+    }
+
+    async function loadDeskContinueWatching() {
+        if (deskAuthState.loggedIn && deskAuthState.activeProfileId) {
+            try {
+                const res = await fetch(`/api/profiles/progress?profile_id=${encodeURIComponent(deskAuthState.activeProfileId)}`);
+                const data = await res.json();
+                renderDeskContinueWatching(data.progress || []);
+                return;
+            } catch {}
+        }
+        let local = [];
+        try { local = JSON.parse(localStorage.getItem('mp3_guest_progress') || '[]'); } catch {}
+        renderDeskContinueWatching(local);
+    }
+
+    function renderDeskContinueWatching(items) {
+        const sec = document.getElementById('deskContinueWatchingSection');
+        const list = document.getElementById('deskContinueWatchingList');
+        const tag = document.getElementById('deskContinueProfileTag');
+        if (!sec || !list) return;
+
+        if (!items || !items.length) {
+            sec.style.display = 'none';
+            return;
+        }
+        sec.style.display = 'block';
+        if (tag) {
+            const prof = deskAuthState.loggedIn ? deskAuthState.profiles.find(p => p.id === deskAuthState.activeProfileId) : null;
+            tag.textContent = prof ? `Profil : ${prof.name}` : 'Sauvegarde locale';
+        }
+        list.innerHTML = '';
+
+        items.forEach(it => {
+            const card = document.createElement('div');
+            card.className = 'disney-continue-card';
+            const subBadge = it.is_series
+                ? `S${it.season || 1} • Ép ${it.episode || 1}${it.time_note ? ' • ' + it.time_note : ''}`
+                : (it.time_note ? `⏱️ ${it.time_note}` : 'En cours');
+
+            card.innerHTML = `
+                <div class="disney-continue-poster">
+                    <img src="${escapeHtml(it.thumbnail || '/static/icons/icon-512.png')}" alt="" onerror="this.src='/static/icons/icon-512.png'">
+                    <button type="button" class="disney-continue-remove" title="Retirer">&times;</button>
+                    <span class="disney-continue-badge">${escapeHtml(subBadge)}</span>
+                </div>
+                <div class="disney-continue-progress-track"><div class="disney-continue-progress-fill"></div></div>
+                <div class="disney-continue-info">
+                    <div class="disney-continue-title">${escapeHtml(it.title)}</div>
+                    <div class="disney-continue-sub">${it.is_series ? 'Reprendre la série' : 'Reprendre le film'}</div>
+                </div>
+            `;
+
+            const rm = card.querySelector('.disney-continue-remove');
+            if (rm) {
+                rm.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (deskAuthState.loggedIn && deskAuthState.activeProfileId) {
+                        const res = await fetch('/api/profiles/progress/remove', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ profile_id: deskAuthState.activeProfileId, item_id: it.id })
+                        });
+                        const data = await res.json();
+                        renderDeskContinueWatching(data.progress || []);
+                    } else {
+                        let local = [];
+                        try { local = JSON.parse(localStorage.getItem('mp3_guest_progress') || '[]'); } catch {}
+                        local = local.filter(x => String(x.id) !== String(it.id));
+                        localStorage.setItem('mp3_guest_progress', JSON.stringify(local));
+                        renderDeskContinueWatching(local);
+                    }
+                };
+            }
+
+            card.onclick = () => {
+                playDeskVideoStream({
+                    ...it,
+                    _resumeSeason: it.season || 1,
+                    _resumeEpisode: it.episode || 1,
+                    _resumeTimeNote: it.time_note || ''
+                });
+            };
+            list.appendChild(card);
+        });
     }
 
     // Run

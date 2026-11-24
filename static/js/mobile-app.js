@@ -221,6 +221,7 @@
         setupMobThemes();
         initMobGlobalAudioPlayer();
         handleUrlParams();
+        setupMobAccountSystem();
     }
 
     // =========================================================
@@ -1672,6 +1673,13 @@
         const modeBadge = $('mobCurrentModeLabel');
         const logoIcon = $('mobLogoIcon');
 
+        // Disney+ body class toggle
+        if (mode === 'streaming') {
+            document.body.classList.add('mode-disney-streaming');
+        } else {
+            document.body.classList.remove('mode-disney-streaming');
+        }
+
         if (mode === 'music') {
             if (modeBadge) modeBadge.textContent = '🎵 Mode Musique';
             if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-music"></i>';
@@ -2314,6 +2322,7 @@
                 currentStreamingVideo.servers = srvData.servers;
                 renderMobServerButtons(srvData.servers);
             }
+            saveMobStreamProgress(currentStreamingVideo, { season, episode });
         } catch {
             showToast("Erreur lors du chargement de l'épisode", true);
         }
@@ -2399,53 +2408,39 @@
         const results = $('mobStreamResults');
         if (!results) return;
         results.innerHTML = '';
+        results.className = 'disney-poster-grid';
 
-        videos.forEach((v, index) => {
+        videos.forEach((v) => {
             const card = document.createElement('div');
-            card.className = 'mob-result-card';
-            card.style.cssText = 'display:flex;flex-direction:column;gap:12px;padding:14px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:14px;box-shadow:0 6px 20px rgba(0,0,0,0.35);';
+            card.className = 'disney-movie-card';
 
-            const badgeBg = v.is_series ? 'rgba(59,130,246,0.2)' : 'rgba(16,185,129,0.2)';
-            const badgeColor = v.is_series ? '#60a5fa' : '#34d399';
-            const badgeBorder = v.is_series ? '#3b82f6' : '#10b981';
+            const badgeClass = v.is_series ? 'disney-card-badge badge-series' : 'disney-card-badge';
+            const badgeLabel = v.is_series ? '📺 Série' : '🎬 Film';
+            const poster = v.thumbnail || '/static/icons/icon-192.png';
 
             card.innerHTML = `
-                <div style="display:flex;gap:14px;width:100%;">
-                    <div style="position:relative;width:95px;height:135px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#1a202c;box-shadow:0 4px 12px rgba(0,0,0,0.6);">
-                        <img src="${esc(v.thumbnail)}" alt="" onerror="this.src='/static/icons/icon-192.png'" style="width:100%;height:100%;object-fit:cover;">
-                        <span style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:4px;font-weight:900;">#${index + 1}</span>
-                        ${v.year ? `<span style="position:absolute;bottom:5px;right:5px;background:rgba(0,0,0,0.85);color:#fff;font-size:0.65rem;padding:2px 5px;border-radius:4px;font-weight:800;">${esc(v.year)}</span>` : ''}
-                    </div>
-                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;">
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
-                            <span style="background:${badgeBg};color:${badgeColor};border:1px solid ${badgeBorder};font-size:0.7rem;padding:2px 7px;border-radius:6px;font-weight:700;">${esc(v.type_label || '🎬 Film Complet')}</span>
-                            <span style="background:rgba(239,68,68,0.15);color:#f87171;border:1px solid #ef4444;font-size:0.7rem;padding:2px 7px;border-radius:6px;font-weight:700;">🇫🇷 VF / VOSTFR</span>
-                        </div>
-                        <div style="font-size:1.02rem;font-weight:800;color:#fff;line-height:1.25;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${esc(v.title)}</div>
-                        ${v.actors ? `<div style="font-size:0.75rem;color:var(--text-muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;margin-bottom:6px;"><i class="fa-solid fa-circle-info"></i> ${esc(v.actors)}</div>` : ''}
-                        <div style="font-size:0.75rem;color:#10b981;font-weight:700;"><i class="fa-solid fa-circle-check"></i> Streaming Gratuit • 8 Serveurs</div>
+                <div class="disney-poster-wrapper">
+                    <img class="disney-poster-img" src="${esc(poster)}" alt="${esc(v.title)}" onerror="this.src='/static/icons/icon-192.png'" loading="lazy">
+                    <span class="${badgeClass}">${badgeLabel}</span>
+                    <span class="disney-card-vf-badge">🇫🇷 VF</span>
+                    <div class="disney-card-overlay">
+                        <button type="button" class="disney-card-play-btn btn-play-stream"><i class="fa-solid fa-play"></i> Regarder</button>
                     </div>
                 </div>
-                <!-- BOUTONS PAR FILM : REGARDER FILM & BANDE-ANNONCE -->
-                <div style="display:flex;gap:8px;width:100%;margin-top:4px;">
-                    <button type="button" class="btn-play-stream" style="flex:1.2;padding:12px 8px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:0.86rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(16,185,129,0.35);">
-                        <i class="fa-solid fa-play"></i> <span>${v.is_series ? 'Regarder Série' : 'Regarder Film'}</span>
-                    </button>
-                    <button type="button" class="btn-play-trailer" style="flex:1;padding:12px 8px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;border:none;border-radius:12px;font-weight:800;font-size:0.86rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 3px 12px rgba(139,92,246,0.35);">
-                        <i class="fa-solid fa-clapperboard"></i> <span>Bande-Annonce</span>
-                    </button>
+                <div class="disney-card-info">
+                    <div class="disney-card-title">${esc(v.title)}</div>
+                    <div class="disney-card-meta">
+                        ${v.year ? `<span class="meta-year">${esc(v.year)}</span>` : ''}
+                        <span>${esc(v.type_label || 'Film Complet')}</span>
+                    </div>
                 </div>
             `;
 
             const btnPlay = card.querySelector('.btn-play-stream');
             if (btnPlay) {
-                btnPlay.onclick = () => playVideoStream(v);
+                btnPlay.onclick = (e) => { e.stopPropagation(); playVideoStream(v); };
             }
-
-            const btnTrailer = card.querySelector('.btn-play-trailer');
-            if (btnTrailer) {
-                btnTrailer.onclick = () => playVideoTrailer(v);
-            }
+            card.onclick = () => playVideoStream(v);
 
             results.appendChild(card);
         });
@@ -2538,15 +2533,27 @@
         if (seriesControls) {
             if (video.is_series || video.type === 'serie') {
                 seriesControls.style.display = 'flex';
+                const sIn = $('mobStreamSeason');
+                const eIn = $('mobStreamEpisode');
+                if (sIn && video._resumeSeason) sIn.value = video._resumeSeason;
+                if (eIn && video._resumeEpisode) eIn.value = video._resumeEpisode;
             } else {
                 seriesControls.style.display = 'none';
             }
         }
 
+        const noteIn = $('mobStreamTimeNote');
+        if (noteIn) noteIn.value = video._resumeTimeNote || '';
+
         if (container) {
             container.style.display = 'block';
             container.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+        saveMobStreamProgress(video, {
+            season: video._resumeSeason || ($('mobStreamSeason') ? parseInt($('mobStreamSeason').value, 10) || 1 : 1),
+            episode: video._resumeEpisode || ($('mobStreamEpisode') ? parseInt($('mobStreamEpisode').value, 10) || 1 : 1),
+            time_note: video._resumeTimeNote || ''
+        });
         showToast(`▶️ Lancement du film : ${video.title}`);
     }
 
@@ -2640,6 +2647,454 @@
     }
 
     function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // =========================================================
+    // COMPTES, PROFILS STYLE DISNEY+ & REPRISE DE LECTURE (MOBILE)
+    // =========================================================
+    let mobAuthState = { loggedIn: false, username: '', profiles: [], avatars: [], activeProfileId: localStorage.getItem('mp3_active_profile_id') || '' };
+    let mobAuthMode = 'login';
+    let mobEditProfilesMode = false;
+    let mobEditingProfileId = null;
+    let mobSelectedAvatar = 'star';
+
+    function setupMobAccountSystem() {
+        const btnAcc = $('btnMobAccount');
+        const modal = $('mobDisneyAccountModal');
+        const btnClose = $('btnMobAccountClose');
+        const btnGuest = $('btnMobContinueGuest');
+        const btnPromptSync = $('btnMobPromptSync');
+        const authForm = $('mobAuthForm');
+        const btnLogout = $('btnMobLogout');
+        const btnToggleEdit = $('btnMobToggleEditProfiles');
+        const btnProfCancel = $('btnMobProfileCancel');
+        const btnProfSave = $('btnMobProfileSave');
+        const btnProfDel = $('btnMobProfileDelete');
+        const btnSaveNote = $('btnMobSaveTimeNote');
+
+        if (btnAcc) btnAcc.addEventListener('click', () => openMobAccountModal());
+        if (btnPromptSync) btnPromptSync.addEventListener('click', () => openMobAccountModal());
+        if (btnClose) btnClose.addEventListener('click', () => { if (modal) modal.style.display = 'none'; });
+        if (btnGuest) btnGuest.addEventListener('click', () => { if (modal) modal.style.display = 'none'; });
+        if (modal) {
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+        }
+
+        document.querySelectorAll('#mobAuthView .disney-auth-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('#mobAuthView .disney-auth-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                mobAuthMode = tab.dataset.authTab;
+                const subBtn = $('btnMobAuthSubmit');
+                if (subBtn) subBtn.textContent = mobAuthMode === 'register' ? 'Créer un compte' : 'Se connecter';
+                const err = $('mobAuthError');
+                if (err) err.style.display = 'none';
+            });
+        });
+
+        if (authForm) {
+            authForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const u = ($('mobAuthUsername')?.value || '').trim();
+                const p = $('mobAuthPassword')?.value || '';
+                const err = $('mobAuthError');
+                if (err) err.style.display = 'none';
+
+                const endpoint = mobAuthMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: u, password: p })
+                    });
+                    const data = await res.json();
+                    if (!data.success) {
+                        if (err) { err.textContent = data.error || 'Erreur'; err.style.display = 'block'; }
+                        return;
+                    }
+                    mobAuthState.loggedIn = true;
+                    mobAuthState.username = data.username;
+                    mobAuthState.profiles = data.profiles || [];
+                    if (!mobAuthState.activeProfileId && mobAuthState.profiles.length) {
+                        mobAuthState.activeProfileId = mobAuthState.profiles[0].id;
+                        localStorage.setItem('mp3_active_profile_id', mobAuthState.activeProfileId);
+                    }
+                    updateMobAccountPill();
+                    showMobProfilesView();
+                    await loadMobContinueWatching();
+                    showToast(`✨ Bienvenue ${data.username} !`);
+                } catch {
+                    if (err) { err.textContent = 'Erreur réseau'; err.style.display = 'block'; }
+                }
+            });
+        }
+
+        if (btnLogout) {
+            btnLogout.addEventListener('click', async () => {
+                await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+                mobAuthState.loggedIn = false;
+                mobAuthState.username = '';
+                mobAuthState.profiles = [];
+                mobAuthState.activeProfileId = '';
+                localStorage.removeItem('mp3_active_profile_id');
+                updateMobAccountPill();
+                if (modal) modal.style.display = 'none';
+                await loadMobContinueWatching();
+                showToast('Déconnecté');
+            });
+        }
+
+        if (btnToggleEdit) {
+            btnToggleEdit.addEventListener('click', () => {
+                mobEditProfilesMode = !mobEditProfilesMode;
+                btnToggleEdit.innerHTML = mobEditProfilesMode
+                    ? '<i class="fa-solid fa-check"></i> Terminer'
+                    : '<i class="fa-solid fa-pen"></i> Modifier les profils';
+                renderMobProfilesGrid();
+            });
+        }
+
+        if (btnProfCancel) {
+            btnProfCancel.addEventListener('click', () => showMobProfilesView());
+        }
+
+        if (btnProfSave) {
+            btnProfSave.addEventListener('click', async () => {
+                const name = ($('mobProfileNameInput')?.value || '').trim();
+                const err = $('mobProfileEditError');
+                if (err) err.style.display = 'none';
+                if (!name) {
+                    if (err) { err.textContent = 'Veuillez saisir un nom.'; err.style.display = 'block'; }
+                    return;
+                }
+                const endpoint = mobEditingProfileId ? '/api/profiles/update' : '/api/profiles/add';
+                const body = mobEditingProfileId
+                    ? { profile_id: mobEditingProfileId, name, avatar: mobSelectedAvatar }
+                    : { name, avatar: mobSelectedAvatar };
+                try {
+                    const res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await res.json();
+                    if (!data.success) {
+                        if (err) { err.textContent = data.error || 'Erreur'; err.style.display = 'block'; }
+                        return;
+                    }
+                    mobAuthState.profiles = data.profiles || [];
+                    updateMobAccountPill();
+                    showMobProfilesView();
+                } catch {
+                    if (err) { err.textContent = 'Erreur réseau'; err.style.display = 'block'; }
+                }
+            });
+        }
+
+        if (btnProfDel) {
+            btnProfDel.addEventListener('click', async () => {
+                if (!mobEditingProfileId) return;
+                const err = $('mobProfileEditError');
+                try {
+                    const res = await fetch('/api/profiles/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ profile_id: mobEditingProfileId })
+                    });
+                    const data = await res.json();
+                    if (!data.success) {
+                        if (err) { err.textContent = data.error || 'Impossible de supprimer'; err.style.display = 'block'; }
+                        return;
+                    }
+                    mobAuthState.profiles = data.profiles || [];
+                    if (mobAuthState.activeProfileId === mobEditingProfileId && mobAuthState.profiles.length) {
+                        mobAuthState.activeProfileId = mobAuthState.profiles[0].id;
+                        localStorage.setItem('mp3_active_profile_id', mobAuthState.activeProfileId);
+                    }
+                    updateMobAccountPill();
+                    showMobProfilesView();
+                    await loadMobContinueWatching();
+                } catch {}
+            });
+        }
+
+        if (btnSaveNote) {
+            btnSaveNote.addEventListener('click', () => {
+                if (!currentStreamingVideo) return;
+                const note = ($('mobStreamTimeNote')?.value || '').trim();
+                const s = $('mobStreamSeason') ? parseInt($('mobStreamSeason').value, 10) || 1 : 1;
+                const e = $('mobStreamEpisode') ? parseInt($('mobStreamEpisode').value, 10) || 1 : 1;
+                saveMobStreamProgress(currentStreamingVideo, { season: s, episode: e, time_note: note });
+                showToast(note ? `⏱️ Position "${note}" sauvegardée !` : '🔖 Avancement sauvegardé !');
+            });
+        }
+
+        checkMobAuthStatus();
+    }
+
+    async function checkMobAuthStatus() {
+        try {
+            const res = await fetch('/api/auth/me');
+            const data = await res.json();
+            mobAuthState.avatars = data.avatars || [];
+            if (data.logged_in) {
+                mobAuthState.loggedIn = true;
+                mobAuthState.username = data.username;
+                mobAuthState.profiles = data.profiles || [];
+                const found = mobAuthState.profiles.find(p => p.id === mobAuthState.activeProfileId);
+                if (!found && mobAuthState.profiles.length) {
+                    mobAuthState.activeProfileId = mobAuthState.profiles[0].id;
+                    localStorage.setItem('mp3_active_profile_id', mobAuthState.activeProfileId);
+                }
+            }
+        } catch {}
+        updateMobAccountPill();
+        await loadMobContinueWatching();
+    }
+
+    function updateMobAccountPill() {
+        const btn = $('btnMobAccount');
+        const promptSync = $('btnMobPromptSync');
+        const statusEl = $('mobStreamProgressStatus');
+        if (!btn) return;
+
+        if (mobAuthState.loggedIn) {
+            const prof = mobAuthState.profiles.find(p => p.id === mobAuthState.activeProfileId) || mobAuthState.profiles[0];
+            btn.classList.add('logged-in');
+            btn.innerHTML = prof
+                ? `<span class="disney-pill-avatar" style="background:${prof.gradient}"><i class="fa-solid ${prof.icon}"></i></span><span>${esc(prof.name)}</span>`
+                : `<i class="fa-solid fa-user-check"></i><span>${esc(mobAuthState.username)}</span>`;
+            if (promptSync) promptSync.style.display = 'none';
+            if (statusEl && prof) statusEl.innerHTML = `<i class="fa-solid fa-bookmark" style="color:#00d2ff;"></i> Profil : ${esc(prof.name)}`;
+        } else {
+            btn.classList.remove('logged-in');
+            btn.innerHTML = `<i class="fa-solid fa-user-circle"></i><span>Se connecter</span>`;
+            if (promptSync) promptSync.style.display = 'inline-block';
+            if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-bookmark" style="color:#00d2ff;"></i> Sauvegardé sur l'appareil`;
+        }
+    }
+
+    function openMobAccountModal() {
+        const modal = $('mobDisneyAccountModal');
+        if (!modal) return;
+        mobEditProfilesMode = false;
+        if (mobAuthState.loggedIn) {
+            showMobProfilesView();
+        } else {
+            $('mobAuthView').style.display = 'block';
+            $('mobProfilesView').style.display = 'none';
+            $('mobProfileEditView').style.display = 'none';
+        }
+        modal.style.display = 'flex';
+    }
+
+    function showMobProfilesView() {
+        $('mobAuthView').style.display = 'none';
+        $('mobProfileEditView').style.display = 'none';
+        $('mobProfilesView').style.display = 'block';
+        const tag = $('mobAccountTag');
+        if (tag) tag.textContent = `Compte : ${mobAuthState.username}`;
+        const btnEdit = $('btnMobToggleEditProfiles');
+        if (btnEdit) {
+            btnEdit.innerHTML = mobEditProfilesMode
+                ? '<i class="fa-solid fa-check"></i> Terminer'
+                : '<i class="fa-solid fa-pen"></i> Modifier les profils';
+        }
+        renderMobProfilesGrid();
+    }
+
+    function renderMobProfilesGrid() {
+        const grid = $('mobProfilesGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        mobAuthState.profiles.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'disney-profile-item' + (p.id === mobAuthState.activeProfileId ? ' active' : '');
+            item.innerHTML = `
+                <div class="disney-profile-avatar" style="background:${p.gradient};">
+                    <i class="fa-solid ${p.icon}"></i>
+                    ${mobEditProfilesMode ? '<div class="disney-profile-edit-badge"><i class="fa-solid fa-pen"></i></div>' : ''}
+                </div>
+                <div class="disney-profile-name">${esc(p.name)}</div>
+            `;
+            item.onclick = async () => {
+                if (mobEditProfilesMode) {
+                    openMobProfileEditor(p);
+                } else {
+                    mobAuthState.activeProfileId = p.id;
+                    localStorage.setItem('mp3_active_profile_id', p.id);
+                    updateMobAccountPill();
+                    $('mobDisneyAccountModal').style.display = 'none';
+                    await loadMobContinueWatching();
+                    showToast(`🍿 Profil actif : ${p.name}`);
+                }
+            };
+            grid.appendChild(item);
+        });
+
+        if (mobAuthState.profiles.length < 8) {
+            const addItem = document.createElement('div');
+            addItem.className = 'disney-profile-item';
+            addItem.innerHTML = `
+                <div class="disney-profile-avatar add-avatar"><i class="fa-solid fa-plus"></i></div>
+                <div class="disney-profile-name">Ajouter</div>
+            `;
+            addItem.onclick = () => openMobProfileEditor(null);
+            grid.appendChild(addItem);
+        }
+    }
+
+    function openMobProfileEditor(prof) {
+        $('mobProfilesView').style.display = 'none';
+        $('mobProfileEditView').style.display = 'block';
+        mobEditingProfileId = prof ? prof.id : null;
+        mobSelectedAvatar = prof ? prof.avatar : 'star';
+        $('mobProfileEditTitle').textContent = prof ? 'Modifier le profil' : 'Nouveau profil';
+        $('mobProfileNameInput').value = prof ? prof.name : '';
+        $('mobProfileEditError').style.display = 'none';
+        $('btnMobProfileDelete').style.display = (prof && mobAuthState.profiles.length > 1) ? 'inline-flex' : 'none';
+
+        const picker = $('mobAvatarPicker');
+        picker.innerHTML = '';
+        (mobAuthState.avatars || []).forEach(av => {
+            const opt = document.createElement('div');
+            opt.className = 'disney-avatar-option' + (av.id === mobSelectedAvatar ? ' selected' : '');
+            opt.style.background = av.gradient;
+            opt.innerHTML = `<i class="fa-solid ${av.icon}"></i>`;
+            opt.onclick = () => {
+                mobSelectedAvatar = av.id;
+                picker.querySelectorAll('.disney-avatar-option').forEach(x => x.classList.remove('selected'));
+                opt.classList.add('selected');
+            };
+            picker.appendChild(opt);
+        });
+    }
+
+    async function saveMobStreamProgress(video, opts = {}) {
+        if (!video || !video.id) return;
+        const entry = {
+            id: video.id,
+            title: video.title || 'Titre',
+            thumbnail: video.thumbnail || '',
+            year: video.year || '',
+            is_series: !!(video.is_series || video.type === 'serie'),
+            type_label: video.type_label || (video.is_series ? 'Série' : 'Film Complet'),
+            embed_url: video.embed_url || video.url || '',
+            season: opts.season || 1,
+            episode: opts.episode || 1,
+            server_idx: currentStreamingServerIdx || 1,
+            lang: 'vf',
+            time_note: opts.time_note !== undefined ? opts.time_note : ($('mobStreamTimeNote')?.value || '').trim()
+        };
+
+        if (mobAuthState.loggedIn && mobAuthState.activeProfileId) {
+            try {
+                const res = await fetch('/api/profiles/progress', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_id: mobAuthState.activeProfileId, item: entry })
+                });
+                const data = await res.json();
+                if (data && data.progress) {
+                    renderMobContinueWatching(data.progress);
+                    return;
+                }
+            } catch {}
+        }
+
+        let local = [];
+        try { local = JSON.parse(localStorage.getItem('mp3_guest_progress') || '[]'); } catch {}
+        local = local.filter(x => String(x.id) !== String(entry.id));
+        local.unshift(entry);
+        local = local.slice(0, 20);
+        localStorage.setItem('mp3_guest_progress', JSON.stringify(local));
+        renderMobContinueWatching(local);
+    }
+
+    async function loadMobContinueWatching() {
+        if (mobAuthState.loggedIn && mobAuthState.activeProfileId) {
+            try {
+                const res = await fetch(`/api/profiles/progress?profile_id=${encodeURIComponent(mobAuthState.activeProfileId)}`);
+                const data = await res.json();
+                renderMobContinueWatching(data.progress || []);
+                return;
+            } catch {}
+        }
+        let local = [];
+        try { local = JSON.parse(localStorage.getItem('mp3_guest_progress') || '[]'); } catch {}
+        renderMobContinueWatching(local);
+    }
+
+    function renderMobContinueWatching(items) {
+        const sec = $('mobContinueWatchingSection');
+        const list = $('mobContinueWatchingList');
+        const tag = $('mobContinueProfileTag');
+        if (!sec || !list) return;
+
+        if (!items || !items.length) {
+            sec.style.display = 'none';
+            return;
+        }
+        sec.style.display = 'block';
+        if (tag) {
+            const prof = mobAuthState.loggedIn ? mobAuthState.profiles.find(p => p.id === mobAuthState.activeProfileId) : null;
+            tag.textContent = prof ? `Profil : ${prof.name}` : 'Sauvegarde locale';
+        }
+        list.innerHTML = '';
+
+        items.forEach(it => {
+            const card = document.createElement('div');
+            card.className = 'disney-continue-card';
+            const subBadge = it.is_series
+                ? `S${it.season || 1} • Ép ${it.episode || 1}${it.time_note ? ' • ' + it.time_note : ''}`
+                : (it.time_note ? `⏱️ ${it.time_note}` : 'En cours');
+
+            card.innerHTML = `
+                <div class="disney-continue-poster">
+                    <img src="${esc(it.thumbnail || '/static/icons/icon-192.png')}" alt="" onerror="this.src='/static/icons/icon-192.png'">
+                    <button type="button" class="disney-continue-remove" title="Retirer">&times;</button>
+                    <span class="disney-continue-badge">${esc(subBadge)}</span>
+                </div>
+                <div class="disney-continue-progress-track"><div class="disney-continue-progress-fill"></div></div>
+                <div class="disney-continue-info">
+                    <div class="disney-continue-title">${esc(it.title)}</div>
+                    <div class="disney-continue-sub">${it.is_series ? 'Reprendre la série' : 'Reprendre le film'}</div>
+                </div>
+            `;
+
+            const rm = card.querySelector('.disney-continue-remove');
+            if (rm) {
+                rm.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (mobAuthState.loggedIn && mobAuthState.activeProfileId) {
+                        const res = await fetch('/api/profiles/progress/remove', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ profile_id: mobAuthState.activeProfileId, item_id: it.id })
+                        });
+                        const data = await res.json();
+                        renderMobContinueWatching(data.progress || []);
+                    } else {
+                        let local = [];
+                        try { local = JSON.parse(localStorage.getItem('mp3_guest_progress') || '[]'); } catch {}
+                        local = local.filter(x => String(x.id) !== String(it.id));
+                        localStorage.setItem('mp3_guest_progress', JSON.stringify(local));
+                        renderMobContinueWatching(local);
+                    }
+                };
+            }
+
+            card.onclick = () => {
+                playVideoStream({
+                    ...it,
+                    _resumeSeason: it.season || 1,
+                    _resumeEpisode: it.episode || 1,
+                    _resumeTimeNote: it.time_note || ''
+                });
+            };
+            list.appendChild(card);
+        });
+    }
 
     // Bouton de rafraîchissement bibliothèque
     $('btnMobRefreshLib')?.addEventListener('click', loadLibrary);
