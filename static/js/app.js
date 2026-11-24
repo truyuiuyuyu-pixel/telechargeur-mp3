@@ -1933,6 +1933,40 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        // Barre de navigation supérieure Disney+ (Accueil, Rechercher, Sites Externes)
+        const btnHome = document.getElementById('btnDeskStreamHome');
+        const btnSearchTog = document.getElementById('btnDeskStreamSearchToggle');
+        const searchPanel = document.getElementById('deskStreamSearchPanel');
+        const btnSitesTog = document.getElementById('btnDeskToggleManualSites');
+        const sitesDrawer = document.getElementById('deskManualSitesDrawer');
+
+        if (btnHome) {
+            btnHome.addEventListener('click', () => {
+                if (searchPanel) searchPanel.style.display = 'none';
+                if (sitesDrawer) sitesDrawer.style.display = 'none';
+                document.querySelectorAll('.disney-nav-item').forEach(n => n.classList.remove('active'));
+                btnHome.classList.add('active');
+                doSearchDeskStreaming('tendances');
+            });
+        }
+        if (btnSearchTog && searchPanel) {
+            btnSearchTog.addEventListener('click', () => {
+                const isOpen = searchPanel.style.display !== 'none';
+                searchPanel.style.display = isOpen ? 'none' : 'block';
+                btnSearchTog.classList.toggle('active', !isOpen);
+                if (!isOpen && sInput) sInput.focus();
+            });
+        }
+        if (btnSitesTog && sitesDrawer) {
+            btnSitesTog.addEventListener('click', () => {
+                const isOpen = sitesDrawer.style.display !== 'none';
+                sitesDrawer.style.display = isOpen ? 'none' : 'block';
+                btnSitesTog.classList.toggle('active', !isOpen);
+            });
+        }
+
+        initDeskDisneyHero();
+
         const btnWatchTrailer = document.getElementById('btnDeskWatchTrailerInPlayer');
         if (btnWatchTrailer) {
             btnWatchTrailer.addEventListener('click', () => {
@@ -3105,6 +3139,94 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             list.appendChild(card);
         });
+    }
+
+    function initDeskDisneyHero() {
+        const heroEl = document.getElementById('deskDisneyHero');
+        if (!heroEl) return;
+        const slides = [
+            {
+                id: 'tt6263850',
+                title: 'Deadpool & Wolverine',
+                year: '2024',
+                type_label: '🦸 Marvel • Action',
+                is_series: false,
+                synopsis: 'Wade Wilson fait équipe avec un Wolverine venu d\'un autre univers pour sauver son monde.',
+                thumbnail: 'https://image.tmdb.org/t/p/w1280/yDHYTfA3R0jFYba16jBB1ef8oIt.jpg'
+            },
+            {
+                id: 'tt22022452',
+                title: 'Vice-Versa 2 (Inside Out 2)',
+                year: '2024',
+                type_label: '🎬 Pixar • Animation',
+                is_series: false,
+                synopsis: 'Riley entre dans l\'adolescence et le Quartier Cérébral accueille de nouvelles émotions inattendues.',
+                thumbnail: 'https://image.tmdb.org/t/p/w1280/stKGOm8UyhuLPR9sZLjs5AkmncA.jpg'
+            },
+            {
+                id: 'tt8111088',
+                title: 'The Mandalorian',
+                year: '2019',
+                type_label: '📺 Star Wars • Série',
+                is_series: true,
+                synopsis: 'Les aventures d\'un chasseur de primes solitaire aux confins de la galaxie, loin de la Nouvelle République.',
+                thumbnail: 'https://image.tmdb.org/t/p/w1280/9ijMGlJKqcslswWUzTEwScm82Gs.jpg'
+            },
+            {
+                id: 'tt0110357',
+                title: 'Le Roi Lion (The Lion King)',
+                year: '1994',
+                type_label: '🏰 Disney • Classique',
+                is_series: false,
+                synopsis: 'Sur les Hautes Terres d\'Afrique, le jeune lionceau Simba doit trouver sa place dans le grand cycle de la vie.',
+                thumbnail: 'https://image.tmdb.org/t/p/w1280/wXsQvli6tWqja51pYxXNG1LFIGV.jpg'
+            }
+        ];
+
+        heroEl.innerHTML = '';
+        slides.forEach((s, idx) => {
+            const slide = document.createElement('div');
+            slide.className = 'disney-hero-slide' + (idx === 0 ? ' active' : '');
+            slide.innerHTML = `
+                <img src="${escapeHtml(s.thumbnail)}" alt="${escapeHtml(s.title)}" onerror="this.src='/static/icons/icon-512.png'">
+                <div class="disney-hero-overlay"></div>
+                <div class="disney-hero-content">
+                    <div class="disney-hero-badges">
+                        <span class="badge-disney-exclusive">${escapeHtml(s.type_label)}</span>
+                        <span class="badge-disney-vf">🇫🇷 VF / VOSTFR</span>
+                        <span class="badge-disney-tech">${escapeHtml(s.year)}</span>
+                    </div>
+                    <h2 class="disney-hero-title">${escapeHtml(s.title)}</h2>
+                    <p class="disney-hero-synopsis">${escapeHtml(s.synopsis)}</p>
+                    <div class="disney-hero-actions">
+                        <button type="button" class="btn-disney-play hero-play-btn"><i class="fa-solid fa-play"></i> Lecture</button>
+                        <button type="button" class="btn-disney-trailer hero-trailer-btn"><i class="fa-solid fa-clapperboard"></i> Bande-annonce</button>
+                    </div>
+                </div>
+            `;
+            slide.querySelector('.hero-play-btn').onclick = () => playDeskVideoStream(s);
+            slide.querySelector('.hero-trailer-btn').onclick = () => playDeskVideoTrailer(s);
+            heroEl.appendChild(slide);
+        });
+
+        const dots = document.createElement('div');
+        dots.className = 'disney-hero-dots';
+        let activeIdx = 0;
+        const setSlide = (nextIdx) => {
+            const allSlides = heroEl.querySelectorAll('.disney-hero-slide');
+            const allDots = dots.querySelectorAll('.hero-dot');
+            allSlides.forEach((sl, i) => sl.classList.toggle('active', i === nextIdx));
+            allDots.forEach((d, i) => d.classList.toggle('active', i === nextIdx));
+            activeIdx = nextIdx;
+        };
+        slides.forEach((_, idx) => {
+            const dot = document.createElement('div');
+            dot.className = 'hero-dot' + (idx === 0 ? ' active' : '');
+            dot.onclick = () => setSlide(idx);
+            dots.appendChild(dot);
+        });
+        heroEl.appendChild(dots);
+        setInterval(() => setSlide((activeIdx + 1) % slides.length), 6500);
     }
 
     // Run

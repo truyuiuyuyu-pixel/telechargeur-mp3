@@ -1704,3 +1704,79 @@ body.mode-disney-streaming {
     border-color: #fff;
     box-shadow: 0 0 12px rgba(0, 210, 255, 0.5);
 }
+
+/* ============================================================
+   DISNEY+ AUTHENTIC TOP NAV, SEARCH PANEL & BRAND TILES (MOBILE)
+   ============================================================ */
+
+.disney-mob-top-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 2px 12px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+.disney-mob-top-nav::-webkit-scrollbar { display: none; }
+
+.disney-mob-nav-pill {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 13px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #cbd5e1;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+.disney-mob-nav-pill.active {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.45);
+    color: #fff;
+}
+
+.disney-search-panel {
+    margin-bottom: 14px;
+    padding: 10px;
+    background: #13151f;
+    border: 1.5px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+}
+
+.disney-brands-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 4px 2px 14px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+}
+.disney-brands-row::-webkit-scrollbar { display: none; }
+
+.disney-brand-card {
+    flex-shrink: 0;
+    width: 108px;
+    height: 62px;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #30343e 0%, #1e1f2a 100%);
+    border: 2px solid rgba(249, 249, 249, 0.15);
+    box-shadow: 0 10px 18px -6px rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+.disney-brand-card img {
+    max-width: 85%;
+    max-height: 34px;
+    object-fit: contain;
+}
+.disney-brand-card:active {
+    transform: scale(0.96);
+    border-color: rgba(249, 249, 249, 0.75);
+}

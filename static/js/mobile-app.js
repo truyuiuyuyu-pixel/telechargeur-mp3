@@ -1849,6 +1849,40 @@
             });
         });
 
+        // Barre de navigation supérieure Disney+ (Mobile)
+        const btnHome = $('btnMobStreamHome');
+        const btnSearchTog = $('btnMobStreamSearchToggle');
+        const searchPanel = $('mobStreamSearchPanel');
+        const btnSitesTog = $('btnMobToggleManualSites');
+        const sitesDrawer = $('mobManualSitesDrawer');
+
+        if (btnHome) {
+            btnHome.addEventListener('click', () => {
+                if (searchPanel) searchPanel.style.display = 'none';
+                if (sitesDrawer) sitesDrawer.style.display = 'none';
+                document.querySelectorAll('.disney-mob-nav-pill').forEach(n => n.classList.remove('active'));
+                btnHome.classList.add('active');
+                doSearchStreaming('tendances');
+            });
+        }
+        if (btnSearchTog && searchPanel) {
+            btnSearchTog.addEventListener('click', () => {
+                const isOpen = searchPanel.style.display !== 'none';
+                searchPanel.style.display = isOpen ? 'none' : 'block';
+                btnSearchTog.classList.toggle('active', !isOpen);
+                if (!isOpen && sInput) sInput.focus();
+            });
+        }
+        if (btnSitesTog && sitesDrawer) {
+            btnSitesTog.addEventListener('click', () => {
+                const isOpen = sitesDrawer.style.display !== 'none';
+                sitesDrawer.style.display = isOpen ? 'none' : 'block';
+                btnSitesTog.classList.toggle('active', !isOpen);
+            });
+        }
+
+        initMobDisneyHero();
+
         const btnWatchTrailer = $('btnMobWatchTrailerInPlayer');
         if (btnWatchTrailer) {
             btnWatchTrailer.addEventListener('click', () => {
@@ -3094,6 +3128,89 @@
             };
             list.appendChild(card);
         });
+    }
+
+    function initMobDisneyHero() {
+        const heroEl = $('mobDisneyHero');
+        if (!heroEl) return;
+        const slides = [
+            {
+                id: 'tt6263850',
+                title: 'Deadpool & Wolverine',
+                year: '2024',
+                type_label: '🦸 Marvel',
+                is_series: false,
+                synopsis: 'Wade Wilson fait équipe avec Wolverine pour sauver son univers.',
+                thumbnail: 'https://image.tmdb.org/t/p/w1280/yDHYTfA3R0jFYba16jBB1ef8oIt.jpg'
+            },
+            {
+                id: 'tt22022452',
+                title: 'Vice-Versa 2',
+                year: '2024',
+                type_label: '🎬 Pixar',
+                is_series: false,
+                synopsis: 'Le Quartier Cérébral accueille de nouvelles émotions inattendues.',
+                thumbnail: 'https://image.tmdb.org/t/p/w1280/stKGOm8UyhuLPR9sZLjs5AkmncA.jpg'
+            },
+            {
+                id: 'tt8111088',
+                title: 'The Mandalorian',
+                year: '2019',
+                type_label: '📺 Star Wars',
+                is_series: true,
+                synopsis: 'Les aventures d\'un chasseur de primes solitaire aux confins de la galaxie.',
+                thumbnail: 'https://image.tmdb.org/t/p/w1280/9ijMGlJKqcslswWUzTEwScm82Gs.jpg'
+            },
+            {
+                id: 'tt0110357',
+                title: 'Le Roi Lion',
+                year: '1994',
+                type_label: '🏰 Disney',
+                is_series: false,
+                synopsis: 'Le jeune lionceau Simba doit trouver sa place dans le grand cycle de la vie.',
+                thumbnail: 'https://image.tmdb.org/t/p/w1280/wXsQvli6tWqja51pYxXNG1LFIGV.jpg'
+            }
+        ];
+
+        heroEl.innerHTML = '';
+        slides.forEach((s, idx) => {
+            const slide = document.createElement('div');
+            slide.className = 'disney-hero-slide' + (idx === 0 ? ' active' : '');
+            slide.innerHTML = `
+                <img src="${esc(s.thumbnail)}" alt="${esc(s.title)}" onerror="this.src='/static/icons/icon-512.png'">
+                <div class="disney-hero-gradient"></div>
+                <div class="disney-hero-content">
+                    <h2 class="disney-hero-title">${esc(s.title)}</h2>
+                    <p class="disney-hero-synopsis">${esc(s.synopsis)}</p>
+                    <div class="disney-hero-actions">
+                        <button type="button" class="btn-disney-play hero-play-btn"><i class="fa-solid fa-play"></i> Lecture</button>
+                        <button type="button" class="btn-disney-trailer hero-trailer-btn"><i class="fa-solid fa-clapperboard"></i> Bande-annonce</button>
+                    </div>
+                </div>
+            `;
+            slide.querySelector('.hero-play-btn').onclick = () => playVideoStream(s);
+            slide.querySelector('.hero-trailer-btn').onclick = () => playVideoTrailer(s);
+            heroEl.appendChild(slide);
+        });
+
+        const dots = document.createElement('div');
+        dots.className = 'disney-hero-dots';
+        let activeIdx = 0;
+        const setSlide = (nextIdx) => {
+            const allSlides = heroEl.querySelectorAll('.disney-hero-slide');
+            const allDots = dots.querySelectorAll('.hero-dot');
+            allSlides.forEach((sl, i) => sl.classList.toggle('active', i === nextIdx));
+            allDots.forEach((d, i) => d.classList.toggle('active', i === nextIdx));
+            activeIdx = nextIdx;
+        };
+        slides.forEach((_, idx) => {
+            const dot = document.createElement('div');
+            dot.className = 'hero-dot' + (idx === 0 ? ' active' : '');
+            dot.onclick = () => setSlide(idx);
+            dots.appendChild(dot);
+        });
+        heroEl.appendChild(dots);
+        setInterval(() => setSlide((activeIdx + 1) % slides.length), 6500);
     }
 
     // Bouton de rafraîchissement bibliothèque

@@ -490,116 +490,40 @@
 
     <!-- ===== TAB: STREAMING & LECTEUR VIDÉO (STYLE DISNEY+) ===== -->
     <div class="mob-tab-pane" id="mobPane-streaming" style="display:none;">
-        
-        <!-- En-Tête Haute Style Disney+ (Bouton Rechercher + Marques Disney+) -->
-        <div class="mob-search-box" style="margin-bottom:14px;padding:12px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1px solid #334155;border-radius:18px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                <span class="mob-hd-pill" style="background:linear-gradient(135deg,#0284c7,#0369a1);border:none;color:#fff;font-weight:800;letter-spacing:0.5px;">
-                    <i class="fa-solid fa-play"></i> STREAMING DISNEY+ STYLE
-                </span>
-                <span style="font-size:0.75rem;color:#38bdf8;font-weight:700;"><i class="fa-solid fa-bolt"></i> 8 Serveurs VF / VOSTFR</span>
-            </div>
 
-            <!-- Barre de Recherche en HAUT -->
-            <form id="mobStreamSearchForm" class="mob-search-row" style="margin-top:6px;margin-bottom:12px;">
+        <!-- 1. Barre de Navigation Supérieure Style Disney+ (Mobile) -->
+        <div class="disney-mob-top-nav">
+            <button type="button" id="btnMobStreamHome" class="disney-mob-nav-pill active">
+                <i class="fa-solid fa-house"></i> <span>Accueil</span>
+            </button>
+            <button type="button" id="btnMobStreamSearchToggle" class="disney-mob-nav-pill">
+                <i class="fa-solid fa-magnifying-glass"></i> <span>Rechercher</span>
+            </button>
+            <button type="button" class="disney-mob-nav-pill mob-fast-stream-pill" data-q="tendances">
+                <i class="fa-solid fa-film"></i> <span>Films</span>
+            </button>
+            <button type="button" class="disney-mob-nav-pill mob-fast-stream-pill" data-q="series">
+                <i class="fa-solid fa-tv"></i> <span>Séries</span>
+            </button>
+            <button type="button" id="btnMobToggleManualSites" class="disney-mob-nav-pill">
+                <i class="fa-solid fa-globe"></i> <span>Sites</span>
+            </button>
+        </div>
+
+        <!-- Panneau Recherche Disney+ (S'ouvre au tap sur Rechercher) -->
+        <div id="mobStreamSearchPanel" class="disney-search-panel" style="display:none;">
+            <form id="mobStreamSearchForm" class="mob-search-row" style="margin:0;">
                 <input type="search" id="mobStreamSearchInput" class="mob-input"
-                    placeholder="🔍 Rechercher un film, héros, série..."
-                    autocomplete="off" style="font-size:0.9rem;">
-                <button type="submit" class="mob-btn" style="background:linear-gradient(135deg,#38bdf8,#0284c7);color:#fff;padding:0 18px;font-weight:800;">
+                    placeholder="Titre, personnage, saga..."
+                    autocomplete="off" style="font-size:0.9rem;background:#090b13;">
+                <button type="submit" class="mob-btn" style="background:linear-gradient(135deg,#0063e5,#00d2ff);color:#fff;padding:0 16px;font-weight:800;">
                     <i class="fa-solid fa-magnifying-glass"></i>
                 </button>
             </form>
-
-            <!-- Tuiles des Marques Officielles / Univers Cinéma (Style Disney+ avec Vrais Logos) -->
-            <div style="font-size:0.75rem;font-weight:800;color:#94a3b8;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:6px;">
-                <i class="fa-solid fa-layer-group"></i> Univers & Studios Officiels :
-            </div>
-            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none;">
-                <!-- Marvel -->
-                <button type="button" id="btnMobToggleMarvel" class="mob-brand-tile streaming-brand-tile" style="--tile-glow:rgba(239,68,68,0.6);" title="Collection Marvel">
-                    <img src="/static/logos/marvel.svg" alt="Marvel">
-                    <span class="tile-label" style="color:#f87171;">MARVEL ▾</span>
-                </button>
-                <!-- Disney -->
-                <button type="button" class="mob-brand-tile mob-fast-stream-pill streaming-brand-tile" data-q="disney" style="--tile-glow:rgba(59,130,246,0.6);" title="Univers Disney">
-                    <img src="/static/logos/disney.svg" alt="Disney" style="filter:brightness(0) invert(1);">
-                    <span class="tile-label">DISNEY+</span>
-                </button>
-                <!-- Pixar -->
-                <button type="button" class="mob-brand-tile mob-fast-stream-pill streaming-brand-tile" data-q="pixar" style="--tile-glow:rgba(6,182,212,0.6);" title="Studios Pixar">
-                    <img src="/static/logos/pixar.svg" alt="Pixar">
-                    <span class="tile-label">PIXAR</span>
-                </button>
-                <!-- Star Wars -->
-                <button type="button" class="mob-brand-tile mob-fast-stream-pill streaming-brand-tile" data-q="starwars" style="--tile-glow:rgba(245,158,11,0.6);" title="Saga Star Wars">
-                    <img src="/static/logos/starwars.svg" alt="Star Wars">
-                    <span class="tile-label" style="color:#fbbf24;">STAR WARS</span>
-                </button>
-                <!-- Netflix / Séries -->
-                <button type="button" class="mob-brand-tile mob-fast-stream-pill streaming-brand-tile" data-q="series" style="--tile-glow:rgba(229,9,20,0.6);" title="Séries & Nouveautés">
-                    <img src="/static/logos/netflix.svg" alt="Netflix">
-                    <span class="tile-label" style="color:#f87171;">SÉRIES</span>
-                </button>
-                <!-- DC Comics -->
-                <button type="button" class="mob-brand-tile mob-fast-stream-pill streaming-brand-tile" data-q="dc" style="--tile-glow:rgba(2,132,199,0.6);" title="DC Universe">
-                    <img src="/static/logos/dc.svg" alt="DC Comics">
-                    <span class="tile-label" style="color:#38bdf8;">DC COMICS</span>
-                </button>
-                <!-- Animés -->
-                <button type="button" class="mob-brand-tile mob-fast-stream-pill streaming-brand-tile" data-q="anime" style="--tile-glow:rgba(236,72,153,0.6);" title="Manga & Animés">
-                    <img src="/static/logos/anime.svg" alt="Animés">
-                    <span class="tile-label" style="color:#f472b6;">ANIMÉS</span>
-                </button>
-                <!-- Warner Bros -->
-                <button type="button" class="mob-brand-tile mob-fast-stream-pill streaming-brand-tile" data-q="action" style="--tile-glow:rgba(245,158,11,0.6);" title="Blockbusters">
-                    <img src="/static/logos/warner.svg" alt="Warner Bros">
-                    <span class="tile-label" style="color:#fcd34d;">ACTION</span>
-                </button>
-            </div>
-
-            <!-- Sous-barre MARVEL avec Logos Réels de chaque Héros -->
-            <div id="mobMarvelSubBar" style="display:flex;flex-direction:column;gap:8px;background:linear-gradient(135deg,rgba(185,28,28,0.22),rgba(30,41,59,0.7));border:1px solid rgba(239,68,68,0.4);border-radius:14px;padding:10px;margin-top:10px;">
-                <div style="font-size:0.75rem;font-weight:900;color:#fca5a5;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;">
-                    <span style="display:flex;align-items:center;gap:6px;">
-                        <img src="/static/logos/marvel.svg" alt="" style="height:14px;">
-                        <span>Collection Héros Marvel</span>
-                    </span>
-                    <span style="font-size:0.68rem;color:#f87171;">Films Complets</span>
-                </div>
-                <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;">
-                    <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_avengers" style="--hero-color:#ef4444;--hero-glow:rgba(239,68,68,0.5);">
-                        <img src="/static/logos/avengers.svg" alt=""> <span>Avengers</span>
-                    </button>
-                    <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_spiderman" style="--hero-color:#0284c7;--hero-glow:rgba(2,132,199,0.5);">
-                        <img src="/static/logos/spiderman.svg" alt=""> <span>Spider-Man</span>
-                    </button>
-                    <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_deadpool" style="--hero-color:#dc2626;--hero-glow:rgba(220,38,38,0.5);">
-                        <img src="/static/logos/deadpool.svg" alt=""> <span>Deadpool</span>
-                    </button>
-                    <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_ironman" style="--hero-color:#f59e0b;--hero-glow:rgba(245,158,11,0.5);">
-                        <img src="/static/logos/ironman.svg" alt=""> <span>Iron Man</span>
-                    </button>
-                    <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_thor" style="--hero-color:#38bdf8;--hero-glow:rgba(56,189,248,0.5);">
-                        <img src="/static/logos/thor.svg" alt=""> <span>Thor</span>
-                    </button>
-                    <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_xmen" style="--hero-color:#eab308;--hero-glow:rgba(234,179,8,0.5);">
-                        <img src="/static/logos/xmen.svg" alt=""> <span>X-Men</span>
-                    </button>
-                    <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_wolverine" style="--hero-color:#f59e0b;--hero-glow:rgba(245,158,11,0.5);">
-                        <img src="/static/logos/wolverine.svg" alt=""> <span>Wolverine</span>
-                    </button>
-                    <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_captain" style="--hero-color:#2563eb;--hero-glow:rgba(37,99,235,0.5);">
-                        <img src="/static/logos/captain.svg" alt=""> <span>Captain America</span>
-                    </button>
-                    <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_guardians" style="--hero-color:#a855f7;--hero-glow:rgba(168,85,247,0.5);">
-                        <img src="/static/logos/guardians.svg" alt=""> <span>Gardiens</span>
-                    </button>
-                </div>
-            </div>
         </div>
 
-        <!-- Section Ajout Manuel de Sites de Streaming & Recherche Intégrée (Demandé par l'utilisateur) -->
-        <div class="mob-card" style="margin-bottom:14px;padding:13px;background:linear-gradient(135deg,rgba(15,23,42,0.95),rgba(30,41,59,0.95));border:1px solid #0284c7;border-radius:16px;">
+        <!-- Panneau Sites Externes Manuels (Replié par défaut) -->
+        <div id="mobManualSitesDrawer" class="mob-card" style="display:none;margin-bottom:14px;padding:13px;background:linear-gradient(135deg,rgba(15,23,42,0.95),rgba(30,41,59,0.95));border:1px solid #0284c7;border-radius:16px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                 <span style="font-size:0.88rem;font-weight:900;color:#38bdf8;display:flex;align-items:center;gap:6px;">
                     <i class="fa-solid fa-globe"></i> Sites Manuels & Recherche Directe
@@ -620,16 +544,14 @@
                         <i class="fa-solid fa-bookmark"></i> Sauver
                     </button>
                 </div>
-                <!-- Recherche directe dans le site donné -->
                 <div style="display:flex;gap:6px;">
-                    <input type="text" id="mobManualSiteQuery" class="mob-input" placeholder="🔍 Que chercher sur ce site ? (ex: avatar, clip...)" style="flex:1;font-size:0.85rem;border-color:#38bdf8;">
+                    <input type="text" id="mobManualSiteQuery" class="mob-input" placeholder="🔍 Que chercher sur ce site ? (ex: avatar, film...)" style="flex:1;font-size:0.85rem;border-color:#38bdf8;">
                     <button type="button" id="btnMobSearchInsideSite" class="mob-btn" style="background:linear-gradient(135deg,#38bdf8,#0284c7);color:#fff;font-weight:800;padding:0 14px;border-radius:10px;font-size:0.8rem;white-space:nowrap;">
                         <i class="fa-solid fa-magnifying-glass"></i> Chercher
                     </button>
                 </div>
             </div>
 
-            <!-- Raccourcis Rapides de Vrais Sites Recommandés -->
             <div style="margin-top:10px;padding-top:8px;border-top:1px solid #334155;">
                 <div style="font-size:0.7rem;font-weight:800;color:#cbd5e1;margin-bottom:6px;">⚡ Sites recommandés en 1 clic :</div>
                 <div style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;">
@@ -640,10 +562,80 @@
                 </div>
             </div>
 
-            <!-- Liste des sites personnalisés enregistrés -->
             <div id="mobCustomSitesContainer" style="display:none;margin-top:8px;padding-top:8px;border-top:1px dashed #334155;">
                 <div style="font-size:0.72rem;font-weight:800;color:#38bdf8;margin-bottom:6px;"><i class="fa-solid fa-list-check"></i> Mes Sites Favoris Enregistrés :</div>
                 <div id="mobCustomSitesList" style="display:flex;flex-direction:column;gap:5px;"></div>
+            </div>
+        </div>
+
+        <!-- 2. Carrousel Hero Cinéma Style Disney+ (Tout en haut) -->
+        <div id="mobDisneyHero" class="disney-hero-banner"></div>
+
+        <!-- 3. Tuiles des Marques Disney+ (Juste sous le Hero) -->
+        <div class="disney-brands-row">
+            <button type="button" class="mob-brand-tile mob-fast-stream-pill disney-brand-card" data-q="disney" title="Univers Disney">
+                <img src="/static/logos/disney.svg" alt="Disney" style="filter:brightness(0) invert(1);">
+            </button>
+            <button type="button" class="mob-brand-tile mob-fast-stream-pill disney-brand-card" data-q="pixar" title="Studios Pixar">
+                <img src="/static/logos/pixar.svg" alt="Pixar">
+            </button>
+            <button type="button" id="btnMobToggleMarvel" class="mob-brand-tile disney-brand-card" title="Collection Marvel">
+                <img src="/static/logos/marvel.svg" alt="Marvel">
+            </button>
+            <button type="button" class="mob-brand-tile mob-fast-stream-pill disney-brand-card" data-q="starwars" title="Saga Star Wars">
+                <img src="/static/logos/starwars.svg" alt="Star Wars">
+            </button>
+            <button type="button" class="mob-brand-tile mob-fast-stream-pill disney-brand-card" data-q="series" title="Séries">
+                <img src="/static/logos/netflix.svg" alt="Séries">
+            </button>
+            <button type="button" class="mob-brand-tile mob-fast-stream-pill disney-brand-card" data-q="dc" title="DC Universe">
+                <img src="/static/logos/dc.svg" alt="DC Comics">
+            </button>
+            <button type="button" class="mob-brand-tile mob-fast-stream-pill disney-brand-card" data-q="anime" title="Manga & Animés">
+                <img src="/static/logos/anime.svg" alt="Animés">
+            </button>
+            <button type="button" class="mob-brand-tile mob-fast-stream-pill disney-brand-card" data-q="action" title="Blockbusters">
+                <img src="/static/logos/warner.svg" alt="Action">
+            </button>
+        </div>
+
+        <!-- Sous-barre MARVEL (Masquée par défaut, s'ouvre au tap sur Marvel) -->
+        <div id="mobMarvelSubBar" style="display:none;flex-direction:column;gap:8px;background:linear-gradient(135deg,rgba(185,28,28,0.22),rgba(19,21,31,0.9));border:1px solid rgba(239,68,68,0.4);border-radius:14px;padding:10px;margin-bottom:14px;">
+            <div style="font-size:0.75rem;font-weight:900;color:#fca5a5;text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;">
+                <span style="display:flex;align-items:center;gap:6px;">
+                    <img src="/static/logos/marvel.svg" alt="" style="height:14px;">
+                    <span>Collection Héros Marvel</span>
+                </span>
+                <span style="font-size:0.68rem;color:#f87171;">9 Univers</span>
+            </div>
+            <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;">
+                <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_avengers" style="--hero-color:#ef4444;--hero-glow:rgba(239,68,68,0.5);">
+                    <img src="/static/logos/avengers.svg" alt=""> <span>Avengers</span>
+                </button>
+                <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_spiderman" style="--hero-color:#0284c7;--hero-glow:rgba(2,132,199,0.5);">
+                    <img src="/static/logos/spiderman.svg" alt=""> <span>Spider-Man</span>
+                </button>
+                <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_deadpool" style="--hero-color:#dc2626;--hero-glow:rgba(220,38,38,0.5);">
+                    <img src="/static/logos/deadpool.svg" alt=""> <span>Deadpool</span>
+                </button>
+                <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_ironman" style="--hero-color:#f59e0b;--hero-glow:rgba(245,158,11,0.5);">
+                    <img src="/static/logos/ironman.svg" alt=""> <span>Iron Man</span>
+                </button>
+                <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_thor" style="--hero-color:#38bdf8;--hero-glow:rgba(56,189,248,0.5);">
+                    <img src="/static/logos/thor.svg" alt=""> <span>Thor</span>
+                </button>
+                <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_xmen" style="--hero-color:#eab308;--hero-glow:rgba(234,179,8,0.5);">
+                    <img src="/static/logos/xmen.svg" alt=""> <span>X-Men</span>
+                </button>
+                <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_wolverine" style="--hero-color:#f59e0b;--hero-glow:rgba(245,158,11,0.5);">
+                    <img src="/static/logos/wolverine.svg" alt=""> <span>Wolverine</span>
+                </button>
+                <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_captain" style="--hero-color:#2563eb;--hero-glow:rgba(37,99,235,0.5);">
+                    <img src="/static/logos/captain.svg" alt=""> <span>Captain America</span>
+                </button>
+                <button type="button" class="mob-fast-stream-pill marvel-hero-pill" data-q="marvel_guardians" style="--hero-color:#a855f7;--hero-glow:rgba(168,85,247,0.5);">
+                    <img src="/static/logos/guardians.svg" alt=""> <span>Gardiens</span>
+                </button>
             </div>
         </div>
 
