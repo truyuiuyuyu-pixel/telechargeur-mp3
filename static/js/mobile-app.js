@@ -1998,7 +1998,7 @@
             }
         });
 
-        // --- GESTION DES SITES DE STREAMING MANUELS & RECHERCHE INTERNE (Sites -18 & classiques débloqués) ---
+        // --- GESTION DES SITES DE STREAMING MANUELS & RECHERCHE INTERNE (Sites débloqués) ---
         const btnLaunchManual = $('btnMobLaunchManualStream');
         const btnSaveManual = $('btnMobSaveManualStream');
         const manualUrlInput = $('mobManualStreamUrl');

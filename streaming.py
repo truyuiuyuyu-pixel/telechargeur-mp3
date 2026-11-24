@@ -494,7 +494,7 @@ def search_streaming(query: str, limit: int = 35):
 def build_site_search_url(site_url: str, query: str) -> str:
     """
     Construit l'URL de recherche exacte pour n'importe quel site personnalisé.
-    Gère tous les sites de streaming, films, séries, animés et sites -18 (XHamster, XVideos, Pornhub, Wiflix, etc.)
+    Gère tous les sites de streaming, films, séries, animés et plateformes vidéo (Wiflix, French-Stream, etc.)
     """
     if not site_url:
         return ""

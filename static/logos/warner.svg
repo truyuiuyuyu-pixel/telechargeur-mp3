@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200">
+  <defs>
+    <linearGradient id="wbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <path d="M80 8 C130 8 152 40 152 90 C152 155 80 192 80 192 C80 192 8 155 8 90 C8 40 30 8 80 8 Z" fill="url(#wbGrad)" stroke="#f59e0b" stroke-width="8"/>
+  <text x="80" y="128" font-family="'Times New Roman', serif" font-size="82" font-weight="bold" font-style="italic" fill="#f59e0b" text-anchor="middle">WB</text>
+</svg>

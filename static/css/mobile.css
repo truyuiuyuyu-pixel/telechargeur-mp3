@@ -956,3 +956,77 @@ html, body {
     border: none !important;
 }
 
+/* =====================================================================
+   DISNEY+ STYLE BRAND CARDS & HERO PILLS (MOBILE)
+   ===================================================================== */
+.streaming-brand-tile {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    flex-shrink: 0;
+    min-width: 105px;
+    height: 64px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    cursor: pointer;
+    overflow: hidden;
+    user-select: none;
+    text-align: center;
+}
+
+.streaming-brand-tile:active {
+    transform: scale(0.96);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.streaming-brand-tile img {
+    height: 24px;
+    max-width: 88%;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.7));
+}
+
+.streaming-brand-tile .tile-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+.marvel-hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.76rem;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.marvel-hero-pill:active {
+    transform: scale(0.96);
+    background: rgba(30, 41, 59, 0.98);
+}
+
+.marvel-hero-pill img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+

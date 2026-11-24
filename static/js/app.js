@@ -2064,7 +2064,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // --- GESTION DES SITES DE STREAMING MANUELS & RECHERCHE INTERNE (Sites -18 & classiques débloqués) ---
+        // --- GESTION DES SITES DE STREAMING MANUELS & RECHERCHE INTERNE (Sites débloqués) ---
         const btnLaunchManual = document.getElementById('btnDeskLaunchManualStream');
         const btnSaveManual = document.getElementById('btnDeskSaveManualStream');
         const manualUrlInput = document.getElementById('deskManualStreamUrl');

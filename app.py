@@ -290,7 +290,7 @@ def api_streaming_trailer():
 def api_streaming_proxy():
     """
     Proxy débloqueur universel : permet d'intégrer N'IMPORTE QUEL site dans le lecteur iframe,
-    y compris les sites avec X-Frame-Options (sites de streaming, sites -18, etc.).
+    y compris les sites avec X-Frame-Options (sites de streaming, plateformes vidéo, etc.).
     Supprime les en-têtes bloquants et injecte <base href="..."> pour charger images/scripts.
     """
     target_url = request.args.get('url', '').strip()
