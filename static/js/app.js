@@ -2269,27 +2269,85 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function renderDeskServerButtons(srvMap) {
+        const srvList = document.getElementById('deskStreamingServerList');
+        const iframe = document.getElementById('deskStreamingIframe');
+        if (!srvList) return;
+        srvList.innerHTML = '';
+        let idx = 1;
+        Object.keys(srvMap).forEach(sName => {
+            const sUrl = srvMap[sName];
+            const srvBtn = document.createElement('button');
+            srvBtn.type = 'button';
+            srvBtn.textContent = sName;
+            srvBtn.dataset.serverIdx = idx;
+            srvBtn.dataset.serverName = sName;
+            const thisIdx = idx;
+            const isSelected = thisIdx === currentDeskStreamingServerIdx;
+            srvBtn.style.cssText = `padding:6px 14px;border-radius:8px;font-size:0.8rem;font-weight:700;white-space:nowrap;cursor:pointer;border:1px solid ${isSelected ? '#10b981' : 'var(--border)'};background:${isSelected ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)'};color:#fff;`;
+            srvBtn.onclick = () => {
+                currentDeskStreamingServerIdx = thisIdx;
+                if (iframe) iframe.src = sUrl;
+                srvList.querySelectorAll('button').forEach(b => {
+                    b.style.border = '1px solid var(--border)';
+                    b.style.background = 'rgba(255,255,255,0.08)';
+                });
+                srvBtn.style.border = '1px solid #10b981';
+                srvBtn.style.background = 'rgba(16,185,129,0.3)';
+                showToast(`Basculement sur ${sName}`);
+            };
+            srvList.appendChild(srvBtn);
+            idx++;
+        });
+    }
+
     function activateDeskLang(lang) {
         if (!currentDeskStreamingVideo) {
-            showToast("Lancez d'abord un film pour choisir sa langue", true);
+            showToast("Lancez d'abord un film ou une série pour choisir sa langue", true);
             return;
         }
         const srvList = document.getElementById('deskStreamingServerList');
-        const btns = srvList ? srvList.querySelectorAll('button') : [];
+        const btns = srvList ? Array.from(srvList.querySelectorAll('button')) : [];
         if (!btns.length) return;
 
         if (lang === 'vf') {
-            // Serveur 1 : Frembed VF / VOSTFR
-            btns[0].click();
-            showToast("🇫🇷 Piste Française (VF) activée !");
+            // Serveurs Français (VF / Frembed / Wiflix / French-Stream / Smashy)
+            const vfBtns = btns.filter(b => {
+                const txt = (b.textContent || '').toLowerCase();
+                return txt.includes('🇫🇷') || txt.includes('vf') || txt.includes('frembed') || txt.includes('wiflix') || txt.includes('french');
+            });
+            if (vfBtns.length > 0) {
+                const activeBtn = btns.find(b => b.style.borderColor === 'rgb(16, 185, 129)' || (b.style.border && b.style.border.includes('#10b981')));
+                let nextIdx = 0;
+                if (activeBtn) {
+                    const curIdx = vfBtns.indexOf(activeBtn);
+                    if (curIdx !== -1) {
+                        nextIdx = (curIdx + 1) % vfBtns.length;
+                    }
+                }
+                const chosen = vfBtns[nextIdx];
+                chosen.click();
+                showToast(`🇫🇷 VF : ${chosen.textContent} activé !` + (vfBtns.length > 1 ? ` (${nextIdx + 1}/${vfBtns.length} - Cliquez pour alterner)` : ''));
+            } else {
+                btns[0].click();
+                showToast("🇫🇷 Piste Française sélectionnée !");
+            }
         } else if (lang === 'vostfr') {
-            if (btns.length >= 2) btns[1].click();
-            else btns[0].click();
-            showToast("💬 VOSTFR sélectionné (Sous-titres français disponibles)");
+            const vostfrBtns = btns.filter(b => {
+                const txt = (b.textContent || '').toLowerCase();
+                return txt.includes('vostfr') || txt.includes('st fr') || txt.includes('multiembed') || txt.includes('2embed') || txt.includes('miroir');
+            });
+            const targetBtn = vostfrBtns.length > 0 ? vostfrBtns[0] : (btns.length >= 2 ? btns[1] : btns[0]);
+            targetBtn.click();
+            showToast(`💬 Sous-titres français (VOSTFR) : ${targetBtn.textContent} activé`);
         } else if (lang === 'vo') {
-            if (btns.length >= 3) btns[2].click();
-            else btns[btns.length - 1].click();
-            showToast("🇬🇧 Version Originale (VO) activée");
+            const voBtns = btns.filter(b => {
+                const txt = (b.textContent || '').toLowerCase();
+                return txt.includes('autoembed') || txt.includes('vidsrc to') || txt.includes('multi');
+            });
+            const targetBtn = voBtns.length > 0 ? voBtns[0] : (btns.length >= 3 ? btns[2] : btns[btns.length - 1]);
+            targetBtn.click();
+            showToast(`🇬🇧 Version Originale (VO) : ${targetBtn.textContent} activée`);
         }
     }
 
@@ -2297,12 +2355,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentDeskStreamingVideo) return;
         const iframe = document.getElementById('deskStreamingIframe');
         const imdbId = currentDeskStreamingVideo.id;
+        const title = currentDeskStreamingVideo.title || '';
+        showToast(`🔄 Chargement S${season}E${episode} en français...`);
         try {
-            const res = await fetch(`/api/streaming/episode?id=${encodeURIComponent(imdbId)}&season=${season}&episode=${episode}&server=${currentDeskStreamingServerIdx}`);
+            const res = await fetch(`/api/streaming/episode?id=${encodeURIComponent(imdbId)}&title=${encodeURIComponent(title)}&season=${season}&episode=${episode}&server=${currentDeskStreamingServerIdx}`);
             const data = await res.json();
             if (data && data.embed_url && iframe) {
                 iframe.src = data.embed_url;
                 showToast(`📺 Épisode S${season}E${episode} chargé !`);
+            }
+            // Mettre à jour l'ensemble des boutons serveurs pour le nouvel épisode
+            const srvRes = await fetch(`/api/streaming/servers?id=${encodeURIComponent(imdbId)}&title=${encodeURIComponent(title)}&type=series&season=${season}&episode=${episode}`);
+            const srvData = await srvRes.json();
+            if (srvData && srvData.servers) {
+                currentDeskStreamingVideo.servers = srvData.servers;
+                renderDeskServerButtons(srvData.servers);
             }
         } catch {
             showToast("Erreur chargement épisode", true);
@@ -2481,34 +2548,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (iframe) iframe.src = video.embed_url || video.url;
 
-        // Fonction d'affichage des serveurs
-        function renderDeskServerButtons(srvMap) {
-            if (!srvList) return;
-            srvList.innerHTML = '';
-            let idx = 1;
-            Object.keys(srvMap).forEach(sName => {
-                const sUrl = srvMap[sName];
-                const srvBtn = document.createElement('button');
-                srvBtn.type = 'button';
-                srvBtn.textContent = sName;
-                const thisIdx = idx;
-                srvBtn.style.cssText = `padding:6px 14px;border-radius:8px;font-size:0.8rem;font-weight:700;white-space:nowrap;cursor:pointer;border:1px solid ${thisIdx === 1 ? '#10b981' : 'var(--border)'};background:${thisIdx === 1 ? 'rgba(16,185,129,0.3)' : 'rgba(255,255,255,0.08)'};color:#fff;`;
-                srvBtn.onclick = () => {
-                    currentDeskStreamingServerIdx = thisIdx;
-                    if (iframe) iframe.src = sUrl;
-                    srvList.querySelectorAll('button').forEach(b => {
-                        b.style.border = '1px solid var(--border)';
-                        b.style.background = 'rgba(255,255,255,0.08)';
-                    });
-                    srvBtn.style.border = '1px solid #10b981';
-                    srvBtn.style.background = 'rgba(16,185,129,0.3)';
-                    showToast(`Basculement sur ${sName}`);
-                };
-                srvList.appendChild(srvBtn);
-                idx++;
-            });
-        }
-
         let srvs = video.servers;
         if (!srvs) {
             if (video.embed_url && video.embed_url.includes('/api/streaming/proxy')) {
@@ -2522,9 +2561,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         renderDeskServerButtons(srvs);
 
-        // Si le film n'a pas encore le Serveur 1 Frembed VF résolu, on l'interroge en direct
-        if (video.id && video.id.startsWith('tt') && (!video.servers || !Object.keys(video.servers)[0].includes('Frembed'))) {
-            fetch(`/api/streaming/servers?id=${encodeURIComponent(video.id)}&type=${video.is_series ? 'series' : 'movie'}`)
+        // Si le film ou la série est lancé(e), on résout tous les serveurs VF avec le titre et épisode
+        if (video.id && video.id.startsWith('tt')) {
+            const s = document.getElementById('deskStreamSeason') ? parseInt(document.getElementById('deskStreamSeason').value, 10) || 1 : 1;
+            const e = document.getElementById('deskStreamEpisode') ? parseInt(document.getElementById('deskStreamEpisode').value, 10) || 1 : 1;
+            fetch(`/api/streaming/servers?id=${encodeURIComponent(video.id)}&title=${encodeURIComponent(video.title || '')}&type=${video.is_series ? 'series' : 'movie'}&season=${s}&episode=${e}`)
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.servers) {

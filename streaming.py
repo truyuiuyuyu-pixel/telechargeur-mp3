@@ -56,45 +56,57 @@ def clean_query(q: str) -> str:
     q = re.sub(r'[^\w\s\-\'\.]', ' ', q, flags=re.UNICODE)
     return " ".join(q.split()).strip()
 
-def build_servers(imdb_id: str, tmdb_id: str = "", is_series: bool = False, season: int = 1, episode: int = 1):
+def build_servers(imdb_id: str, tmdb_id: str = "", title: str = "", is_series: bool = False, season: int = 1, episode: int = 1):
     """
-    Génère les serveurs de streaming fiables.
-    Si tmdb_id est disponible (instantané via le catalogue ou cache), Frembed VF est mis en Serveur 1.
+    Génère les serveurs de streaming fiables en français (VF & VOSTFR).
+    Intègre les endpoints Frembed actifs, les serveurs multi-pistes et les recherches VF directes débloquées.
     """
     s = max(1, int(season))
     e = max(1, int(episode))
 
-    if not tmdb_id and imdb_id in TMDB_CACHE:
-        tmdb_id = TMDB_CACHE[imdb_id]
+    if not tmdb_id:
+        if imdb_id in TMDB_CACHE:
+            tmdb_id = TMDB_CACHE[imdb_id]
+        elif imdb_id and imdb_id.startswith('tt'):
+            tmdb_id = get_tmdb_id(imdb_id, is_series=is_series)
 
     servers = {}
+    clean_title = (title or "").strip()
 
     if is_series:
         if tmdb_id:
-            servers["1. 🇫🇷 Serveur 1 (Frembed VF / VOSTFR)"] = f"https://frembed.shop/api/serie.php?id={tmdb_id}&sa={s}&epi={e}"
-            servers["2. 🇫🇷 Serveur 2 (MultiEmbed Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}&s={s}&e={e}"
-        else:
-            servers["1. 🇫🇷 Serveur 1 (MultiEmbed VF / Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}&s={s}&e={e}"
+            servers["1. 🇫🇷 Serveur 1 (Frembed VF)"] = f"https://frembed.pics/embed/serie/{tmdb_id}?sa={s}&epi={e}"
+            servers["2. 🇫🇷 Serveur 2 (Frembed Miroir)"] = f"https://frembed.shop/api/serie.php?id={tmdb_id}&sa={s}&epi={e}"
 
-        servers["3. 🎬 Serveur 3 (AutoEmbed Rapide)"] = f"https://autoembed.to/tv/imdb/{imdb_id}-{s}-{e}"
-        servers["4. 🍿 Serveur 4 (2Embed Cinéma)"] = f"https://www.2embed.cc/embedtv/{imdb_id}&s={s}&e={e}"
-        servers["5. 🇫🇷 Serveur 5 (Français HD - Smashy)"] = f"https://embed.smashystream.com/playere.php?imdb={imdb_id}&season={s}&episode={e}"
-        servers["6. ⚡ Serveur 6 (VidSrc FR)"] = f"https://vidsrc.me/embed/tv?imdb={imdb_id}&season={s}&episode={e}&ds_lang=fr"
-        servers["7. 🌐 Serveur 7 (StreamM4u)"] = f"https://streamm4u.com/embed/tv/{imdb_id}/{s}/{e}"
-        servers["8. 🛡️ Serveur 8 (VidSrc TO)"] = f"https://vidsrc.to/embed/tv/{imdb_id}/{s}/{e}"
+        servers["3. 🇫🇷 Serveur 3 (Smashy Audio FR)"] = f"https://embed.smashystream.com/playere.php?imdb={imdb_id}&season={s}&episode={e}"
+        servers["4. 🇫🇷 Serveur 4 (VidSrc Audio/ST FR)"] = f"https://vidsrc.me/embed/tv?imdb={imdb_id}&season={s}&episode={e}&ds_lang=fr"
+
+        if clean_title:
+            q_enc = urllib.parse.quote(clean_title)
+            servers["5. 🍿 Serveur 5 (Wiflix VF Direct)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://wiflix.voto/?s=' + q_enc)}"
+            servers["6. 🎬 Serveur 6 (French-Stream VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://french-stream.bio/?s=' + q_enc)}"
+
+        servers["7. 🌐 Serveur 7 (MultiEmbed Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}&s={s}&e={e}"
+        servers["8. 🍿 Serveur 8 (2Embed Cinéma)"] = f"https://www.2embed.cc/embedtv/{imdb_id}&s={s}&e={e}"
+        servers["9. ⚡ Serveur 9 (AutoEmbed Rapide)"] = f"https://autoembed.to/tv/imdb/{imdb_id}-{s}-{e}"
+        servers["10. 🛡️ Serveur 10 (VidSrc TO)"] = f"https://vidsrc.to/embed/tv/{imdb_id}/{s}/{e}"
     else:
         if tmdb_id:
-            servers["1. 🇫🇷 Serveur 1 (Frembed VF / VOSTFR)"] = f"https://frembed.shop/api/film.php?id={tmdb_id}"
-            servers["2. 🇫🇷 Serveur 2 (MultiEmbed Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}"
-        else:
-            servers["1. 🇫🇷 Serveur 1 (MultiEmbed VF / Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}"
+            servers["1. 🇫🇷 Serveur 1 (Frembed VF)"] = f"https://frembed.pics/embed/movie/{tmdb_id}"
+            servers["2. 🇫🇷 Serveur 2 (Frembed Miroir)"] = f"https://frembed.shop/api/film.php?id={tmdb_id}"
 
-        servers["3. 🎬 Serveur 3 (AutoEmbed Rapide)"] = f"https://autoembed.to/movie/imdb/{imdb_id}"
-        servers["4. 🍿 Serveur 4 (2Embed Cinéma)"] = f"https://www.2embed.cc/embed/{imdb_id}"
-        servers["5. 🇫🇷 Serveur 5 (Français HD - Smashy)"] = f"https://embed.smashystream.com/playere.php?imdb={imdb_id}"
-        servers["6. ⚡ Serveur 6 (VidSrc FR)"] = f"https://vidsrc.me/embed/movie?imdb={imdb_id}&ds_lang=fr"
-        servers["7. 🌐 Serveur 7 (StreamM4u)"] = f"https://streamm4u.com/embed/movie/{imdb_id}"
-        servers["8. 🛡️ Serveur 8 (VidSrc TO)"] = f"https://vidsrc.to/embed/movie/{imdb_id}"
+        servers["3. 🇫🇷 Serveur 3 (Smashy Audio FR)"] = f"https://embed.smashystream.com/playere.php?imdb={imdb_id}"
+        servers["4. 🇫🇷 Serveur 4 (VidSrc Audio/ST FR)"] = f"https://vidsrc.me/embed/movie?imdb={imdb_id}&ds_lang=fr"
+
+        if clean_title:
+            q_enc = urllib.parse.quote(clean_title)
+            servers["5. 🍿 Serveur 5 (Wiflix VF Direct)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://wiflix.voto/?s=' + q_enc)}"
+            servers["6. 🎬 Serveur 6 (French-Stream VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://french-stream.bio/?s=' + q_enc)}"
+
+        servers["7. 🌐 Serveur 7 (MultiEmbed Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}"
+        servers["8. 🍿 Serveur 8 (2Embed Cinéma)"] = f"https://www.2embed.cc/embed/{imdb_id}"
+        servers["9. ⚡ Serveur 9 (AutoEmbed Rapide)"] = f"https://autoembed.to/movie/imdb/{imdb_id}"
+        servers["10. 🛡️ Serveur 10 (VidSrc TO)"] = f"https://vidsrc.to/embed/movie/{imdb_id}"
 
     return servers
 
@@ -121,9 +133,10 @@ def get_trailer_url(imdb_id: str = "", title: str = "", year: str = "") -> str:
     clean_t = urllib.parse.quote(f"{title} {year} film bande annonce vf officielle trailer cinema -musique -clip -soundtrack")
     return f"https://www.youtube-nocookie.com/embed?listType=search&list={clean_t}&autoplay=1&playsinline=1"
 
-def get_series_stream_url(imdb_id: str, season: int = 1, episode: int = 1, server_idx: int = 1):
+def get_series_stream_url(imdb_id: str, season: int = 1, episode: int = 1, server_idx: int = 1, title: str = ""):
     """Renvoie l'URL exacte d'un épisode pour le serveur sélectionné."""
-    srv_dict = build_servers(imdb_id, is_series=True, season=season, episode=episode)
+    tmdb_id = get_tmdb_id(imdb_id, is_series=True)
+    srv_dict = build_servers(imdb_id, tmdb_id=tmdb_id, title=title, is_series=True, season=season, episode=episode)
     keys = list(srv_dict.keys())
     idx = max(0, min(server_idx - 1, len(keys) - 1))
     return srv_dict[keys[idx]]
@@ -255,6 +268,11 @@ def search_imdb(query: str, limit: int = 15):
                 img_data = item.get('i') or {}
                 poster = img_data.get('imageUrl') or ""
                 mid = TMDB_CACHE.get(imdb_id, '')
+                if not mid and len(results) < 5:
+                    mid = get_tmdb_id(imdb_id, is_series=is_series)
+
+                srvs = build_servers(imdb_id, tmdb_id=mid, title=title, is_series=is_series)
+                first_embed = list(srvs.values())[0] if srvs else f"https://multiembed.mov/?video_id={imdb_id}"
 
                 results.append({
                     "id": imdb_id,
@@ -266,8 +284,8 @@ def search_imdb(query: str, limit: int = 15):
                     "is_series": is_series,
                     "actors": actors,
                     "thumbnail": poster or "/static/icons/icon-192.png",
-                    "servers": build_servers(imdb_id, tmdb_id=mid, is_series=is_series),
-                    "embed_url": f"https://frembed.shop/api/film.php?id={mid}" if mid else f"https://multiembed.mov/?video_id={imdb_id}",
+                    "servers": srvs,
+                    "embed_url": first_embed,
                     "url": f"https://www.imdb.com/title/{imdb_id}/",
                     "source": "Cinéma Gratuit (VF / VOSTFR)",
                     "duration": f"Sortie : {year}" if year else "Film Complet"

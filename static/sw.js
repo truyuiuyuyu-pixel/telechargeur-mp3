@@ -1,6 +1,6 @@
 // Service Worker — Téléchargeur MP3 HD
-// Version du cache : mp3dl-v20-official-logos-ui
-const CACHE_VERSION = 'mp3dl-v20-official-logos-ui';
+// Version du cache : mp3dl-v21-french-series-fix
+const CACHE_VERSION = 'mp3dl-v21-french-series-fix';
 
 // ——— Installation : Activer immédiatement sans attendre ———
 self.addEventListener('install', (event) => {
