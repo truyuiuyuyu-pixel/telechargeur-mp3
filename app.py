@@ -945,6 +945,7 @@ def auth_me():
         return jsonify({"logged_in": False, "avatars": profiles.AVATAR_PRESETS})
     return jsonify({
         "logged_in": True,
+        "email": info.get("email", username),
         "username": info["username"],
         "profiles": info["profiles"],
         "avatars": profiles.AVATAR_PRESETS
@@ -954,12 +955,17 @@ def auth_me():
 @app.route('/api/auth/register', methods=['POST'])
 def auth_register():
     data = request.json or {}
-    ok, msg, payload = profiles.register_account(data.get('username'), data.get('password'))
+    ok, msg, payload = profiles.register_account(
+        data.get('email') or data.get('username'),
+        data.get('password'),
+        name=data.get('name')
+    )
     if not ok:
         return jsonify({"success": False, "error": msg}), 400
     resp = jsonify({
         "success": True,
         "message": msg,
+        "email": payload["email"],
         "username": payload["username"],
         "profiles": payload["profiles"],
         "token": payload["token"]
@@ -971,12 +977,13 @@ def auth_register():
 @app.route('/api/auth/login', methods=['POST'])
 def auth_login():
     data = request.json or {}
-    ok, msg, payload = profiles.login_account(data.get('username'), data.get('password'))
+    ok, msg, payload = profiles.login_account(data.get('email') or data.get('username'), data.get('password'))
     if not ok:
         return jsonify({"success": False, "error": msg}), 401
     resp = jsonify({
         "success": True,
         "message": msg,
+        "email": payload["email"],
         "username": payload["username"],
         "profiles": payload["profiles"],
         "token": payload["token"]

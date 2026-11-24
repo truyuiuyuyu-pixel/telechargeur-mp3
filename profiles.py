@@ -5,12 +5,15 @@ Stockage local léger en JSON, thread-safe, sans dépendance externe.
 """
 
 import os
+import re
 import json
 import time
 import hmac
 import hashlib
 import secrets
 import threading
+
+EMAIL_RE = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
 DATA_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'profiles_data.json')
 _LOCK = threading.Lock()
@@ -99,61 +102,68 @@ def verify_token(token):
         return None
 
 
-def _normalize_username(username):
-    return (username or '').strip().lower()
+def _normalize_email(email):
+    return (email or '').strip().lower()
 
 
-def register_account(username, password):
-    uname_display = (username or '').strip()
-    uname = _normalize_username(uname_display)
-    if len(uname) < 2 or len(uname) > 32:
-        return False, "L'identifiant doit contenir entre 2 et 32 caractères.", None
-    if not password or len(password) < 4:
-        return False, "Le mot de passe doit contenir au moins 4 caractères.", None
+def register_account(email, password, name=None):
+    email_clean = _normalize_email(email)
+    if not email_clean or not EMAIL_RE.match(email_clean):
+        return False, "Veuillez saisir une adresse e-mail valide.", None
+    if not password or len(password) < 6:
+        return False, "Le mot de passe doit contenir au moins 6 caractères.", None
+
+    display_name = (name or '').strip() or email_clean.split('@')[0]
+    display_name = display_name[:20]
 
     with _LOCK:
         data = _load_data()
-        if uname in data["accounts"]:
-            return False, "Cet identifiant est déjà utilisé.", None
+        if email_clean in data["accounts"]:
+            return False, "Un compte existe déjà avec cette adresse e-mail.", None
 
         default_profile_id = secrets.token_hex(6)
-        data["accounts"][uname] = {
-            "username": uname_display,
+        data["accounts"][email_clean] = {
+            "email": email_clean,
+            "username": display_name,
             "password_hash": _hash_password(password),
             "created_at": int(time.time()),
             "profiles": [
                 {
                     "id": default_profile_id,
-                    "name": uname_display[:20],
+                    "name": display_name,
                     "avatar": "star",
                     "progress": []
                 }
             ]
         }
         _save_data(data)
-        token = _sign_token(uname, data["secret"])
+        token = _sign_token(email_clean, data["secret"])
         return True, "Compte créé avec succès.", {
             "token": token,
-            "username": uname_display,
-            "profiles": _sanitize_profiles(data["accounts"][uname]["profiles"])
+            "email": email_clean,
+            "username": display_name,
+            "profiles": _sanitize_profiles(data["accounts"][email_clean]["profiles"])
         }
 
 
-def login_account(username, password):
-    uname = _normalize_username(username)
-    if not uname or not password:
-        return False, "Veuillez remplir tous les champs.", None
+def login_account(email, password):
+    email_clean = _normalize_email(email)
+    if not email_clean or not EMAIL_RE.match(email_clean):
+        return False, "Veuillez saisir une adresse e-mail valide.", None
+    if not password:
+        return False, "Veuillez saisir votre mot de passe.", None
 
     with _LOCK:
         data = _load_data()
-        acc = data["accounts"].get(uname)
+        acc = data["accounts"].get(email_clean)
         if not acc or not _verify_password(password, acc.get("password_hash", "")):
-            return False, "Identifiant ou mot de passe incorrect.", None
+            return False, "Adresse e-mail ou mot de passe incorrect.", None
 
-        token = _sign_token(uname, data["secret"])
+        token = _sign_token(email_clean, data["secret"])
         return True, "Connexion réussie.", {
             "token": token,
-            "username": acc.get("username", uname),
+            "email": acc.get("email", email_clean),
+            "username": acc.get("username", email_clean),
             "profiles": _sanitize_profiles(acc.get("profiles", []))
         }
 
@@ -176,20 +186,21 @@ def _sanitize_profiles(profiles):
 
 
 def get_account_info(username):
-    uname = _normalize_username(username)
+    uname = _normalize_email(username)
     with _LOCK:
         data = _load_data()
         acc = data["accounts"].get(uname)
         if not acc:
             return None
         return {
+            "email": acc.get("email", uname),
             "username": acc.get("username", uname),
             "profiles": _sanitize_profiles(acc.get("profiles", []))
         }
 
 
 def add_profile(username, name, avatar="star"):
-    uname = _normalize_username(username)
+    uname = _normalize_email(username)
     pname = (name or '').strip()
     if len(pname) < 1 or len(pname) > 20:
         return False, "Le nom du profil doit contenir entre 1 et 20 caractères.", None
@@ -218,7 +229,7 @@ def add_profile(username, name, avatar="star"):
 
 
 def update_profile(username, profile_id, name=None, avatar=None):
-    uname = _normalize_username(username)
+    uname = _normalize_email(username)
     with _LOCK:
         data = _load_data()
         acc = data["accounts"].get(uname)
@@ -245,7 +256,7 @@ def update_profile(username, profile_id, name=None, avatar=None):
 
 
 def delete_profile(username, profile_id):
-    uname = _normalize_username(username)
+    uname = _normalize_email(username)
     with _LOCK:
         data = _load_data()
         acc = data["accounts"].get(uname)
@@ -260,7 +271,7 @@ def delete_profile(username, profile_id):
 
 
 def get_profile_progress(username, profile_id):
-    uname = _normalize_username(username)
+    uname = _normalize_email(username)
     with _LOCK:
         data = _load_data()
         acc = data["accounts"].get(uname)
@@ -273,7 +284,7 @@ def get_profile_progress(username, profile_id):
 
 
 def save_profile_progress(username, profile_id, item):
-    uname = _normalize_username(username)
+    uname = _normalize_email(username)
     if not item or not item.get("id"):
         return False, []
 
@@ -312,7 +323,7 @@ def save_profile_progress(username, profile_id, item):
 
 
 def remove_profile_progress(username, profile_id, item_id):
-    uname = _normalize_username(username)
+    uname = _normalize_email(username)
     with _LOCK:
         data = _load_data()
         acc = data["accounts"].get(uname)

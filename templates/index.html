@@ -496,39 +496,93 @@
                 <div id="deskVideoResults" class="results-grid" style="margin-top:20px;"></div>
             </section>
 
-            <!-- Tab 6: Streaming & Lecteur Vidéo (Style Disney+) -->
+            <!-- Tab 6: Streaming & Lecteur Vidéo (Pleine Fenêtre Style Disney+) -->
             <section id="tab-streaming" class="tab-pane" style="display:none;">
 
-                <!-- 1. Barre de Navigation Supérieure Style Disney+ -->
+                <!-- 1. Barre de Navigation Supérieure Pleine Fenêtre Style Disney+ -->
                 <div class="disney-top-nav">
-                    <div class="disney-nav-links">
-                        <button type="button" id="btnDeskStreamHome" class="disney-nav-item active">
-                            <i class="fa-solid fa-house"></i> <span>Accueil</span>
+                    <div class="disney-nav-left">
+                        <div class="disney-brand-wordmark" id="btnDeskBrandHome" title="Accueil">
+                            <svg class="disney-arc-svg" viewBox="0 0 120 34" fill="none">
+                                <path d="M10 22 C38 4, 82 4, 108 18" stroke="url(#disneyArcGrad)" stroke-width="2.5" stroke-linecap="round"/>
+                                <defs>
+                                    <linearGradient id="disneyArcGrad" x1="10" y1="22" x2="108" y2="18" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#0063e5" stop-opacity="0"/>
+                                        <stop offset="50%" stop-color="#00d2ff"/>
+                                        <stop offset="100%" stop-color="#f9f9f9"/>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <span>Ciné<strong style="color:#00d2ff;">+</strong></span>
+                        </div>
+                        <div class="disney-nav-links">
+                            <button type="button" id="btnDeskStreamHome" class="disney-nav-item active">
+                                <i class="fa-solid fa-house"></i> <span>Accueil</span>
+                            </button>
+                            <button type="button" id="btnDeskStreamSearchToggle" class="disney-nav-item">
+                                <i class="fa-solid fa-magnifying-glass"></i> <span>Rechercher</span>
+                            </button>
+                            <button type="button" id="btnDeskStreamWatchlist" class="disney-nav-item">
+                                <i class="fa-solid fa-plus"></i> <span>Ma Liste</span>
+                            </button>
+                            <button type="button" class="disney-nav-item desk-fast-stream-pill" data-q="tendances">
+                                <i class="fa-solid fa-film"></i> <span>Films</span>
+                            </button>
+                            <button type="button" class="disney-nav-item desk-fast-stream-pill" data-q="series">
+                                <i class="fa-solid fa-tv"></i> <span>Séries</span>
+                            </button>
+                            <button type="button" id="btnDeskToggleManualSites" class="disney-nav-item">
+                                <i class="fa-solid fa-globe"></i> <span>Sites</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="disney-nav-right">
+                        <button type="button" id="btnDeskStreamAccount" class="disney-auth-pill" title="Se connecter / Profils">
+                            <i class="fa-solid fa-user-circle"></i>
+                            <span>Se connecter</span>
                         </button>
-                        <button type="button" id="btnDeskStreamSearchToggle" class="disney-nav-item">
-                            <i class="fa-solid fa-magnifying-glass"></i> <span>Rechercher</span>
-                        </button>
-                        <button type="button" class="disney-nav-item desk-fast-stream-pill" data-q="tendances">
-                            <i class="fa-solid fa-film"></i> <span>Films</span>
-                        </button>
-                        <button type="button" class="disney-nav-item desk-fast-stream-pill" data-q="series">
-                            <i class="fa-solid fa-tv"></i> <span>Séries</span>
-                        </button>
-                        <button type="button" id="btnDeskToggleManualSites" class="disney-nav-item">
-                            <i class="fa-solid fa-globe"></i> <span>Sites Externes</span>
-                        </button>
+                        <div class="disney-more-wrap" style="position:relative;">
+                            <button type="button" id="btnDeskStreamMoreMenu" class="disney-dots-btn" title="Menu & Retour Mode MP3">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                            <div id="deskStreamMoreDropdown" class="disney-dots-dropdown" style="display:none;">
+                                <button type="button" class="disney-dots-item" id="btnDeskBackToMusic">
+                                    <i class="fa-solid fa-music" style="color:#a78bfa;"></i> <span>Mode Musique MP3</span>
+                                </button>
+                                <button type="button" class="disney-dots-item" id="btnDeskGoToVideo">
+                                    <i class="fa-solid fa-video" style="color:#f87171;"></i> <span>Mode Vidéo MP4</span>
+                                </button>
+                                <button type="button" class="disney-dots-item" id="btnDeskStreamSettings">
+                                    <i class="fa-solid fa-gear" style="color:#94a3b8;"></i> <span>Paramètres</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Panneau Recherche Disney+ (S'ouvre quand on clique sur Rechercher) -->
-                <div id="deskStreamSearchPanel" class="disney-search-panel" style="display:none;">
-                    <form id="deskStreamSearchForm" class="disney-search-form">
+                <!-- PAGE RECHERCHE DÉDIÉE (Remplace complètement l'accueil quand on clique sur Rechercher) -->
+                <div id="deskDisneySearchPage" class="disney-search-page" style="display:none;">
+                    <form id="deskStreamSearchForm" class="disney-big-search-form">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="deskStreamSearchInput" placeholder="Titre, personnage, saga ou acteur...">
-                        <button type="submit" class="btn-disney-play" style="padding:10px 22px;border-radius:10px;">
+                        <input type="text" id="deskStreamSearchInput" placeholder="Titre, personnage ou genre..." autocomplete="off">
+                        <button type="submit" class="btn-disney-play" style="padding:12px 26px;border-radius:10px;">
                             Rechercher
                         </button>
                     </form>
+                    <div id="deskSearchExploreGrid" class="disney-explore-section">
+                        <h3 class="disney-row-heading" style="margin-bottom:14px;">Explorer</h3>
+                        <div class="disney-explore-grid">
+                            <button type="button" class="disney-explore-tile desk-fast-stream-pill" data-q="tendances"><i class="fa-solid fa-fire"></i><span>Tendances</span></button>
+                            <button type="button" class="disney-explore-tile desk-fast-stream-pill" data-q="disney"><i class="fa-solid fa-wand-sparkles"></i><span>Disney</span></button>
+                            <button type="button" class="disney-explore-tile desk-fast-stream-pill" data-q="pixar"><i class="fa-solid fa-rocket"></i><span>Pixar</span></button>
+                            <button type="button" class="disney-explore-tile desk-fast-stream-pill" data-q="marvel"><i class="fa-solid fa-shield-halved"></i><span>Marvel</span></button>
+                            <button type="button" class="disney-explore-tile desk-fast-stream-pill" data-q="starwars"><i class="fa-solid fa-jedi"></i><span>Star Wars</span></button>
+                            <button type="button" class="disney-explore-tile desk-fast-stream-pill" data-q="series"><i class="fa-solid fa-tv"></i><span>Séries</span></button>
+                            <button type="button" class="disney-explore-tile desk-fast-stream-pill" data-q="action"><i class="fa-solid fa-explosion"></i><span>Action</span></button>
+                            <button type="button" class="disney-explore-tile desk-fast-stream-pill" data-q="anime"><i class="fa-solid fa-dragon"></i><span>Animés</span></button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Panneau Sites Externes Manuels (Replié par défaut pour garder l'accueil Disney+ épuré) -->
@@ -574,8 +628,10 @@
                     </div>
                 </div>
 
-                <!-- 2. Carrousel Hero Cinéma Style Disney+ (Tout en haut) -->
-                <div id="deskDisneyHero" class="disney-hero-banner"></div>
+                <!-- PAGE ACCUEIL DISNEY+ (Hero + Marques + Reprendre + Rangées) -->
+                <div id="deskDisneyHomePage">
+                    <!-- 2. Carrousel Hero Cinéma Style Disney+ (Tout en haut) -->
+                    <div id="deskDisneyHero" class="disney-hero-banner"></div>
 
                 <!-- 3. Tuiles des Marques Disney+ (Juste sous le Hero) -->
                 <div class="disney-brands-row">
@@ -738,25 +794,70 @@
                 <!-- Section Reprendre la lecture (Style Disney+) -->
                 <div id="deskContinueWatchingSection" style="display:none;margin:20px 0 14px 0;">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                        <h3 style="color:#fff;font-size:1.15rem;font-weight:900;display:flex;align-items:center;gap:8px;">
-                            <i class="fa-solid fa-clock-rotate-left" style="color:#00d2ff;"></i> Reprendre la lecture
+                        <h3 class="disney-row-heading">
+                            Reprendre la lecture
                         </h3>
                         <span id="deskContinueProfileTag" style="font-size:0.78rem;color:#38bdf8;font-weight:700;"></span>
                     </div>
                     <div id="deskContinueWatchingList" class="disney-continue-row"></div>
                 </div>
 
-                <!-- Section au MILIEU : Les Films les Plus Regardés (Demandé par l'utilisateur) -->
-                <div id="deskStreamMiddleHeader" style="margin:20px 0 12px 0;">
-                    <h3 id="deskStreamSectionTitle" style="color:#fff;font-size:1.25rem;font-weight:900;display:flex;align-items:center;gap:8px;">
-                        <i class="fa-solid fa-fire" style="color:#ef4444;"></i> Les Films les Plus Regardés
-                    </h3>
-                    <p id="deskStreamSectionDesc" style="color:var(--text-muted);font-size:0.85rem;margin-top:2px;">
-                        Top Box-Office mondial & films du moment disponibles en streaming gratuit VF/VOSTFR
-                    </p>
+                <!-- Rangs Multiples Accueil Style Disney+ (Tendances, Disney, Pixar, Marvel, Star Wars, Séries) -->
+                <div id="deskDisneyHomeRows" class="disney-home-rows"></div>
+                </div><!-- /#deskDisneyHomePage -->
+
+                <!-- PAGE DÉDIÉE FILM / SÉRIE STYLE DISNEY+ -->
+                <div id="deskDisneyDetailPage" class="disney-detail-page" style="display:none;">
+                    <button type="button" id="btnDeskDetailBack" class="disney-detail-back">
+                        <i class="fa-solid fa-arrow-left"></i> Retour
+                    </button>
+                    <div id="deskDetailHero" class="disney-detail-hero">
+                        <img id="deskDetailBackdrop" src="" alt="" onerror="this.src='/static/icons/icon-512.png'">
+                        <div class="disney-detail-gradient"></div>
+                        <div class="disney-detail-content">
+                            <div id="deskDetailBadges" class="disney-hero-badges"></div>
+                            <h1 id="deskDetailTitle" class="disney-detail-title">Titre</h1>
+                            <p id="deskDetailMeta" class="disney-detail-meta"></p>
+                            <p id="deskDetailDesc" class="disney-detail-desc"></p>
+                            <div class="disney-hero-actions">
+                                <button type="button" id="btnDeskDetailPlay" class="btn-disney-play">
+                                    <i class="fa-solid fa-play"></i> Lecture
+                                </button>
+                                <button type="button" id="btnDeskDetailTrailer" class="btn-disney-trailer">
+                                    <i class="fa-solid fa-clapperboard"></i> Bande-annonce
+                                </button>
+                                <button type="button" id="btnDeskDetailWatchlist" class="disney-circle-action" title="Ma Liste">
+                                    <i class="fa-solid fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lecteur Vidéo intégré dans la page dédiée -->
+                    <div id="deskStreamingContainerWrapper"></div>
+
+                    <!-- Suggestions ("Vous aimerez aussi") -->
+                    <div class="disney-detail-suggestions">
+                        <h3 class="disney-row-heading" style="margin-bottom:14px;">Vous aimerez aussi</h3>
+                        <div id="deskDetailSuggestions" class="disney-poster-grid"></div>
+                    </div>
                 </div>
 
-                <div id="deskStreamResults" class="results-grid" style="margin-top:10px;"></div>
+                <!-- Vue Grille Filtrée (Recherche, Univers, Films, Séries, Ma Liste) -->
+                <div id="deskStreamFilteredView" style="display:none;">
+                    <div id="deskStreamMiddleHeader" style="margin:18px 0 14px 0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                        <div>
+                            <h3 id="deskStreamSectionTitle" class="disney-row-heading" style="margin:0;">
+                                Catalogue
+                            </h3>
+                            <p id="deskStreamSectionDesc" style="color:#9ca3af;font-size:0.85rem;margin-top:3px;"></p>
+                        </div>
+                        <button type="button" id="btnDeskBackDisneyHome" class="disney-secondary-btn">
+                            <i class="fa-solid fa-arrow-left"></i> Accueil Disney+
+                        </button>
+                    </div>
+                    <div id="deskStreamResults" class="disney-poster-grid" style="margin-top:10px;"></div>
+                </div>
             </section>
         </main>
 
@@ -1070,12 +1171,16 @@
 
                 <form id="deskAuthForm" class="disney-auth-form">
                     <div class="disney-field">
-                        <label>Identifiant</label>
-                        <input type="text" id="deskAuthUsername" placeholder="Votre identifiant" autocomplete="username" required>
+                        <label>Adresse e-mail</label>
+                        <input type="email" id="deskAuthEmail" placeholder="nom@exemple.com" autocomplete="email" required>
+                    </div>
+                    <div class="disney-field" id="deskAuthNameGroup" style="display:none;">
+                        <label>Nom du profil</label>
+                        <input type="text" id="deskAuthName" placeholder="Votre nom" maxlength="20">
                     </div>
                     <div class="disney-field">
                         <label>Mot de passe</label>
-                        <input type="password" id="deskAuthPassword" placeholder="Votre mot de passe" autocomplete="current-password" required>
+                        <input type="password" id="deskAuthPassword" placeholder="6 caractères minimum" autocomplete="current-password" required>
                     </div>
                     <div id="deskAuthError" class="disney-auth-error" style="display:none;"></div>
                     <button type="submit" id="btnDeskAuthSubmit" class="btn-disney-play" style="width:100%;justify-content:center;padding:13px;font-size:0.95rem;">

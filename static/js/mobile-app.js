@@ -1849,28 +1849,40 @@
             });
         });
 
-        // Barre de navigation supérieure Disney+ (Mobile)
+        // Barre de navigation supérieure Disney+ (Mobile : Accueil, Rechercher, Ma Liste, Sites, 3 points)
         const btnHome = $('btnMobStreamHome');
+        const btnBrandHome = $('btnMobBrandHome');
+        const btnBackHome = $('btnMobBackDisneyHome');
         const btnSearchTog = $('btnMobStreamSearchToggle');
-        const searchPanel = $('mobStreamSearchPanel');
+        const btnWatchlist = $('btnMobStreamWatchlist');
         const btnSitesTog = $('btnMobToggleManualSites');
         const sitesDrawer = $('mobManualSitesDrawer');
+        const btnMore = $('btnMobStreamMoreMenu');
+        const moreDrop = $('mobStreamMoreDropdown');
 
-        if (btnHome) {
-            btnHome.addEventListener('click', () => {
-                if (searchPanel) searchPanel.style.display = 'none';
-                if (sitesDrawer) sitesDrawer.style.display = 'none';
+        const goHome = () => {
+            if (sitesDrawer) sitesDrawer.style.display = 'none';
+            document.querySelectorAll('.disney-mob-nav-pill').forEach(n => n.classList.remove('active'));
+            if (btnHome) btnHome.classList.add('active');
+            showMobDisneyHome();
+        };
+
+        if (btnHome) btnHome.addEventListener('click', goHome);
+        if (btnBrandHome) btnBrandHome.addEventListener('click', goHome);
+        if (btnBackHome) btnBackHome.addEventListener('click', goHome);
+
+        if (btnWatchlist) {
+            btnWatchlist.addEventListener('click', () => {
                 document.querySelectorAll('.disney-mob-nav-pill').forEach(n => n.classList.remove('active'));
-                btnHome.classList.add('active');
-                doSearchStreaming('tendances');
+                btnWatchlist.classList.add('active');
+                showMobWatchlist();
             });
         }
-        if (btnSearchTog && searchPanel) {
+        if (btnSearchTog) {
             btnSearchTog.addEventListener('click', () => {
-                const isOpen = searchPanel.style.display !== 'none';
-                searchPanel.style.display = isOpen ? 'none' : 'block';
-                btnSearchTog.classList.toggle('active', !isOpen);
-                if (!isOpen && sInput) sInput.focus();
+                document.querySelectorAll('.disney-mob-nav-pill').forEach(n => n.classList.remove('active'));
+                btnSearchTog.classList.add('active');
+                showMobSearchPage();
             });
         }
         if (btnSitesTog && sitesDrawer) {
@@ -1881,7 +1893,49 @@
             });
         }
 
+        if (btnMore && moreDrop) {
+            btnMore.addEventListener('click', (e) => {
+                e.stopPropagation();
+                moreDrop.style.display = moreDrop.style.display === 'none' ? 'flex' : 'none';
+            });
+            document.addEventListener('click', (e) => {
+                if (!moreDrop.contains(e.target) && e.target !== btnMore) {
+                    moreDrop.style.display = 'none';
+                }
+            });
+        }
+        $('btnMobBackToMusic')?.addEventListener('click', () => {
+            if (moreDrop) moreDrop.style.display = 'none';
+            setAppMode('music');
+        });
+        $('btnMobGoToVideo')?.addEventListener('click', () => {
+            if (moreDrop) moreDrop.style.display = 'none';
+            setAppMode('video');
+        });
+        $('btnMobStreamSettings')?.addEventListener('click', () => {
+            if (moreDrop) moreDrop.style.display = 'none';
+            $('btnMobSettings')?.click();
+        });
+
+        const btnDetailBack = $('btnMobDetailBack');
+        if (btnDetailBack) {
+            btnDetailBack.addEventListener('click', () => {
+                const iframe = $('mobStreamingIframe');
+                if (iframe) iframe.src = '';
+                const cont = $('mobStreamingPlayerContainer');
+                if (cont) cont.style.display = 'none';
+                const detailPage = $('mobDisneyDetailPage');
+                if (detailPage) detailPage.style.display = 'none';
+                if (mobLastView === 'search') showMobSearchPage(true);
+                else if (mobLastView === 'watchlist') showMobWatchlist();
+                else if (mobLastView === 'filtered') {
+                    $('mobStreamFilteredView').style.display = 'block';
+                } else showMobDisneyHome();
+            });
+        }
+
         initMobDisneyHero();
+        loadMobDisneyHomeRows();
 
         const btnWatchTrailer = $('btnMobWatchTrailerInPlayer');
         if (btnWatchTrailer) {
@@ -2389,7 +2443,21 @@
         const empty = $('mobStreamEmpty');
         const titleEl = $('mobStreamSectionTitle');
         const descEl = $('mobStreamSectionDesc');
+        const homePage = $('mobDisneyHomePage');
+        const detailPage = $('mobDisneyDetailPage');
+        const filteredView = $('mobStreamFilteredView');
+        const searchPage = $('mobDisneySearchPage');
+        const exploreGrid = $('mobSearchExploreGrid');
 
+        if (homePage) homePage.style.display = 'none';
+        if (detailPage) detailPage.style.display = 'none';
+        if (searchPage && searchPage.style.display !== 'none' && exploreGrid) {
+            exploreGrid.style.display = 'none';
+            mobLastView = 'search';
+        } else {
+            mobLastView = 'filtered';
+        }
+        if (filteredView) filteredView.style.display = 'block';
         if (loader) loader.style.display = 'flex';
         if (results) results.innerHTML = '';
         if (empty) empty.style.display = 'none';
@@ -2472,9 +2540,9 @@
 
             const btnPlay = card.querySelector('.btn-play-stream');
             if (btnPlay) {
-                btnPlay.onclick = (e) => { e.stopPropagation(); playVideoStream(v); };
+                btnPlay.onclick = (e) => { e.stopPropagation(); openMobDetailPage(v, true); };
             }
-            card.onclick = () => playVideoStream(v);
+            card.onclick = () => openMobDetailPage(v);
 
             results.appendChild(card);
         });
@@ -2693,6 +2761,7 @@
 
     function setupMobAccountSystem() {
         const btnAcc = $('btnMobAccount');
+        const btnStreamAcc = $('btnMobStreamAccount');
         const modal = $('mobDisneyAccountModal');
         const btnClose = $('btnMobAccountClose');
         const btnGuest = $('btnMobContinueGuest');
@@ -2706,6 +2775,7 @@
         const btnSaveNote = $('btnMobSaveTimeNote');
 
         if (btnAcc) btnAcc.addEventListener('click', () => openMobAccountModal());
+        if (btnStreamAcc) btnStreamAcc.addEventListener('click', () => openMobAccountModal());
         if (btnPromptSync) btnPromptSync.addEventListener('click', () => openMobAccountModal());
         if (btnClose) btnClose.addEventListener('click', () => { if (modal) modal.style.display = 'none'; });
         if (btnGuest) btnGuest.addEventListener('click', () => { if (modal) modal.style.display = 'none'; });
@@ -2719,7 +2789,9 @@
                 tab.classList.add('active');
                 mobAuthMode = tab.dataset.authTab;
                 const subBtn = $('btnMobAuthSubmit');
+                const nameGrp = $('mobAuthNameGroup');
                 if (subBtn) subBtn.textContent = mobAuthMode === 'register' ? 'Créer un compte' : 'Se connecter';
+                if (nameGrp) nameGrp.style.display = mobAuthMode === 'register' ? 'flex' : 'none';
                 const err = $('mobAuthError');
                 if (err) err.style.display = 'none';
             });
@@ -2728,17 +2800,19 @@
         if (authForm) {
             authForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const u = ($('mobAuthUsername')?.value || '').trim();
+                const email = ($('mobAuthEmail')?.value || '').trim();
+                const name = ($('mobAuthName')?.value || '').trim();
                 const p = $('mobAuthPassword')?.value || '';
                 const err = $('mobAuthError');
                 if (err) err.style.display = 'none';
 
                 const endpoint = mobAuthMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+                const payload = mobAuthMode === 'register' ? { email, name, password: p } : { email, password: p };
                 try {
                     const res = await fetch(endpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: u, password: p })
+                        body: JSON.stringify(payload)
                     });
                     const data = await res.json();
                     if (!data.success) {
@@ -2886,22 +2960,26 @@
     }
 
     function updateMobAccountPill() {
-        const btn = $('btnMobAccount');
+        const btns = [$('btnMobAccount'), $('btnMobStreamAccount')].filter(Boolean);
         const promptSync = $('btnMobPromptSync');
         const statusEl = $('mobStreamProgressStatus');
-        if (!btn) return;
+        if (!btns.length) return;
 
         if (mobAuthState.loggedIn) {
             const prof = mobAuthState.profiles.find(p => p.id === mobAuthState.activeProfileId) || mobAuthState.profiles[0];
-            btn.classList.add('logged-in');
-            btn.innerHTML = prof
-                ? `<span class="disney-pill-avatar" style="background:${prof.gradient}"><i class="fa-solid ${prof.icon}"></i></span><span>${esc(prof.name)}</span>`
-                : `<i class="fa-solid fa-user-check"></i><span>${esc(mobAuthState.username)}</span>`;
+            btns.forEach(btn => {
+                btn.classList.add('logged-in');
+                btn.innerHTML = prof
+                    ? `<span class="disney-pill-avatar" style="background:${prof.gradient}"><i class="fa-solid ${prof.icon}"></i></span><span>${esc(prof.name)}</span>`
+                    : `<i class="fa-solid fa-user-check"></i><span>${esc(mobAuthState.username)}</span>`;
+            });
             if (promptSync) promptSync.style.display = 'none';
             if (statusEl && prof) statusEl.innerHTML = `<i class="fa-solid fa-bookmark" style="color:#00d2ff;"></i> Profil : ${esc(prof.name)}`;
         } else {
-            btn.classList.remove('logged-in');
-            btn.innerHTML = `<i class="fa-solid fa-user-circle"></i><span>Se connecter</span>`;
+            btns.forEach(btn => {
+                btn.classList.remove('logged-in');
+                btn.innerHTML = `<i class="fa-solid fa-user-circle"></i><span>Se connecter</span>`;
+            });
             if (promptSync) promptSync.style.display = 'inline-block';
             if (statusEl) statusEl.innerHTML = `<i class="fa-solid fa-bookmark" style="color:#00d2ff;"></i> Sauvegardé sur l'appareil`;
         }
@@ -3119,15 +3197,235 @@
             }
 
             card.onclick = () => {
-                playVideoStream({
+                openMobDetailPage({
                     ...it,
                     _resumeSeason: it.season || 1,
                     _resumeEpisode: it.episode || 1,
                     _resumeTimeNote: it.time_note || ''
-                });
+                }, true);
             };
             list.appendChild(card);
         });
+    }
+
+    function getMobWatchlist() {
+        try { return JSON.parse(localStorage.getItem('mp3_disney_watchlist') || '[]'); } catch { return []; }
+    }
+
+    function isInMobWatchlist(id) {
+        return getMobWatchlist().some(x => String(x.id) === String(id));
+    }
+
+    function toggleMobWatchlist(video) {
+        let list = getMobWatchlist();
+        const exists = list.some(x => String(x.id) === String(video.id));
+        if (exists) {
+            list = list.filter(x => String(x.id) !== String(video.id));
+            showToast(`Retiré de Ma Liste`);
+        } else {
+            list.unshift(video);
+            list = list.slice(0, 40);
+            showToast(`✅ Ajouté à Ma Liste !`);
+        }
+        localStorage.setItem('mp3_disney_watchlist', JSON.stringify(list));
+        return !exists;
+    }
+
+    let mobLastView = 'home';
+
+    function showMobDisneyHome() {
+        mobLastView = 'home';
+        const homePage = $('mobDisneyHomePage');
+        const searchPage = $('mobDisneySearchPage');
+        const detailPage = $('mobDisneyDetailPage');
+        const filteredView = $('mobStreamFilteredView');
+        const homeRows = $('mobDisneyHomeRows');
+        if (searchPage) searchPage.style.display = 'none';
+        if (detailPage) detailPage.style.display = 'none';
+        if (filteredView) filteredView.style.display = 'none';
+        if (homePage) homePage.style.display = 'block';
+        if (homeRows && !homeRows.children.length) loadMobDisneyHomeRows();
+    }
+
+    function showMobSearchPage(keepResults = false) {
+        mobLastView = 'search';
+        const homePage = $('mobDisneyHomePage');
+        const searchPage = $('mobDisneySearchPage');
+        const detailPage = $('mobDisneyDetailPage');
+        const filteredView = $('mobStreamFilteredView');
+        const exploreGrid = $('mobSearchExploreGrid');
+        const sInput = $('mobStreamSearchInput');
+        if (homePage) homePage.style.display = 'none';
+        if (detailPage) detailPage.style.display = 'none';
+        if (searchPage) searchPage.style.display = 'block';
+        if (!keepResults) {
+            if (filteredView) filteredView.style.display = 'none';
+            if (exploreGrid) exploreGrid.style.display = 'block';
+        } else {
+            if (filteredView) filteredView.style.display = 'block';
+        }
+        if (sInput) sInput.focus();
+    }
+
+    function showMobWatchlist() {
+        mobLastView = 'watchlist';
+        const homePage = $('mobDisneyHomePage');
+        const searchPage = $('mobDisneySearchPage');
+        const detailPage = $('mobDisneyDetailPage');
+        const filteredView = $('mobStreamFilteredView');
+        const titleEl = $('mobStreamSectionTitle');
+        const descEl = $('mobStreamSectionDesc');
+        if (homePage) homePage.style.display = 'none';
+        if (searchPage) searchPage.style.display = 'none';
+        if (detailPage) detailPage.style.display = 'none';
+        if (filteredView) filteredView.style.display = 'block';
+        if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-bookmark" style="color:#00d2ff;"></i> Ma Liste';
+        if (descEl) descEl.textContent = 'Vos films et séries enregistrés';
+        renderStreamingResults(getMobWatchlist());
+    }
+
+    async function openMobDetailPage(video, autoPlay = false) {
+        if (!video) return;
+        const homePage = $('mobDisneyHomePage');
+        const searchPage = $('mobDisneySearchPage');
+        const filteredView = $('mobStreamFilteredView');
+        const detailPage = $('mobDisneyDetailPage');
+        const player = $('mobStreamingPlayerContainer');
+        const wrapper = $('mobStreamingContainerWrapper');
+
+        if (wrapper && player && player.parentElement !== wrapper) {
+            wrapper.appendChild(player);
+        }
+        if (player) player.style.display = autoPlay ? 'block' : 'none';
+
+        if (homePage) homePage.style.display = 'none';
+        if (searchPage) searchPage.style.display = 'none';
+        if (filteredView) filteredView.style.display = 'none';
+        if (detailPage) {
+            detailPage.style.display = 'block';
+            detailPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        const backdrop = $('mobDetailBackdrop');
+        const titleEl = $('mobDetailTitle');
+        const metaEl = $('mobDetailMeta');
+        const descEl = $('mobDetailDesc');
+        const badgesEl = $('mobDetailBadges');
+        const wlBtn = $('btnMobDetailWatchlist');
+
+        if (backdrop) backdrop.src = video.thumbnail || '/static/icons/icon-192.png';
+        if (titleEl) titleEl.textContent = video.title || 'Titre';
+        if (metaEl) metaEl.textContent = [video.year, video.is_series ? 'Série TV' : 'Film Complet', 'VF / VOSTFR'].filter(Boolean).join(' • ');
+        if (descEl) descEl.textContent = video.synopsis || video.actors || 'Disponible en streaming HD VF et VOSTFR sans abonnement.';
+        if (badgesEl) {
+            badgesEl.innerHTML = `
+                <span class="badge-disney-exclusive">${esc(video.type_label || (video.is_series ? '📺 Série' : '🎬 Film'))}</span>
+                <span class="badge-disney-vf">🇫🇷 VF / VOSTFR</span>
+            `;
+        }
+
+        if (wlBtn) {
+            const syncWl = (inList) => {
+                wlBtn.classList.toggle('in-list', inList);
+                wlBtn.innerHTML = `<i class="fa-solid ${inList ? 'fa-check' : 'fa-plus'}"></i>`;
+            };
+            syncWl(isInMobWatchlist(video.id));
+            wlBtn.onclick = () => syncWl(toggleMobWatchlist(video));
+        }
+
+        $('btnMobDetailPlay').onclick = () => playVideoStream(video);
+        $('btnMobDetailTrailer').onclick = () => playVideoTrailer(video);
+
+        if (autoPlay) {
+            playVideoStream(video);
+        }
+
+        const sugGrid = $('mobDetailSuggestions');
+        if (sugGrid) {
+            sugGrid.innerHTML = '';
+            const sugQuery = video.is_series ? 'series' : (video.type_label && video.type_label.toLowerCase().includes('marvel') ? 'marvel' : 'tendances');
+            try {
+                const res = await fetch(`/api/streaming/search?q=${encodeURIComponent(sugQuery)}&limit=10`);
+                const items = (await res.json() || []).filter(x => String(x.id) !== String(video.id)).slice(0, 6);
+                items.forEach(s => {
+                    const card = document.createElement('div');
+                    card.className = 'disney-movie-card';
+                    card.innerHTML = `
+                        <div class="disney-poster-wrapper">
+                            <img class="disney-poster-img" src="${esc(s.thumbnail || '/static/icons/icon-192.png')}" alt="${esc(s.title)}" onerror="this.src='/static/icons/icon-192.png'" loading="lazy">
+                        </div>
+                        <div class="disney-card-info">
+                            <div class="disney-card-title">${esc(s.title)}</div>
+                            <div class="disney-card-meta">${s.year ? `<span class="meta-year">${esc(s.year)}</span>` : ''}<span>${esc(s.type_label || 'Film')}</span></div>
+                        </div>
+                    `;
+                    card.onclick = () => openMobDetailPage(s);
+                    sugGrid.appendChild(card);
+                });
+            } catch {}
+        }
+    }
+
+    async function loadMobDisneyHomeRows() {
+        const container = $('mobDisneyHomeRows');
+        if (!container) return;
+        const rowsSpec = [
+            { q: 'tendances', title: 'Tendances du moment' },
+            { q: 'disney', title: 'Classiques Disney' },
+            { q: 'pixar', title: 'Studios Pixar' },
+            { q: 'marvel', title: 'Univers Marvel' },
+            { q: 'starwars', title: 'Galaxie Star Wars' },
+            { q: 'series', title: 'Séries à ne pas manquer' }
+        ];
+
+        try {
+            const responses = await Promise.all(
+                rowsSpec.map(r => fetch(`/api/streaming/search?q=${encodeURIComponent(r.q)}&limit=12`).then(res => res.json()).catch(() => []))
+            );
+            container.innerHTML = '';
+            rowsSpec.forEach((spec, i) => {
+                const items = responses[i] || [];
+                if (!items.length) return;
+
+                const sec = document.createElement('div');
+                sec.className = 'disney-row-section';
+                sec.innerHTML = `
+                    <div class="disney-row-header">
+                        <h3 class="disney-row-heading">${esc(spec.title)}</h3>
+                        <button type="button" class="disney-row-more">Tout voir ›</button>
+                    </div>
+                    <div class="disney-row-track"></div>
+                `;
+                sec.querySelector('.disney-row-more').onclick = () => doSearchStreaming(spec.q);
+                const track = sec.querySelector('.disney-row-track');
+
+                items.forEach(v => {
+                    const card = document.createElement('div');
+                    card.className = 'disney-row-card';
+                    const inList = isInMobWatchlist(v.id);
+                    card.innerHTML = `
+                        <div class="disney-row-poster">
+                            <img src="${esc(v.thumbnail || '/static/icons/icon-192.png')}" alt="${esc(v.title)}" onerror="this.src='/static/icons/icon-192.png'" loading="lazy">
+                            <div class="disney-row-gradient"></div>
+                            <button type="button" class="disney-wl-btn ${inList ? 'in-list' : ''}" title="Ma Liste">
+                                <i class="fa-solid ${inList ? 'fa-check' : 'fa-plus'}"></i>
+                            </button>
+                            <div class="disney-row-title">${esc(v.title)}</div>
+                        </div>
+                    `;
+                    const wlBtn = card.querySelector('.disney-wl-btn');
+                    wlBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        const added = toggleMobWatchlist(v);
+                        wlBtn.classList.toggle('in-list', added);
+                        wlBtn.innerHTML = `<i class="fa-solid ${added ? 'fa-check' : 'fa-plus'}"></i>`;
+                    };
+                    card.onclick = () => openMobDetailPage(v);
+                    track.appendChild(card);
+                });
+                container.appendChild(sec);
+            });
+        } catch {}
     }
 
     function initMobDisneyHero() {
@@ -3188,8 +3486,8 @@
                     </div>
                 </div>
             `;
-            slide.querySelector('.hero-play-btn').onclick = () => playVideoStream(s);
-            slide.querySelector('.hero-trailer-btn').onclick = () => playVideoTrailer(s);
+            slide.querySelector('.hero-play-btn').onclick = () => openMobDetailPage(s, true);
+            slide.querySelector('.hero-trailer-btn').onclick = () => openMobDetailPage(s, false);
             heroEl.appendChild(slide);
         });
 

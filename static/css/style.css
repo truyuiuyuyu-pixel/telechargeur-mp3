@@ -2901,3 +2901,447 @@ body.mode-disney-streaming .header {
 .disney-brand-card:hover img {
     transform: scale(1.06);
 }
+
+/* ============================================================
+   DISNEY+ IMMERSION TOTALE (DESKTOP)
+   ============================================================ */
+
+body.mode-disney-streaming {
+    background: radial-gradient(ellipse at top, #1a1d29 0%, #090b13 45%, #040714 100%) fixed !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+}
+body.mode-disney-streaming .nav-tabs {
+    display: none !important;
+}
+body.mode-disney-streaming .navbar {
+    background: rgba(4, 7, 20, 0.85) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(14px);
+}
+body.mode-disney-streaming .btn-disney-play {
+    background: #f9f9f9 !important;
+    color: #040714 !important;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+body.mode-disney-streaming .btn-disney-play:hover {
+    background: #ffffff !important;
+    transform: scale(1.03);
+}
+body.mode-disney-streaming .btn-disney-trailer {
+    background: rgba(0, 0, 0, 0.55) !important;
+    border: 1.5px solid rgba(249, 249, 249, 0.75) !important;
+    color: #f9f9f9 !important;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+body.mode-disney-streaming .btn-disney-trailer:hover {
+    background: rgba(249, 249, 249, 0.16) !important;
+}
+
+/* ---- Rangs Horizontaux Style Disney+ ---- */
+.disney-home-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+    padding-bottom: 40px;
+}
+.disney-row-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.disney-row-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+.disney-row-heading {
+    color: #f9f9f9;
+    font-size: 1.18rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    margin: 0;
+}
+.disney-row-more {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.disney-row-more:hover {
+    color: #f9f9f9;
+}
+.disney-row-track {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 8px 4px 16px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+}
+.disney-row-card {
+    position: relative;
+    min-width: 175px;
+    max-width: 175px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #1a1d29;
+    border: 3px solid rgba(249, 249, 249, 0.1);
+    box-shadow: 0 22px 28px -12px rgba(0, 0, 0, 0.75);
+    cursor: pointer;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    transition: transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.25s, box-shadow 0.25s;
+}
+.disney-row-card:hover {
+    transform: scale(1.06);
+    border-color: rgba(249, 249, 249, 0.85);
+    box-shadow: 0 28px 36px -10px rgba(0, 0, 0, 0.9);
+    z-index: 2;
+}
+.disney-row-poster {
+    position: relative;
+    width: 100%;
+    padding-top: 145%;
+    overflow: hidden;
+    background: #13151f;
+}
+.disney-row-poster img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.disney-row-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 55%, rgba(4, 7, 20, 0.92) 100%);
+    pointer-events: none;
+}
+.disney-row-title {
+    position: absolute;
+    bottom: 8px;
+    left: 9px;
+    right: 9px;
+    color: #f9f9f9;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+.disney-wl-btn {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(4, 7, 20, 0.78);
+    border: 1.5px solid rgba(249, 249, 249, 0.55);
+    color: #fff;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s, transform 0.2s;
+    z-index: 3;
+}
+.disney-row-card:hover .disney-wl-btn,
+.disney-movie-card:hover .disney-wl-btn,
+.disney-wl-btn.in-list {
+    opacity: 1;
+}
+.disney-wl-btn.in-list {
+    background: #0063e5;
+    border-color: #00d2ff;
+}
+
+/* ============================================================
+   DISNEY+ PLEINE FENÊTRE, MENU 3 POINTS, PAGE RECHERCHE & DÉTAIL (DESKTOP)
+   ============================================================ */
+
+body.mode-disney-streaming .navbar {
+    display: none !important;
+}
+body.mode-disney-streaming .app-container {
+    max-width: 100% !important;
+    padding: 0 28px 40px !important;
+    margin: 0 !important;
+}
+body.mode-disney-streaming .main-content {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.disney-top-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 4px 16px;
+    gap: 16px;
+}
+.disney-nav-left {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+.disney-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.disney-brand-wordmark {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: #f9f9f9;
+    letter-spacing: -0.03em;
+    cursor: pointer;
+    padding-top: 8px;
+    user-select: none;
+}
+.disney-arc-svg {
+    position: absolute;
+    top: -2px;
+    left: -6px;
+    width: 92px;
+    height: 24px;
+    pointer-events: none;
+}
+
+.disney-dots-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.16);
+    color: #f9f9f9;
+    font-size: 1.05rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+}
+.disney-dots-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: #f9f9f9;
+}
+.disney-dots-dropdown {
+    position: absolute;
+    top: 46px;
+    right: 0;
+    width: 225px;
+    background: #13151f;
+    border: 1.5px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+    padding: 8px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.85);
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.disney-dots-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    color: #e2e8f0;
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.disney-dots-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* ---- Page Recherche Dédiée ---- */
+.disney-search-page {
+    padding: 10px 0 24px;
+}
+.disney-big-search-form {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    background: #2b2e3b;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    margin-bottom: 24px;
+    transition: border-color 0.2s, background 0.2s;
+}
+.disney-big-search-form:focus-within {
+    border-color: rgba(249, 249, 249, 0.6);
+    background: #333747;
+}
+.disney-big-search-form i {
+    font-size: 1.3rem;
+    color: #9ca3af;
+}
+.disney-big-search-form input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #f9f9f9;
+    font-size: 1.25rem;
+    font-weight: 600;
+    outline: none;
+}
+.disney-big-search-form input::placeholder {
+    color: #9ca3af;
+}
+.disney-explore-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 14px;
+}
+.disney-explore-tile {
+    height: 82px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #252836, #191c28);
+    border: 2px solid rgba(249, 249, 249, 0.12);
+    color: #f9f9f9;
+    font-size: 0.95rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+}
+.disney-explore-tile:hover {
+    transform: scale(1.04);
+    border-color: #f9f9f9;
+}
+.disney-explore-tile i {
+    color: #00d2ff;
+    font-size: 1.15rem;
+}
+
+/* ---- Page Dédiée Film / Série ---- */
+.disney-detail-page {
+    padding: 6px 0 40px;
+}
+.disney-detail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #f9f9f9;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 14px;
+    transition: background 0.2s;
+}
+.disney-detail-back:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+.disney-detail-hero {
+    position: relative;
+    width: 100%;
+    min-height: 360px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #090b13;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 24px;
+}
+.disney-detail-hero > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.65;
+}
+.disney-detail-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(4, 7, 20, 0.96) 20%, rgba(4, 7, 20, 0.55) 60%, rgba(4, 7, 20, 0.2) 100%),
+                linear-gradient(0deg, rgba(4, 7, 20, 0.98) 5%, transparent 65%);
+}
+.disney-detail-content {
+    position: relative;
+    z-index: 2;
+    padding: 32px;
+    max-width: 680px;
+}
+.disney-detail-title {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #f9f9f9;
+    line-height: 1.15;
+    margin: 10px 0 8px;
+}
+.disney-detail-meta {
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+.disney-detail-desc {
+    color: #d1d5db;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.disney-circle-action {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #f9f9f9;
+    color: #f9f9f9;
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+.disney-circle-action:hover,
+.disney-circle-action.in-list {
+    background: #0063e5;
+    border-color: #00d2ff;
+    transform: scale(1.06);
+}
+.disney-detail-suggestions {
+    margin-top: 28px;
+}

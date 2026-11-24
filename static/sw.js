@@ -1,6 +1,6 @@
 // Service Worker — Téléchargeur MP3 HD
-// Version du cache : mp3dl-v24-disney-authentic-layout
-const CACHE_VERSION = 'mp3dl-v24-disney-authentic-layout';
+// Version du cache : mp3dl-v26-disney-fullwindow-detail
+const CACHE_VERSION = 'mp3dl-v26-disney-fullwindow-detail';
 
 // ——— Installation : Activer immédiatement sans attendre ———
 self.addEventListener('install', (event) => {
