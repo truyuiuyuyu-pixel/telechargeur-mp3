@@ -1766,11 +1766,21 @@ document.addEventListener('DOMContentLoaded', () => {
         // Afficher la barre d'onglets uniquement hors mode streaming
         if (navTabs) navTabs.style.display = (mode === 'streaming') ? 'none' : 'flex';
 
-        // Disney+ body class toggle
+        // Disney+ body class toggle & plein écran navigateur
         if (mode === 'streaming') {
             document.body.classList.add('mode-disney-streaming');
+            try {
+                if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+            } catch {}
         } else {
             document.body.classList.remove('mode-disney-streaming');
+            try {
+                if (document.fullscreenElement && document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                }
+            } catch {}
         }
 
         if (mode === 'music') {
@@ -3662,6 +3672,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function attachMarvelEasterEgg(actionsContainer, video, sugSelector, backdropSelector, prefix) {
         const oldBtn = document.getElementById(`${prefix}MarvelEasterBtn`);
         if (oldBtn) oldBtn.remove();
+        document.getElementById('marvelPixelCharsStage')?.remove();
         thanosSnapped = false;
         document.querySelectorAll('.thanos-dusted-card').forEach(el => el.classList.remove('thanos-dusted-card'));
 
@@ -3766,29 +3777,58 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => pop.remove(), 2700);
     }
 
+    function spawnPixelMarvelCharacters() {
+        const old = document.getElementById('marvelPixelCharsStage');
+        if (old) old.remove();
+        const stage = document.createElement('div');
+        stage.id = 'marvelPixelCharsStage';
+        stage.className = 'marvel-pixel-chars-stage';
+        const chars = [
+            { name: 'Spider-Man', dust: true, svg: '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="5" y="1" width="6" height="5" fill="#ef4444"/><rect x="6" y="3" width="1" height="1" fill="#fff"/><rect x="9" y="3" width="1" height="1" fill="#fff"/><rect x="4" y="6" width="8" height="5" fill="#dc2626"/><rect x="5" y="11" width="2" height="4" fill="#2563eb"/><rect x="9" y="11" width="2" height="4" fill="#2563eb"/></svg>' },
+            { name: 'Iron Man', dust: false, svg: '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="5" y="1" width="6" height="5" fill="#dc2626"/><rect x="6" y="2" width="4" height="3" fill="#eab308"/><rect x="4" y="6" width="8" height="5" fill="#b91c1c"/><rect x="7" y="7" width="2" height="2" fill="#38bdf8"/><rect x="5" y="11" width="2" height="4" fill="#dc2626"/><rect x="9" y="11" width="2" height="4" fill="#dc2626"/></svg>' },
+            { name: 'Black Panther', dust: true, svg: '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="5" y="1" width="6" height="5" fill="#1e293b"/><rect x="6" y="3" width="1" height="1" fill="#a855f7"/><rect x="9" y="3" width="1" height="1" fill="#a855f7"/><rect x="4" y="6" width="8" height="5" fill="#0f172a"/><rect x="5" y="11" width="2" height="4" fill="#1e293b"/><rect x="9" y="11" width="2" height="4" fill="#1e293b"/></svg>' },
+            { name: 'Cap. America', dust: false, svg: '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="5" y="1" width="6" height="5" fill="#2563eb"/><rect x="6" y="3" width="4" height="2" fill="#fde68a"/><rect x="4" y="6" width="8" height="5" fill="#1d4ed8"/><rect x="11" y="6" width="3" height="4" fill="#ef4444"/><rect x="5" y="11" width="2" height="4" fill="#1e3a8a"/><rect x="9" y="11" width="2" height="4" fill="#1e3a8a"/></svg>' },
+            { name: 'Dr. Strange', dust: true, svg: '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="5" y="1" width="6" height="5" fill="#fde68a"/><rect x="5" y="1" width="6" height="1" fill="#1e293b"/><rect x="3" y="6" width="10" height="5" fill="#dc2626"/><rect x="5" y="6" width="6" height="5" fill="#2563eb"/><rect x="5" y="11" width="2" height="4" fill="#1e293b"/><rect x="9" y="11" width="2" height="4" fill="#1e293b"/></svg>' },
+            { name: 'Groot', dust: false, svg: '<svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="5" y="1" width="6" height="5" fill="#92400e"/><rect x="6" y="3" width="1" height="1" fill="#000"/><rect x="9" y="3" width="1" height="1" fill="#000"/><rect x="5" y="6" width="6" height="5" fill="#78350f"/><rect x="6" y="6" width="2" height="2" fill="#22c55e"/><rect x="5" y="11" width="2" height="4" fill="#78350f"/><rect x="9" y="11" width="2" height="4" fill="#78350f"/></svg>' }
+        ];
+        chars.forEach(c => {
+            const el = document.createElement('div');
+            el.className = 'marvel-pixel-char';
+            el.dataset.dust = c.dust ? '1' : '0';
+            el.innerHTML = `${c.svg}<span>${c.name}</span>`;
+            stage.appendChild(el);
+        });
+        document.body.appendChild(stage);
+        return stage;
+    }
+
     function triggerMarvelEasterEgg(id, btn, sugSelector, backdropSelector) {
         if (id === 'gauntlet') {
-            const cards = Array.from(document.querySelectorAll(`${sugSelector} .disney-movie-card`));
             if (!thanosSnapped) {
                 thanosSnapped = true;
                 btn.classList.add('snapped');
                 showPixelThanosPopup(false);
-                const half = cards.filter((_, idx) => idx % 2 === 0);
-                half.forEach((card, i) => {
+                const stage = spawnPixelMarvelCharacters();
+                const toDust = Array.from(stage.querySelectorAll('.marvel-pixel-char[data-dust="1"]'));
+                toDust.forEach((ch, i) => {
                     setTimeout(() => {
-                        spawnPixelDustFromElement(card);
-                        card.classList.add('thanos-dusted-card');
-                    }, i * 160);
+                        spawnPixelDustFromElement(ch);
+                        ch.classList.add('thanos-dusted-char');
+                    }, 450 + i * 320);
                 });
-                if (typeof showToast === 'function') showToast('🫰 Claquement de doigts de Thanos !');
+                if (typeof showToast === 'function') showToast('🫰 Thanos a claqué des doigts !');
             } else {
                 thanosSnapped = false;
                 btn.classList.remove('snapped');
                 btn.classList.add('timestone');
                 showPixelThanosPopup(true);
-                cards.forEach((card, i) => {
-                    setTimeout(() => card.classList.remove('thanos-dusted-card'), i * 90);
-                });
+                const stage = document.getElementById('marvelPixelCharsStage');
+                if (stage) {
+                    stage.querySelectorAll('.thanos-dusted-char').forEach((ch, i) => {
+                        setTimeout(() => ch.classList.remove('thanos-dusted-char'), i * 160);
+                    });
+                    setTimeout(() => stage.remove(), 2300);
+                }
                 setTimeout(() => btn.classList.remove('timestone'), 1600);
                 if (typeof showToast === 'function') showToast('💚 Pierre du Temps activée !');
             }

@@ -1,6 +1,6 @@
 // Service Worker — Téléchargeur MP3 HD
-// Version du cache : mp3dl-v29-marvel-easter-eggs
-const CACHE_VERSION = 'mp3dl-v29-marvel-easter-eggs';
+// Version du cache : mp3dl-v30-fullscreen-chars
+const CACHE_VERSION = 'mp3dl-v30-fullscreen-chars';
 
 // ——— Installation : Activer immédiatement sans attendre ———
 self.addEventListener('install', (event) => {

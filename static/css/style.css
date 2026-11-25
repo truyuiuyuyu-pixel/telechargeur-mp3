@@ -3127,6 +3127,8 @@ body.mode-disney-streaming #tab-streaming {
     margin: 0 !important;
     background: radial-gradient(ellipse at top, #1a1d29 0%, #090b13 45%, #040714 100%) !important;
     box-sizing: border-box !important;
+    animation: none !important;
+    transform: none !important;
 }
 
 .disney-top-nav {
@@ -3431,12 +3433,50 @@ body.mode-disney-streaming #tab-streaming {
     pointer-events: none;
     z-index: 999990;
 }
-.thanos-dusted-card {
+.thanos-dusted-card,
+.thanos-dusted-char {
     opacity: 0 !important;
-    transform: scale(0.92) translate(14px, -10px) !important;
+    transform: scale(0.85) translate(14px, -12px) !important;
     filter: contrast(1.8) saturate(0.2) blur(1px);
     pointer-events: none !important;
     transition: opacity 0.9s ease-out, transform 0.9s ease-out, filter 0.6s ease-out !important;
+}
+.marvel-pixel-chars-stage {
+    position: fixed;
+    bottom: 92px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999994;
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    padding: 14px 20px;
+    background: rgba(10, 12, 24, 0.92);
+    border: 2px solid rgba(168, 85, 247, 0.7);
+    border-radius: 14px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.75);
+    max-width: 94vw;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.marvel-pixel-char {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    transition: opacity 0.6s, transform 0.6s;
+}
+.marvel-pixel-char svg {
+    width: 48px;
+    height: 48px;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+.marvel-pixel-char span {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #e2e8f0;
+    font-family: monospace;
 }
 .marvel-pixel-thanos-popup {
     position: fixed;
