@@ -3098,17 +3098,35 @@ body.mode-disney-streaming .btn-disney-trailer:hover {
    DISNEY+ PLEINE FENÊTRE, MENU 3 POINTS, PAGE RECHERCHE & DÉTAIL (DESKTOP)
    ============================================================ */
 
-body.mode-disney-streaming .navbar {
+body.mode-disney-streaming .navbar,
+body.mode-disney-streaming .nav-tabs,
+body.mode-disney-streaming #globalAudioPlayerBar {
     display: none !important;
+}
+body.mode-disney-streaming {
+    overflow: hidden !important;
 }
 body.mode-disney-streaming .app-container {
     max-width: 100% !important;
-    padding: 0 28px 40px !important;
+    padding: 0 !important;
     margin: 0 !important;
 }
 body.mode-disney-streaming .main-content {
     padding: 0 !important;
     margin: 0 !important;
+}
+body.mode-disney-streaming #tab-streaming {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    z-index: 500 !important;
+    padding: 0 32px 48px !important;
+    margin: 0 !important;
+    background: radial-gradient(ellipse at top, #1a1d29 0%, #090b13 45%, #040714 100%) !important;
+    box-sizing: border-box !important;
 }
 
 .disney-top-nav {
@@ -3367,4 +3385,202 @@ body.mode-disney-streaming .main-content {
 }
 .disney-detail-suggestions {
     margin-top: 28px;
+}
+
+/* ============================================================
+   EASTER EGGS MARVEL PIXELISÉS (STYLE GOOGLE)
+   ============================================================ */
+.marvel-easter-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.85);
+    border: 2px solid #f59e0b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.45);
+    transition: transform 0.2s, border-color 0.25s, box-shadow 0.25s;
+}
+.marvel-easter-btn:hover {
+    transform: scale(1.12);
+    box-shadow: 0 0 22px rgba(245, 158, 11, 0.75);
+}
+.marvel-easter-btn.snapped {
+    border-color: #a855f7;
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+}
+.marvel-easter-btn.timestone {
+    border-color: #22c55e;
+    box-shadow: 0 0 24px rgba(34, 197, 94, 0.9);
+}
+.marvel-pixel-svg,
+.thanos-pixel-avatar,
+.marvel-pixel-canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+.marvel-pixel-svg {
+    width: 24px;
+    height: 24px;
+}
+.marvel-pixel-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999990;
+}
+.thanos-dusted-card {
+    opacity: 0 !important;
+    transform: scale(0.92) translate(14px, -10px) !important;
+    filter: contrast(1.8) saturate(0.2) blur(1px);
+    pointer-events: none !important;
+    transition: opacity 0.9s ease-out, transform 0.9s ease-out, filter 0.6s ease-out !important;
+}
+.marvel-pixel-thanos-popup {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999995;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    background: rgba(15, 10, 30, 0.94);
+    border: 2px solid #a855f7;
+    border-radius: 12px;
+    box-shadow: 0 12px 32px rgba(147, 51, 234, 0.5);
+    color: #f9f9f9;
+    font-weight: 800;
+    font-size: 0.95rem;
+    animation: pixelPopIn 0.3s steps(4);
+    transition: opacity 0.45s;
+}
+.marvel-pixel-thanos-popup.restore {
+    border-color: #22c55e;
+    box-shadow: 0 12px 32px rgba(34, 197, 94, 0.45);
+}
+.marvel-pixel-thanos-popup.hide {
+    opacity: 0;
+}
+.thanos-pixel-avatar {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+}
+@keyframes pixelPopIn {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.marvel-pixel-spider-fx {
+    position: fixed;
+    top: 0;
+    right: 18%;
+    z-index: 999992;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: spiderDrop 2.1s ease-in-out forwards;
+}
+.spider-thread {
+    width: 2px;
+    height: 150px;
+    background: repeating-linear-gradient(to bottom, #fff 0 4px, transparent 4px 6px);
+}
+.spider-pixel-drop {
+    font-size: 2rem;
+    filter: drop-shadow(0 0 8px #ef4444);
+}
+@keyframes spiderDrop {
+    0% { transform: translateY(-180px); }
+    35% { transform: translateY(10px); }
+    70% { transform: translateY(-10px); }
+    100% { transform: translateY(-200px); }
+}
+.marvel-swing-fx {
+    animation: backdropSwing 1.3s ease-in-out;
+}
+@keyframes backdropSwing {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    30% { transform: rotate(-2deg) scale(1.03); }
+    65% { transform: rotate(1.5deg) scale(1.02); }
+}
+.marvel-pixel-portal-fx {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 240px;
+    height: 240px;
+    margin: -120px 0 0 -120px;
+    border-radius: 50%;
+    border: 8px dashed #f97316;
+    box-shadow: 0 0 40px #f97316, inset 0 0 40px #fde047;
+    z-index: 999992;
+    pointer-events: none;
+    animation: portalSpin 1.9s steps(16) forwards;
+}
+@keyframes portalSpin {
+    0% { transform: scale(0.1) rotate(0deg); opacity: 0; }
+    30% { transform: scale(1.1) rotate(120deg); opacity: 1; }
+    80% { transform: scale(1) rotate(320deg); opacity: 0.9; }
+    100% { transform: scale(0.1) rotate(420deg); opacity: 0; }
+}
+.marvel-pixel-thor-fx {
+    position: fixed;
+    inset: 0;
+    z-index: 999992;
+    pointer-events: none;
+    background: linear-gradient(125deg, transparent 44%, rgba(56, 189, 248, 0.85) 48%, #ffffff 50%, rgba(56, 189, 248, 0.85) 52%, transparent 56%);
+    animation: thorFlash 0.9s steps(5) forwards;
+}
+@keyframes thorFlash {
+    0%, 40%, 80% { opacity: 0; }
+    20%, 60% { opacity: 1; }
+    100% { opacity: 0; }
+}
+.marvel-thunder-shake {
+    animation: thunderShake 0.45s steps(4);
+}
+@keyframes thunderShake {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-5px, 4px); }
+    50% { transform: translate(5px, -4px); }
+    75% { transform: translate(-3px, -2px); }
+}
+.marvel-pixel-jarvis-fx {
+    position: fixed;
+    inset: 0;
+    z-index: 999992;
+    pointer-events: none;
+    border: 4px solid rgba(56, 189, 248, 0.65);
+    box-shadow: inset 0 0 60px rgba(56, 189, 248, 0.25);
+}
+.jarvis-scan-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #38bdf8;
+    box-shadow: 0 0 18px #38bdf8;
+    animation: jarvisScan 1.7s linear forwards;
+}
+@keyframes jarvisScan {
+    0% { top: 0%; opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+}
+.jarvis-hud-badge {
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 16px;
+    background: rgba(2, 132, 199, 0.88);
+    border: 1px solid #7dd3fc;
+    border-radius: 8px;
+    color: #e0f2fe;
+    font-family: monospace;
+    font-weight: 800;
+    letter-spacing: 0.08em;
 }

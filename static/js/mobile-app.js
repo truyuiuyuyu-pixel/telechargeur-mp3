@@ -1668,7 +1668,7 @@
         });
 
         const tabbar = document.querySelector('.mob-tabbar');
-        if (tabbar) tabbar.style.display = 'flex'; // Toujours garder la barre d'onglets visible et utilisable !
+        if (tabbar) tabbar.style.display = (mode === 'streaming') ? 'none' : 'flex';
 
         const modeBadge = $('mobCurrentModeLabel');
         const logoIcon = $('mobLogoIcon');
@@ -1702,6 +1702,17 @@
         } else if (mode === 'streaming') {
             if (modeBadge) modeBadge.textContent = '📺 Mode Streaming';
             if (logoIcon) logoIcon.innerHTML = '<i class="fa-solid fa-film"></i>';
+            document.querySelectorAll('.mob-tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.mob-tab-pane').forEach(p => {
+                p.classList.remove('active');
+                p.style.display = 'none';
+            });
+            const sPane = $('mobPane-streaming');
+            if (sPane) {
+                sPane.classList.add('active');
+                sPane.style.display = 'block';
+                sPane.scrollTop = 0;
+            }
             const streamTab = document.querySelector('.mob-tab[data-pane="streaming"]');
             if (streamTab) streamTab.click();
         }
@@ -3402,6 +3413,8 @@
             wlBtn.onclick = () => syncWl(toggleMobWatchlist(video));
         }
 
+        attachMarvelEasterEgg(wlBtn ? wlBtn.parentElement : null, video, '#mobDetailSuggestions', '#mobDetailBackdrop', 'mob');
+
         $('btnMobDetailPlay').onclick = () => playVideoStream(video);
         $('btnMobDetailTrailer').onclick = () => playVideoTrailer(video);
 
@@ -3578,6 +3591,229 @@
         });
         heroEl.appendChild(dots);
         setInterval(() => setSlide((activeIdx + 1) % slides.length), 6500);
+    }
+
+    // =========================================================
+    // EASTER EGGS MARVEL PIXELISÉS (STYLE GOOGLE)
+    // =========================================================
+    let thanosSnapped = false;
+
+    function getMarvelEasterEggConfig(title) {
+        const t = (title || '').toLowerCase();
+        if (/infinity\s*war|endgame|thanos/.test(t)) {
+            return {
+                id: 'gauntlet',
+                label: 'Gant de l\'Infini (Cliquer !)',
+                svg: `<svg viewBox="0 0 16 16" shape-rendering="crispEdges" class="marvel-pixel-svg"><rect x="5" y="1" width="6" height="2" fill="#f59e0b"/><rect x="4" y="3" width="8" height="7" fill="#d97706"/><rect x="3" y="5" width="2" height="4" fill="#b45309"/><rect x="5" y="10" width="6" height="5" fill="#92400e"/><rect x="5" y="4" width="1" height="1" fill="#3b82f6"/><rect x="7" y="4" width="1" height="1" fill="#ef4444"/><rect x="9" y="4" width="1" height="1" fill="#a855f7"/><rect x="11" y="5" width="1" height="1" fill="#f97316"/><rect x="4" y="6" width="1" height="1" fill="#22c55e"/><rect x="7" y="7" width="2" height="2" fill="#fde047"/></svg>`
+            };
+        }
+        if (/spider-?man|spider-?verse|no way home|homecoming|far from home/.test(t)) {
+            return {
+                id: 'spiderman',
+                label: 'Spider-Man Easter Egg',
+                svg: `<svg viewBox="0 0 16 16" shape-rendering="crispEdges" class="marvel-pixel-svg"><rect x="5" y="2" width="6" height="2" fill="#ef4444"/><rect x="4" y="4" width="8" height="6" fill="#dc2626"/><rect x="5" y="5" width="2" height="2" fill="#ffffff"/><rect x="9" y="5" width="2" height="2" fill="#ffffff"/><rect x="6" y="10" width="4" height="3" fill="#b91c1c"/><rect x="3" y="6" width="1" height="3" fill="#1e293b"/><rect x="12" y="6" width="1" height="3" fill="#1e293b"/></svg>`
+            };
+        }
+        if (/doctor\s*strange|multiverse/.test(t)) {
+            return {
+                id: 'strange',
+                label: 'Portail du Multivers',
+                svg: `<svg viewBox="0 0 16 16" shape-rendering="crispEdges" class="marvel-pixel-svg"><rect x="5" y="2" width="6" height="2" fill="#f97316"/><rect x="3" y="4" width="2" height="8" fill="#fb923c"/><rect x="11" y="4" width="2" height="8" fill="#fb923c"/><rect x="5" y="12" width="6" height="2" fill="#f97316"/><rect x="6" y="5" width="4" height="6" fill="#fde047" opacity="0.5"/></svg>`
+            };
+        }
+        if (/thor|ragnarok|love and thunder/.test(t)) {
+            return {
+                id: 'thor',
+                label: 'Mjölnir & Éclairs',
+                svg: `<svg viewBox="0 0 16 16" shape-rendering="crispEdges" class="marvel-pixel-svg"><rect x="3" y="3" width="10" height="5" fill="#94a3b8"/><rect x="4" y="4" width="8" height="3" fill="#cbd5e1"/><rect x="7" y="8" width="2" height="6" fill="#78350f"/><rect x="6" y="14" width="4" height="1" fill="#451a03"/></svg>`
+            };
+        }
+        if (/iron\s*man|avengers/.test(t)) {
+            return {
+                id: 'ironman',
+                label: 'Réacteur Arc J.A.R.V.I.S.',
+                svg: `<svg viewBox="0 0 16 16" shape-rendering="crispEdges" class="marvel-pixel-svg"><rect x="4" y="2" width="8" height="2" fill="#38bdf8"/><rect x="2" y="4" width="2" height="8" fill="#38bdf8"/><rect x="12" y="4" width="2" height="8" fill="#38bdf8"/><rect x="4" y="12" width="8" height="2" fill="#38bdf8"/><rect x="5" y="5" width="6" height="6" fill="#e0f2fe"/></svg>`
+            };
+        }
+        return null;
+    }
+
+    function attachMarvelEasterEgg(actionsContainer, video, sugSelector, backdropSelector, prefix) {
+        const oldBtn = document.getElementById(`${prefix}MarvelEasterBtn`);
+        if (oldBtn) oldBtn.remove();
+        thanosSnapped = false;
+        document.querySelectorAll('.thanos-dusted-card').forEach(el => el.classList.remove('thanos-dusted-card'));
+
+        const cfg = getMarvelEasterEggConfig(video && video.title);
+        if (!cfg || !actionsContainer) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = `${prefix}MarvelEasterBtn`;
+        btn.className = 'btn-disney-circle marvel-easter-btn';
+        btn.title = cfg.label;
+        btn.innerHTML = cfg.svg;
+        btn.onclick = () => triggerMarvelEasterEgg(cfg.id, btn, sugSelector, backdropSelector);
+        actionsContainer.appendChild(btn);
+    }
+
+    function spawnPixelDustFromElement(el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.className = 'marvel-pixel-canvas';
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        document.body.appendChild(canvas);
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+
+        const colors = ['#a855f7', '#eab308', '#94a3b8', '#64748b', '#e2e8f0', '#f59e0b'];
+        const particles = [];
+        const step = 10;
+        for (let x = rect.left; x < rect.right; x += step) {
+            for (let y = rect.top; y < rect.bottom; y += step) {
+                if (Math.random() < 0.65) {
+                    particles.push({
+                        x: x + Math.random() * 6,
+                        y: y + Math.random() * 6,
+                        vx: 0.8 + Math.random() * 3.2,
+                        vy: -0.6 - Math.random() * 2.4,
+                        size: (Math.random() < 0.5 ? 4 : 6),
+                        alpha: 1,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        delay: ((x - rect.left) / rect.width) * 18
+                    });
+                }
+            }
+        }
+
+        let frame = 0;
+        function tick() {
+            frame++;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let alive = false;
+            for (const p of particles) {
+                if (frame < p.delay) {
+                    ctx.globalAlpha = 0.85;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+                    alive = true;
+                    continue;
+                }
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.022;
+                if (p.alpha > 0) {
+                    alive = true;
+                    ctx.globalAlpha = Math.max(0, p.alpha);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+                }
+            }
+            if (alive && frame < 110) {
+                requestAnimationFrame(tick);
+            } else {
+                canvas.remove();
+            }
+        }
+        requestAnimationFrame(tick);
+    }
+
+    function showPixelThanosPopup(isRestore) {
+        const existing = document.getElementById('pixelThanosPopup');
+        if (existing) existing.remove();
+
+        const pop = document.createElement('div');
+        pop.id = 'pixelThanosPopup';
+        pop.className = 'marvel-pixel-thanos-popup' + (isRestore ? ' restore' : '');
+        pop.innerHTML = `
+            <svg viewBox="0 0 16 16" shape-rendering="crispEdges" class="thanos-pixel-avatar">
+                <rect x="4" y="1" width="8" height="2" fill="#eab308"/>
+                <rect x="3" y="3" width="10" height="7" fill="#9333ea"/>
+                <rect x="5" y="5" width="2" height="2" fill="#fde047"/>
+                <rect x="9" y="5" width="2" height="2" fill="#fde047"/>
+                <rect x="5" y="8" width="6" height="2" fill="#581c87"/>
+                <rect x="2" y="10" width="12" height="5" fill="#ca8a04"/>
+                <rect x="5" y="11" width="6" height="3" fill="#3b82f6"/>
+            </svg>
+            <div class="thanos-pixel-text">${isRestore ? '💚 Pierre du Temps : Tout est restauré !' : '🫰 « Parfaitement équilibré... »'}</div>
+        `;
+        document.body.appendChild(pop);
+        setTimeout(() => pop.classList.add('hide'), 2200);
+        setTimeout(() => pop.remove(), 2700);
+    }
+
+    function triggerMarvelEasterEgg(id, btn, sugSelector, backdropSelector) {
+        if (id === 'gauntlet') {
+            const cards = Array.from(document.querySelectorAll(`${sugSelector} .disney-movie-card`));
+            if (!thanosSnapped) {
+                thanosSnapped = true;
+                btn.classList.add('snapped');
+                showPixelThanosPopup(false);
+                const half = cards.filter((_, idx) => idx % 2 === 0);
+                half.forEach((card, i) => {
+                    setTimeout(() => {
+                        spawnPixelDustFromElement(card);
+                        card.classList.add('thanos-dusted-card');
+                    }, i * 160);
+                });
+                if (typeof showToast === 'function') showToast('🫰 Claquement de doigts de Thanos !');
+            } else {
+                thanosSnapped = false;
+                btn.classList.remove('snapped');
+                btn.classList.add('timestone');
+                showPixelThanosPopup(true);
+                cards.forEach((card, i) => {
+                    setTimeout(() => card.classList.remove('thanos-dusted-card'), i * 90);
+                });
+                setTimeout(() => btn.classList.remove('timestone'), 1600);
+                if (typeof showToast === 'function') showToast('💚 Pierre du Temps activée !');
+            }
+            return;
+        }
+
+        if (id === 'spiderman') {
+            const web = document.createElement('div');
+            web.className = 'marvel-pixel-spider-fx';
+            web.innerHTML = `<div class="spider-thread"></div><div class="spider-pixel-drop">🕷️</div>`;
+            document.body.appendChild(web);
+            const bd = document.querySelector(backdropSelector);
+            if (bd) { bd.classList.add('marvel-swing-fx'); setTimeout(() => bd.classList.remove('marvel-swing-fx'), 1400); }
+            setTimeout(() => web.remove(), 2200);
+            if (typeof showToast === 'function') showToast('🕸️ Thwip !');
+            return;
+        }
+
+        if (id === 'strange') {
+            const portal = document.createElement('div');
+            portal.className = 'marvel-pixel-portal-fx';
+            document.body.appendChild(portal);
+            setTimeout(() => portal.remove(), 2000);
+            if (typeof showToast === 'function') showToast('🌀 Portail du Multivers ouvert !');
+            return;
+        }
+
+        if (id === 'thor') {
+            const bolt = document.createElement('div');
+            bolt.className = 'marvel-pixel-thor-fx';
+            document.body.appendChild(bolt);
+            document.body.classList.add('marvel-thunder-shake');
+            setTimeout(() => document.body.classList.remove('marvel-thunder-shake'), 600);
+            setTimeout(() => bolt.remove(), 1100);
+            if (typeof showToast === 'function') showToast('⚡ Par le pouvoir de Mjölnir !');
+            return;
+        }
+
+        if (id === 'ironman') {
+            const hud = document.createElement('div');
+            hud.className = 'marvel-pixel-jarvis-fx';
+            hud.innerHTML = `<div class="jarvis-scan-line"></div><div class="jarvis-hud-badge">J.A.R.V.I.S. • SYSTÈMES EN LIGNE</div>`;
+            document.body.appendChild(hud);
+            setTimeout(() => hud.remove(), 1900);
+            if (typeof showToast === 'function') showToast('🤖 J.A.R.V.I.S. activé !');
+        }
     }
 
     // Bouton de rafraîchissement bibliothèque
