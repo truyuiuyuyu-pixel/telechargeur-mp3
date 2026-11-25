@@ -1717,7 +1717,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =========================================================
     // MODES & MENU DÉROULANT DESKTOP (MUSIQUE / VIDÉO / STREAMING)
     // =========================================================
-    let currentDeskMode = localStorage.getItem('mp3_app_mode') || 'music';
+    let currentDeskMode = 'music'; // Toujours démarrer en mode Musique MP3
 
     function setupDeskModeDropdown() {
         const trigger = document.getElementById('deskLogoModeTrigger');
@@ -2884,10 +2884,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (err) { err.textContent = 'Veuillez saisir un nom.'; err.style.display = 'block'; }
                     return;
                 }
+                const ageVal = document.getElementById('deskProfileAgeInput')?.value;
+                const pinVal = document.getElementById('deskProfilePinInput')?.value;
                 const endpoint = deskEditingProfileId ? '/api/profiles/update' : '/api/profiles/add';
                 const body = deskEditingProfileId
-                    ? { profile_id: deskEditingProfileId, name, avatar: deskSelectedAvatar }
-                    : { name, avatar: deskSelectedAvatar };
+                    ? { profile_id: deskEditingProfileId, name, avatar: deskSelectedAvatar, age: ageVal || null, pin: pinVal || null }
+                    : { name, avatar: deskSelectedAvatar, age: ageVal || null, pin: pinVal || null };
                 try {
                     const res = await fetch(endpoint, {
                         method: 'POST',
@@ -3032,23 +3034,23 @@ document.addEventListener('DOMContentLoaded', () => {
         deskAuthState.profiles.forEach(p => {
             const item = document.createElement('div');
             item.className = 'disney-profile-item' + (p.id === deskAuthState.activeProfileId ? ' active' : '');
+            const ageLabel = p.age ? `<span class="disney-profile-age">${p.age} ans</span>` : '';
+            const lockIcon = p.has_pin ? '<div class="disney-profile-lock"><i class="fa-solid fa-lock"></i></div>' : '';
             item.innerHTML = `
                 <div class="disney-profile-avatar" style="background:${p.gradient};">
                     <i class="fa-solid ${p.icon}"></i>
-                    ${deskEditProfilesMode ? '<div class="disney-profile-edit-badge"><i class="fa-solid fa-pen"></i></div>' : ''}
+                    ${deskEditProfilesMode ? '<div class="disney-profile-edit-badge"><i class="fa-solid fa-pen"></i></div>' : lockIcon}
                 </div>
                 <div class="disney-profile-name">${escapeHtml(p.name)}</div>
+                ${ageLabel}
             `;
             item.onclick = async () => {
                 if (deskEditProfilesMode) {
                     openDeskProfileEditor(p);
+                } else if (p.has_pin) {
+                    openDeskPinVerify(p);
                 } else {
-                    deskAuthState.activeProfileId = p.id;
-                    localStorage.setItem('mp3_active_profile_id', p.id);
-                    updateDeskAccountPill();
-                    document.getElementById('deskDisneyAccountModal').style.display = 'none';
-                    await loadDeskContinueWatching();
-                    showToast(`🍿 Profil actif : ${p.name}`);
+                    await selectDeskProfileDirect(p);
                 }
             };
             grid.appendChild(item);
@@ -3066,13 +3068,80 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    let deskPinTargetProfile = null;
+
+    function openDeskPinVerify(prof) {
+        deskPinTargetProfile = prof;
+        document.getElementById('deskProfilesView').style.display = 'none';
+        document.getElementById('deskProfileEditView').style.display = 'none';
+        document.getElementById('deskPinModal').style.display = 'block';
+        document.getElementById('deskPinVerifyInput').value = '';
+        document.getElementById('deskPinError').style.display = 'none';
+        document.getElementById('deskPinVerifyInput').focus();
+    }
+
+    (function setupDeskPinEvents() {
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'btnDeskPinCancel') {
+                document.getElementById('deskPinModal').style.display = 'none';
+                showDeskProfilesView();
+            }
+            if (e.target.id === 'btnDeskPinSubmit' || e.target.closest('#btnDeskPinSubmit')) {
+                verifyDeskPin();
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && document.getElementById('deskPinModal')?.style.display === 'block') {
+                verifyDeskPin();
+            }
+        });
+    })();
+
+    async function verifyDeskPin() {
+        if (!deskPinTargetProfile) return;
+        const pin = (document.getElementById('deskPinVerifyInput')?.value || '').trim();
+        const err = document.getElementById('deskPinError');
+        if (!pin) {
+            if (err) { err.textContent = 'Veuillez saisir le code PIN.'; err.style.display = 'block'; }
+            return;
+        }
+        try {
+            const res = await fetch('/api/profiles/verify-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ profile_id: deskPinTargetProfile.id, pin })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                if (err) { err.textContent = data.error || 'Code PIN incorrect.'; err.style.display = 'block'; }
+                return;
+            }
+            document.getElementById('deskPinModal').style.display = 'none';
+            await selectDeskProfileDirect(deskPinTargetProfile);
+        } catch {
+            if (err) { err.textContent = 'Erreur réseau.'; err.style.display = 'block'; }
+        }
+    }
+
+    async function selectDeskProfileDirect(p) {
+        deskAuthState.activeProfileId = p.id;
+        localStorage.setItem('mp3_active_profile_id', p.id);
+        updateDeskAccountPill();
+        document.getElementById('deskDisneyAccountModal').style.display = 'none';
+        await loadDeskContinueWatching();
+        showToast(`🍿 Profil actif : ${p.name}`);
+    }
+
     function openDeskProfileEditor(prof) {
         document.getElementById('deskProfilesView').style.display = 'none';
         document.getElementById('deskProfileEditView').style.display = 'block';
+        document.getElementById('deskPinModal').style.display = 'none';
         deskEditingProfileId = prof ? prof.id : null;
         deskSelectedAvatar = prof ? prof.avatar : 'star';
         document.getElementById('deskProfileEditTitle').textContent = prof ? 'Modifier le profil' : 'Nouveau profil';
         document.getElementById('deskProfileNameInput').value = prof ? prof.name : '';
+        document.getElementById('deskProfileAgeInput').value = prof && prof.age ? prof.age : '';
+        document.getElementById('deskProfilePinInput').value = '';
         document.getElementById('deskProfileEditError').style.display = 'none';
         document.getElementById('btnDeskProfileDelete').style.display = (prof && deskAuthState.profiles.length > 1) ? 'inline-flex' : 'none';
 

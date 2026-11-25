@@ -1623,7 +1623,7 @@
     // =========================================================
     // GESTION DU MENU DÉROULANT ET MODES (MUSIQUE / VIDÉO / STREAMING)
     // =========================================================
-    let currentAppMode = localStorage.getItem('mp3_app_mode') || 'music';
+    let currentAppMode = 'music'; // Toujours démarrer en mode Musique MP3
 
     function setupModeDropdown() {
         const trigger = $('mobLogoModeTrigger');
@@ -2874,10 +2874,12 @@
                     if (err) { err.textContent = 'Veuillez saisir un nom.'; err.style.display = 'block'; }
                     return;
                 }
+                const ageVal = $('mobProfileAgeInput')?.value;
+                const pinVal = $('mobProfilePinInput')?.value;
                 const endpoint = mobEditingProfileId ? '/api/profiles/update' : '/api/profiles/add';
                 const body = mobEditingProfileId
-                    ? { profile_id: mobEditingProfileId, name, avatar: mobSelectedAvatar }
-                    : { name, avatar: mobSelectedAvatar };
+                    ? { profile_id: mobEditingProfileId, name, avatar: mobSelectedAvatar, age: ageVal || null, pin: pinVal || null }
+                    : { name, avatar: mobSelectedAvatar, age: ageVal || null, pin: pinVal || null };
                 try {
                     const res = await fetch(endpoint, {
                         method: 'POST',
@@ -3022,23 +3024,23 @@
         mobAuthState.profiles.forEach(p => {
             const item = document.createElement('div');
             item.className = 'disney-profile-item' + (p.id === mobAuthState.activeProfileId ? ' active' : '');
+            const ageLabel = p.age ? `<span class="disney-profile-age">${p.age} ans</span>` : '';
+            const lockIcon = p.has_pin ? '<div class="disney-profile-lock"><i class="fa-solid fa-lock"></i></div>' : '';
             item.innerHTML = `
                 <div class="disney-profile-avatar" style="background:${p.gradient};">
                     <i class="fa-solid ${p.icon}"></i>
-                    ${mobEditProfilesMode ? '<div class="disney-profile-edit-badge"><i class="fa-solid fa-pen"></i></div>' : ''}
+                    ${mobEditProfilesMode ? '<div class="disney-profile-edit-badge"><i class="fa-solid fa-pen"></i></div>' : lockIcon}
                 </div>
                 <div class="disney-profile-name">${esc(p.name)}</div>
+                ${ageLabel}
             `;
             item.onclick = async () => {
                 if (mobEditProfilesMode) {
                     openMobProfileEditor(p);
+                } else if (p.has_pin) {
+                    openMobPinVerify(p);
                 } else {
-                    mobAuthState.activeProfileId = p.id;
-                    localStorage.setItem('mp3_active_profile_id', p.id);
-                    updateMobAccountPill();
-                    $('mobDisneyAccountModal').style.display = 'none';
-                    await loadMobContinueWatching();
-                    showToast(`🍿 Profil actif : ${p.name}`);
+                    await selectMobProfileDirect(p);
                 }
             };
             grid.appendChild(item);
@@ -3056,13 +3058,80 @@
         }
     }
 
+    let mobPinTargetProfile = null;
+
+    function openMobPinVerify(prof) {
+        mobPinTargetProfile = prof;
+        $('mobProfilesView').style.display = 'none';
+        $('mobProfileEditView').style.display = 'none';
+        $('mobPinModal').style.display = 'block';
+        $('mobPinVerifyInput').value = '';
+        $('mobPinError').style.display = 'none';
+        $('mobPinVerifyInput').focus();
+    }
+
+    (function setupMobPinEvents() {
+        document.addEventListener('click', (e) => {
+            if (e.target.id === 'btnMobPinCancel') {
+                $('mobPinModal').style.display = 'none';
+                showMobProfilesView();
+            }
+            if (e.target.id === 'btnMobPinSubmit' || e.target.closest('#btnMobPinSubmit')) {
+                verifyMobPin();
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && $('mobPinModal')?.style.display === 'block') {
+                verifyMobPin();
+            }
+        });
+    })();
+
+    async function verifyMobPin() {
+        if (!mobPinTargetProfile) return;
+        const pin = ($('mobPinVerifyInput')?.value || '').trim();
+        const err = $('mobPinError');
+        if (!pin) {
+            if (err) { err.textContent = 'Veuillez saisir le code PIN.'; err.style.display = 'block'; }
+            return;
+        }
+        try {
+            const res = await fetch('/api/profiles/verify-pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ profile_id: mobPinTargetProfile.id, pin })
+            });
+            const data = await res.json();
+            if (!data.success) {
+                if (err) { err.textContent = data.error || 'Code PIN incorrect.'; err.style.display = 'block'; }
+                return;
+            }
+            $('mobPinModal').style.display = 'none';
+            await selectMobProfileDirect(mobPinTargetProfile);
+        } catch {
+            if (err) { err.textContent = 'Erreur réseau.'; err.style.display = 'block'; }
+        }
+    }
+
+    async function selectMobProfileDirect(p) {
+        mobAuthState.activeProfileId = p.id;
+        localStorage.setItem('mp3_active_profile_id', p.id);
+        updateMobAccountPill();
+        $('mobDisneyAccountModal').style.display = 'none';
+        await loadMobContinueWatching();
+        showToast(`🍿 Profil actif : ${p.name}`);
+    }
+
     function openMobProfileEditor(prof) {
         $('mobProfilesView').style.display = 'none';
         $('mobProfileEditView').style.display = 'block';
+        if ($('mobPinModal')) $('mobPinModal').style.display = 'none';
         mobEditingProfileId = prof ? prof.id : null;
         mobSelectedAvatar = prof ? prof.avatar : 'star';
         $('mobProfileEditTitle').textContent = prof ? 'Modifier le profil' : 'Nouveau profil';
         $('mobProfileNameInput').value = prof ? prof.name : '';
+        if ($('mobProfileAgeInput')) $('mobProfileAgeInput').value = prof && prof.age ? prof.age : '';
+        if ($('mobProfilePinInput')) $('mobProfilePinInput').value = '';
         $('mobProfileEditError').style.display = 'none';
         $('btnMobProfileDelete').style.display = (prof && mobAuthState.profiles.length > 1) ? 'inline-flex' : 'none';
 

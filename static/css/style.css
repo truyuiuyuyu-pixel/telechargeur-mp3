@@ -2716,6 +2716,29 @@ body.mode-disney-streaming .header {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+.disney-profile-age {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    background: rgba(255,255,255,0.08);
+    padding: 2px 8px;
+    border-radius: 8px;
+    margin-top: 2px;
+}
+.disney-profile-lock {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #1a1d29;
+    border: 2px solid #0063e5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: #0063e5;
+}
 .disney-profile-item.active .disney-profile-name,
 .disney-profile-item:hover .disney-profile-name {
     color: #fff;

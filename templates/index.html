@@ -1220,6 +1220,15 @@
                     <input type="text" id="deskProfileNameInput" placeholder="Nom du profil" maxlength="20">
                 </div>
                 <div class="disney-field" style="margin-top:12px;">
+                    <label>Âge (optionnel)</label>
+                    <input type="number" id="deskProfileAgeInput" placeholder="Ex : 8" min="1" max="120" style="width:100px;">
+                </div>
+                <div class="disney-field" style="margin-top:12px;">
+                    <label>Code PIN (4-6 chiffres, optionnel)</label>
+                    <input type="password" id="deskProfilePinInput" placeholder="Ex : 1234" maxlength="6" inputmode="numeric" pattern="[0-9]*">
+                    <small style="color:#94a3b8;font-size:0.78rem;">Laissez vide pour retirer le code PIN.</small>
+                </div>
+                <div class="disney-field" style="margin-top:12px;">
                     <label>Choisir un avatar</label>
                     <div id="deskAvatarPicker" class="disney-avatar-picker"></div>
                 </div>
@@ -1230,9 +1239,23 @@
                     <button type="button" id="btnDeskProfileSave" class="btn-disney-play" style="flex:1.4;justify-content:center;">Enregistrer</button>
                 </div>
             </div>
+
+            <!-- Modal PIN Desktop -->
+            <div id="deskPinModal" style="display:none;">
+                <h2 style="color:#fff;font-size:1.25rem;font-weight:900;margin-bottom:12px;text-align:center;">🔒 Profil protégé</h2>
+                <p style="color:#94a3b8;text-align:center;margin-bottom:16px;font-size:0.9rem;">Saisissez le code PIN pour accéder à ce profil.</p>
+                <div class="disney-field" style="text-align:center;">
+                    <input type="password" id="deskPinVerifyInput" placeholder="Code PIN" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="text-align:center;font-size:1.3rem;letter-spacing:0.4em;max-width:200px;">
+                </div>
+                <div id="deskPinError" class="disney-auth-error" style="display:none;"></div>
+                <div style="display:flex;gap:10px;margin-top:18px;">
+                    <button type="button" id="btnDeskPinCancel" class="disney-secondary-btn" style="flex:1;">Annuler</button>
+                    <button type="button" id="btnDeskPinSubmit" class="btn-disney-play" style="flex:1.4;justify-content:center;">Valider</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=14.0"></script>
+    <script src="/static/js/app.js?v=15.0"></script>
 </body>
 </html>

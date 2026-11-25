@@ -1005,7 +1005,13 @@ def api_profile_add():
     if not username:
         return jsonify({"success": False, "error": "Non connecté"}), 401
     data = request.json or {}
-    ok, msg, profs = profiles.add_profile(username, data.get('name'), data.get('avatar', 'star'))
+    ok, msg, profs = profiles.add_profile(
+        username,
+        data.get('name'),
+        data.get('avatar', 'star'),
+        age=data.get('age'),
+        pin=data.get('pin')
+    )
     if not ok:
         return jsonify({"success": False, "error": msg}), 400
     return jsonify({"success": True, "message": msg, "profiles": profs})
@@ -1017,9 +1023,52 @@ def api_profile_update():
     if not username:
         return jsonify({"success": False, "error": "Non connecté"}), 401
     data = request.json or {}
-    ok, msg, profs = profiles.update_profile(
-        username, data.get('profile_id'), name=data.get('name'), avatar=data.get('avatar')
-    )
+    kwargs = {}
+    if 'name' in data:
+        kwargs['name'] = data.get('name')
+    if 'avatar' in data:
+        kwargs['avatar'] = data.get('avatar')
+    if 'age' in data:
+        kwargs['age'] = data.get('age')
+    if 'pin' in data:
+        kwargs['pin'] = data.get('pin')
+    ok, msg, profs = profiles.update_profile(username, data.get('profile_id'), **kwargs)
+    if not ok:
+        return jsonify({"success": False, "error": msg}), 400
+    return jsonify({"success": True, "message": msg, "profiles": profs})
+
+
+@app.route('/api/profiles/set-pin', methods=['POST'])
+def api_profile_set_pin():
+    username = _get_auth_username()
+    if not username:
+        return jsonify({"success": False, "error": "Non connecté"}), 401
+    data = request.json or {}
+    ok, msg, profs = profiles.set_profile_pin(username, data.get('profile_id'), data.get('pin'))
+    if not ok:
+        return jsonify({"success": False, "error": msg}), 400
+    return jsonify({"success": True, "message": msg, "profiles": profs})
+
+
+@app.route('/api/profiles/verify-pin', methods=['POST'])
+def api_profile_verify_pin():
+    username = _get_auth_username()
+    if not username:
+        return jsonify({"success": False, "error": "Non connecté"}), 401
+    data = request.json or {}
+    ok, msg = profiles.verify_profile_pin(username, data.get('profile_id'), data.get('pin'))
+    if not ok:
+        return jsonify({"success": False, "error": msg}), 403
+    return jsonify({"success": True, "message": msg})
+
+
+@app.route('/api/profiles/set-age', methods=['POST'])
+def api_profile_set_age():
+    username = _get_auth_username()
+    if not username:
+        return jsonify({"success": False, "error": "Non connecté"}), 401
+    data = request.json or {}
+    ok, msg, profs = profiles.set_profile_age(username, data.get('profile_id'), data.get('age'))
     if not ok:
         return jsonify({"success": False, "error": msg}), 400
     return jsonify({"success": True, "message": msg, "profiles": profs})

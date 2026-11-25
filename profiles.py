@@ -168,6 +168,27 @@ def login_account(email, password):
         }
 
 
+def _normalize_age(age):
+    if age is None or age == "":
+        return None
+    try:
+        val = int(age)
+        if 1 <= val <= 120:
+            return val
+    except (ValueError, TypeError):
+        pass
+    return None
+
+
+def _validate_pin(pin):
+    if pin is None or pin == "":
+        return True, None
+    p = str(pin).strip()
+    if not re.match(r'^\d{4,6}$', p):
+        return False, "Le code PIN doit contenir entre 4 et 6 chiffres."
+    return True, p
+
+
 def _sanitize_profiles(profiles):
     preset_map = {p["id"]: p for p in AVATAR_PRESETS}
     out = []
@@ -180,6 +201,8 @@ def _sanitize_profiles(profiles):
             "avatar": av_id,
             "icon": av["icon"],
             "gradient": av["gradient"],
+            "age": p.get("age"),
+            "has_pin": bool(p.get("pin_hash")),
             "progress_count": len(p.get("progress", []))
         })
     return out
@@ -199,11 +222,15 @@ def get_account_info(username):
         }
 
 
-def add_profile(username, name, avatar="star"):
+def add_profile(username, name, avatar="star", age=None, pin=None):
     uname = _normalize_email(username)
     pname = (name or '').strip()
     if len(pname) < 1 or len(pname) > 20:
         return False, "Le nom du profil doit contenir entre 1 et 20 caractères.", None
+
+    ok_pin, pin_val = _validate_pin(pin)
+    if not ok_pin:
+        return False, pin_val, None
 
     valid_avatars = {p["id"] for p in AVATAR_PRESETS}
     if avatar not in valid_avatars:
@@ -221,6 +248,8 @@ def add_profile(username, name, avatar="star"):
             "id": secrets.token_hex(6),
             "name": pname,
             "avatar": avatar,
+            "age": _normalize_age(age),
+            "pin_hash": _hash_password(pin_val) if pin_val else None,
             "progress": []
         }
         acc["profiles"].append(new_prof)
@@ -228,8 +257,15 @@ def add_profile(username, name, avatar="star"):
         return True, "Profil ajouté.", _sanitize_profiles(acc["profiles"])
 
 
-def update_profile(username, profile_id, name=None, avatar=None):
+def update_profile(username, profile_id, name=None, avatar=None, age="__UNSET__", pin="__UNSET__"):
     uname = _normalize_email(username)
+    if pin != "__UNSET__":
+        ok_pin, pin_val = _validate_pin(pin)
+        if not ok_pin:
+            return False, pin_val, None
+    else:
+        pin_val = "__UNSET__"
+
     with _LOCK:
         data = _load_data()
         acc = data["accounts"].get(uname)
@@ -251,8 +287,40 @@ def update_profile(username, profile_id, name=None, avatar=None):
             if avatar in valid_avatars:
                 target["avatar"] = avatar
 
+        if age != "__UNSET__":
+            target["age"] = _normalize_age(age)
+
+        if pin_val != "__UNSET__":
+            target["pin_hash"] = _hash_password(pin_val) if pin_val else None
+
         _save_data(data)
         return True, "Profil mis à jour.", _sanitize_profiles(acc["profiles"])
+
+
+def set_profile_pin(username, profile_id, pin):
+    return update_profile(username, profile_id, pin=pin)
+
+
+def set_profile_age(username, profile_id, age):
+    return update_profile(username, profile_id, age=age)
+
+
+def verify_profile_pin(username, profile_id, pin):
+    uname = _normalize_email(username)
+    with _LOCK:
+        data = _load_data()
+        acc = data["accounts"].get(uname)
+        if not acc:
+            return False, "Compte introuvable."
+        target = next((p for p in acc["profiles"] if p["id"] == profile_id), None)
+        if not target:
+            return False, "Profil introuvable."
+        pin_hash = target.get("pin_hash")
+        if not pin_hash:
+            return True, "Aucun code PIN requis."
+        if not pin or not _verify_password(str(pin).strip(), pin_hash):
+            return False, "Code PIN incorrect."
+        return True, "Code PIN validé."
 
 
 def delete_profile(username, profile_id):
