@@ -88,47 +88,75 @@ def build_servers(imdb_id: str, tmdb_id: str = "", title: str = "", is_series: b
             servers["1. 🇫🇷 Serveur 1 (Frembed VF)"] = f"https://frembed.pics/embed/serie/{tmdb_id}?sa={s}&epi={e}"
             servers["2. 🇫🇷 Serveur 2 (Frembed Miroir)"] = f"https://frembed.shop/api/serie.php?id={tmdb_id}&sa={s}&epi={e}"
             servers["3. 🇫🇷 Serveur 3 (Frembed Live VF)"] = f"https://frembed.live/api/serie.php?id={tmdb_id}&sa={s}&epi={e}"
-            servers["4. 🇫🇷 Serveur 4 (EmbedSU Multi/FR)"] = f"https://embed.su/embed/tv/{tmdb_id}/{s}/{e}"
-            servers["5. 🇫🇷 Serveur 5 (VidLink HD FR)"] = f"https://vidlink.pro/tv/{tmdb_id}/{s}/{e}"
+            servers["4. 🇫🇷 Serveur 4 (Frembed Fun VF)"] = f"https://frembed.fun/api/serie.php?id={tmdb_id}&sa={s}&epi={e}"
+            servers["5. 🇫🇷 Serveur 5 (Frembed Pro VF)"] = f"https://frembed.pro/api/serie.php?id={tmdb_id}&sa={s}&epi={e}"
+            servers["6. 🇫🇷 Serveur 6 (EmbedSU Multi/FR)"] = f"https://embed.su/embed/tv/{tmdb_id}/{s}/{e}"
+            servers["7. 🇫🇷 Serveur 7 (VidLink HD FR)"] = f"https://vidlink.pro/tv/{tmdb_id}/{s}/{e}"
+            servers["8. 🇫🇷 Serveur 8 (VidBinge HD)"] = f"https://vidbinge.dev/embed/tv/{tmdb_id}/{s}/{e}"
 
-        servers["6. 🇫🇷 Serveur 6 (Smashy Audio FR)"] = f"https://embed.smashystream.com/playere.php?imdb={imdb_id}&season={s}&episode={e}"
-        servers["7. 🇫🇷 Serveur 7 (VidSrc Audio/ST FR)"] = f"https://vidsrc.me/embed/tv?imdb={imdb_id}&season={s}&episode={e}&ds_lang=fr"
+        servers["9. 🇫🇷 Serveur 9 (Smashy Audio FR)"] = f"https://embed.smashystream.com/playere.php?imdb={imdb_id}&season={s}&episode={e}"
+        servers["10. 🇫🇷 Serveur 10 (VidSrc Audio/ST FR)"] = f"https://vidsrc.me/embed/tv?imdb={imdb_id}&season={s}&episode={e}&ds_lang=fr"
 
         if clean_title:
             q_enc = urllib.parse.quote(clean_title)
-            servers["8. 🇫🇷 Serveur 8 (Wiflix VF Direct)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://wiflix.voto/?s=' + q_enc)}"
-            servers["9. 🇫🇷 Serveur 9 (French-Stream VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://french-stream.bio/?s=' + q_enc)}"
-            servers["10. 🇫🇷 Serveur 10 (Coflix VF Direct)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://coflix.top/?s=' + q_enc)}"
-            servers["11. 🇫🇷 Serveur 11 (Papadustream VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://papadustream.ws/?s=' + q_enc)}"
+            servers["11. 🇫🇷 Serveur 11 (Wiflix VF Direct)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://wiflix.voto/?s=' + q_enc)}"
+            servers["12. 🇫🇷 Serveur 12 (French-Stream VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://french-stream.bio/?s=' + q_enc)}"
+            servers["13. 🇫🇷 Serveur 13 (Coflix VF Direct)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://coflix.top/?s=' + q_enc)}"
+            servers["14. 🇫🇷 Serveur 14 (Papadustream VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://papadustream.ws/?s=' + q_enc)}"
+            servers["15. 🇫🇷 Serveur 15 (VoirFilm VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://voirfilm.cfd/?s=' + q_enc)}"
+            servers["16. 🇫🇷 Serveur 16 (Streaming-Integrale VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://streaming-integrale.com/?s=' + q_enc)}"
 
-        servers["12. 🌐 Serveur 12 (VidSrc CC)"] = f"https://vidsrc.cc/v2/embed/tv/{imdb_id}/{s}/{e}"
-        servers["13. 🌐 Serveur 13 (MultiEmbed Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}&s={s}&e={e}"
-        servers["14. 🍿 Serveur 14 (2Embed Cinéma)"] = f"https://www.2embed.cc/embedtv/{imdb_id}&s={s}&e={e}"
-        servers["15. ⚡ Serveur 15 (AutoEmbed Rapide)"] = f"https://autoembed.to/tv/imdb/{imdb_id}-{s}-{e}"
-        servers["16. 🛡️ Serveur 16 (VidSrc TO)"] = f"https://vidsrc.to/embed/tv/{imdb_id}/{s}/{e}"
+        if tmdb_id:
+            servers["17. 🌐 Serveur 17 (MoviesAPI Club)"] = f"https://moviesapi.club/tv/{tmdb_id}-{s}-{e}"
+            servers["18. 🌐 Serveur 18 (SuperEmbed VIP)"] = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={s}&e={e}"
+
+        servers["19. 🌐 Serveur 19 (VidSrc CC)"] = f"https://vidsrc.cc/v2/embed/tv/{imdb_id}/{s}/{e}"
+        servers["20. 🌐 Serveur 20 (VidSrc XYZ)"] = f"https://vidsrc.xyz/embed/tv/{imdb_id}/{s}/{e}"
+        servers["21. 🌐 Serveur 21 (VidSrc IN)"] = f"https://vidsrc.in/embed/tv/{imdb_id}/{s}/{e}"
+        servers["22. 🌐 Serveur 22 (VidSrc PM)"] = f"https://vidsrc.pm/embed/tv/{imdb_id}/{s}/{e}"
+        servers["23. 🌐 Serveur 23 (MultiEmbed Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}&s={s}&e={e}"
+        servers["24. 🍿 Serveur 24 (2Embed Cinéma)"] = f"https://www.2embed.cc/embedtv/{imdb_id}&s={s}&e={e}"
+        servers["25. ⚡ Serveur 25 (AutoEmbed Rapide)"] = f"https://autoembed.to/tv/imdb/{imdb_id}-{s}-{e}"
+        servers["26. 🎬 Serveur 26 (NontonGo HD)"] = f"https://www.nontongo.win/embed/tv/{imdb_id}/{s}/{e}"
+        servers["27. 🔥 Serveur 27 (EmbedRise)"] = f"https://embedrise.com/tv/{imdb_id}/{s}/{e}"
+        servers["28. 🛡️ Serveur 28 (VidSrc TO)"] = f"https://vidsrc.to/embed/tv/{imdb_id}/{s}/{e}"
     else:
         if tmdb_id:
             servers["1. 🇫🇷 Serveur 1 (Frembed VF)"] = f"https://frembed.pics/embed/movie/{tmdb_id}"
             servers["2. 🇫🇷 Serveur 2 (Frembed Miroir)"] = f"https://frembed.shop/api/film.php?id={tmdb_id}"
             servers["3. 🇫🇷 Serveur 3 (Frembed Live VF)"] = f"https://frembed.live/api/film.php?id={tmdb_id}"
-            servers["4. 🇫🇷 Serveur 4 (EmbedSU Multi/FR)"] = f"https://embed.su/embed/movie/{tmdb_id}"
-            servers["5. 🇫🇷 Serveur 5 (VidLink HD FR)"] = f"https://vidlink.pro/movie/{tmdb_id}"
+            servers["4. 🇫🇷 Serveur 4 (Frembed Fun VF)"] = f"https://frembed.fun/api/film.php?id={tmdb_id}"
+            servers["5. 🇫🇷 Serveur 5 (Frembed Pro VF)"] = f"https://frembed.pro/api/film.php?id={tmdb_id}"
+            servers["6. 🇫🇷 Serveur 6 (EmbedSU Multi/FR)"] = f"https://embed.su/embed/movie/{tmdb_id}"
+            servers["7. 🇫🇷 Serveur 7 (VidLink HD FR)"] = f"https://vidlink.pro/movie/{tmdb_id}"
+            servers["8. 🇫🇷 Serveur 8 (VidBinge HD)"] = f"https://vidbinge.dev/embed/movie/{tmdb_id}"
 
-        servers["6. 🇫🇷 Serveur 6 (Smashy Audio FR)"] = f"https://embed.smashystream.com/playere.php?imdb={imdb_id}"
-        servers["7. 🇫🇷 Serveur 7 (VidSrc Audio/ST FR)"] = f"https://vidsrc.me/embed/movie?imdb={imdb_id}&ds_lang=fr"
+        servers["9. 🇫🇷 Serveur 9 (Smashy Audio FR)"] = f"https://embed.smashystream.com/playere.php?imdb={imdb_id}"
+        servers["10. 🇫🇷 Serveur 10 (VidSrc Audio/ST FR)"] = f"https://vidsrc.me/embed/movie?imdb={imdb_id}&ds_lang=fr"
 
         if clean_title:
             q_enc = urllib.parse.quote(clean_title)
-            servers["8. 🇫🇷 Serveur 8 (Wiflix VF Direct)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://wiflix.voto/?s=' + q_enc)}"
-            servers["9. 🇫🇷 Serveur 9 (French-Stream VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://french-stream.bio/?s=' + q_enc)}"
-            servers["10. 🇫🇷 Serveur 10 (Coflix VF Direct)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://coflix.top/?s=' + q_enc)}"
-            servers["11. 🇫🇷 Serveur 11 (Papadustream VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://papadustream.ws/?s=' + q_enc)}"
+            servers["11. 🇫🇷 Serveur 11 (Wiflix VF Direct)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://wiflix.voto/?s=' + q_enc)}"
+            servers["12. 🇫🇷 Serveur 12 (French-Stream VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://french-stream.bio/?s=' + q_enc)}"
+            servers["13. 🇫🇷 Serveur 13 (Coflix VF Direct)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://coflix.top/?s=' + q_enc)}"
+            servers["14. 🇫🇷 Serveur 14 (Papadustream VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://papadustream.ws/?s=' + q_enc)}"
+            servers["15. 🇫🇷 Serveur 15 (VoirFilm VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://voirfilm.cfd/?s=' + q_enc)}"
+            servers["16. 🇫🇷 Serveur 16 (Streaming-Integrale VF)"] = f"/api/streaming/proxy?url={urllib.parse.quote('https://streaming-integrale.com/?s=' + q_enc)}"
 
-        servers["12. 🌐 Serveur 12 (VidSrc CC)"] = f"https://vidsrc.cc/v2/embed/movie/{imdb_id}"
-        servers["13. 🌐 Serveur 13 (MultiEmbed Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}"
-        servers["14. 🍿 Serveur 14 (2Embed Cinéma)"] = f"https://www.2embed.cc/embed/{imdb_id}"
-        servers["15. ⚡ Serveur 15 (AutoEmbed Rapide)"] = f"https://autoembed.to/movie/imdb/{imdb_id}"
-        servers["16. 🛡️ Serveur 16 (VidSrc TO)"] = f"https://vidsrc.to/embed/movie/{imdb_id}"
+        if tmdb_id:
+            servers["17. 🌐 Serveur 17 (MoviesAPI Club)"] = f"https://moviesapi.club/movie/{tmdb_id}"
+            servers["18. 🌐 Serveur 18 (SuperEmbed VIP)"] = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1"
+
+        servers["19. 🌐 Serveur 19 (VidSrc CC)"] = f"https://vidsrc.cc/v2/embed/movie/{imdb_id}"
+        servers["20. 🌐 Serveur 20 (VidSrc XYZ)"] = f"https://vidsrc.xyz/embed/movie/{imdb_id}"
+        servers["21. 🌐 Serveur 21 (VidSrc IN)"] = f"https://vidsrc.in/embed/movie/{imdb_id}"
+        servers["22. 🌐 Serveur 22 (VidSrc PM)"] = f"https://vidsrc.pm/embed/movie/{imdb_id}"
+        servers["23. 🌐 Serveur 23 (MultiEmbed Multi)"] = f"https://multiembed.mov/?video_id={imdb_id}"
+        servers["24. 🍿 Serveur 24 (2Embed Cinéma)"] = f"https://www.2embed.cc/embed/{imdb_id}"
+        servers["25. ⚡ Serveur 25 (AutoEmbed Rapide)"] = f"https://autoembed.to/movie/imdb/{imdb_id}"
+        servers["26. 🎬 Serveur 26 (NontonGo HD)"] = f"https://www.nontongo.win/embed/movie/{imdb_id}"
+        servers["27. 🔥 Serveur 27 (EmbedRise)"] = f"https://embedrise.com/movie/{imdb_id}"
+        servers["28. 🛡️ Serveur 28 (VidSrc TO)"] = f"https://vidsrc.to/embed/movie/{imdb_id}"
 
     return servers
 

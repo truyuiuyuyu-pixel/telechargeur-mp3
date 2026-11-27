@@ -133,12 +133,15 @@ def get_yt_dlp_common_opts():
         'quiet': True,
         'no_warnings': True,
         'nocheckcertificate': True,
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'socket_timeout': 20,
-        'retries': 5,
+        'geo_bypass': True,
+        'hls_prefer_native': True,
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+        'socket_timeout': 25,
+        'retries': 6,
+        'fragment_retries': 6,
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'ios', 'web']
+                'player_client': ['tv_embedded', 'android_vr', 'android', 'web']
             }
         }
     }
@@ -390,19 +393,42 @@ def process_single_track(url: str, chosen_artist: str = "", chosen_title: str = 
                     'ffmpegextractaudio': ['-b:a', f'{audio_quality}k', '-ar', '44100']
                 }
 
-            # Tentative principale de téléchargement
+            # Tentative principale + fallbacks multi-sources (clients YT alternatifs, YT audio, SoundCloud)
             info = None
-            try:
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info = ydl.extract_info(effective_url, download=True)
-            except Exception as ex_main:
-                print(f"Échec source principale ({effective_url}) : {ex_main}")
-                # FALLBACK SUR SOUNDCLOUD si YouTube échoue
-                if progress_hook_cb:
-                    progress_hook_cb(40, "Source secondaire SoundCloud en cours...")
-                sc_query = f"scsearch3:{chosen_artist} {chosen_title}"
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl_sc:
-                    info = ydl_sc.extract_info(sc_query, download=True)
+            fallback_query = f"{chosen_artist} {chosen_title}".strip()
+            if not fallback_query or fallback_query in ("Artiste Inconnu", "Sans Titre", "Artiste Inconnu Sans Titre"):
+                fallback_query = url if not (url.startswith("http://") or url.startswith("https://")) else ""
+
+            attempts = [
+                ("Source principale", effective_url, ydl_opts),
+            ]
+            alt_opts = dict(ydl_opts)
+            alt_opts['extractor_args'] = {'youtube': {'player_client': ['mweb', 'web_safari', 'ios']}}
+            attempts.append(("Client alternatif", effective_url, alt_opts))
+
+            if fallback_query:
+                attempts.append(("YouTube Audio", f"ytsearch1:{fallback_query} audio", ydl_opts))
+                attempts.append(("SoundCloud", f"scsearch1:{fallback_query}", ydl_opts))
+                attempts.append(("YouTube Lyrics", f"ytsearch1:{fallback_query} lyrics", alt_opts))
+
+            last_err = None
+            for label, target_src, opts_try in attempts:
+                try:
+                    if label != "Source principale" and progress_hook_cb:
+                        progress_hook_cb(45, f"Nouvelle tentative ({label})...")
+                    with yt_dlp.YoutubeDL(opts_try) as ydl_try:
+                        info = ydl_try.extract_info(target_src, download=True)
+                    if info:
+                        if 'entries' in info and info['entries']:
+                            info = info['entries'][0]
+                        break
+                except Exception as ex_try:
+                    last_err = ex_try
+                    print(f"Échec {label} ({target_src}) : {ex_try}")
+                    info = None
+
+            if not info and not any(f.lower().endswith(".mp3") for f in os.listdir(temp_dir)):
+                raise Exception(f"Impossible de télécharger ce morceau ({last_err})")
 
             if info and not effective_cover:
                 effective_cover = info.get('thumbnail')
