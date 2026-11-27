@@ -135,15 +135,9 @@ def get_yt_dlp_common_opts():
         'nocheckcertificate': True,
         'geo_bypass': True,
         'hls_prefer_native': True,
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
         'socket_timeout': 25,
         'retries': 6,
         'fragment_retries': 6,
-        'extractor_args': {
-            'youtube': {
-                'player_client': ['tv_embedded', 'android_vr', 'android', 'web']
-            }
-        }
     }
 
 def search_tracks(query: str, limit: int = 12, source: str = "all"):
@@ -249,6 +243,8 @@ def search_tracks(query: str, limit: int = 12, source: str = "all"):
                     url = entry.get('url') or entry.get('webpage_url')
                     if not url and eid:
                         url = f"https://www.youtube.com/watch?v={eid}"
+                    if not url or any(bad in url for bad in ('/channel/', '/user/', '/@', '/playlist?')):
+                        continue
 
                     results.append({
                         "id": eid or str(uuid.uuid4())[:8],
@@ -281,6 +277,10 @@ def search_tracks(query: str, limit: int = 12, source: str = "all"):
                 for entry in entries:
                     if not entry:
                         continue
+                    dur_sc = entry.get('duration') or 0
+                    if 0 < dur_sc <= 35:
+                        # Ignorer les aperçus SoundCloud Go+ de 30s protégés par DRM
+                        continue
                     eid = f"sc_{entry.get('id')}"
                     if eid in seen_ids:
                         continue
@@ -312,6 +312,52 @@ def search_tracks(query: str, limit: int = 12, source: str = "all"):
             print(f"Erreur recherche SoundCloud : {e}")
 
     return results
+
+def _extract_yt_id(url: str):
+    if not url:
+        return None
+    m = re.search(r'(?:v=|youtu\.be/|shorts/|embed/)([A-Za-z0-9_-]{11})', url)
+    return m.group(1) if m else None
+
+
+def _download_via_piped(video_id: str, temp_dir: str):
+    """Fallback cloud via instances Piped publiques si YouTube bloque l'IP."""
+    if not video_id:
+        return None
+    instances = [
+        "https://pipedapi.kavin.rocks",
+        "https://pipedapi.adminforge.de",
+        "https://api.piped.private.coffee",
+        "https://pipedapi.leptons.xyz",
+    ]
+    for base in instances:
+        try:
+            r = requests.get(f"{base}/streams/{video_id}", timeout=8)
+            if r.status_code != 200:
+                continue
+            data = r.json()
+            streams = data.get("audioStreams") or []
+            if not streams:
+                continue
+            best = max(streams, key=lambda s: s.get("bitrate", 0))
+            stream_url = best.get("url")
+            if not stream_url:
+                continue
+            ext = "m4a" if "mp4" in (best.get("mimeType") or "") else "webm"
+            out_path = os.path.join(temp_dir, f"{video_id}.{ext}")
+            resp = requests.get(stream_url, stream=True, timeout=25)
+            if resp.status_code != 200:
+                continue
+            with open(out_path, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=65536):
+                    if chunk:
+                        f.write(chunk)
+            if os.path.exists(out_path) and os.path.getsize(out_path) > 10000:
+                return {"title": data.get("title", ""), "artist": data.get("uploader", ""), "thumbnail": data.get("thumbnailUrl", "")}
+        except Exception:
+            continue
+    return None
+
 
 def process_single_track(url: str, chosen_artist: str = "", chosen_title: str = "", album: str = None, cover_url: str = None, progress_hook_cb = None):
     """
@@ -376,7 +422,7 @@ def process_single_track(url: str, chosen_artist: str = "", chosen_title: str = 
             out_template = os.path.join(temp_dir, "%(title)s.%(ext)s")
             ydl_opts = get_yt_dlp_common_opts()
             ydl_opts.update({
-                'format': 'bestaudio/best',
+                'format': 'bestaudio*/best',
                 'outtmpl': out_template,
                 'progress_hooks': [progress_hook],
                 'noplaylist': True,
@@ -402,14 +448,14 @@ def process_single_track(url: str, chosen_artist: str = "", chosen_title: str = 
             attempts = [
                 ("Source principale", effective_url, ydl_opts),
             ]
-            alt_opts = dict(ydl_opts)
-            alt_opts['extractor_args'] = {'youtube': {'player_client': ['mweb', 'web_safari', 'ios']}}
-            attempts.append(("Client alternatif", effective_url, alt_opts))
-
             if fallback_query:
-                attempts.append(("YouTube Audio", f"ytsearch1:{fallback_query} audio", ydl_opts))
+                attempts.append(("YouTube Audio", f"ytsearch1:{fallback_query}", ydl_opts))
+                attempts.append(("YouTube Lyrics", f"ytsearch1:{fallback_query} lyrics", ydl_opts))
                 attempts.append(("SoundCloud", f"scsearch1:{fallback_query}", ydl_opts))
-                attempts.append(("YouTube Lyrics", f"ytsearch1:{fallback_query} lyrics", alt_opts))
+
+            alt_opts = dict(ydl_opts)
+            alt_opts['extractor_args'] = {'youtube': {'player_client': ['mweb', 'web_safari']}}
+            attempts.append(("Client alternatif", effective_url, alt_opts))
 
             last_err = None
             for label, target_src, opts_try in attempts:
@@ -427,7 +473,14 @@ def process_single_track(url: str, chosen_artist: str = "", chosen_title: str = 
                     print(f"Échec {label} ({target_src}) : {ex_try}")
                     info = None
 
-            if not info and not any(f.lower().endswith(".mp3") for f in os.listdir(temp_dir)):
+            if not info and not os.listdir(temp_dir):
+                yt_id = _extract_yt_id(effective_url)
+                if yt_id:
+                    if progress_hook_cb:
+                        progress_hook_cb(55, "Source miroir Piped en cours...")
+                    info = _download_via_piped(yt_id, temp_dir)
+
+            if not info and not os.listdir(temp_dir):
                 raise Exception(f"Impossible de télécharger ce morceau ({last_err})")
 
             if info and not effective_cover:
